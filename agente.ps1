@@ -1,0 +1,53 @@
+$listener = New-Object System.Net.HttpListener
+$listener.Prefixes.Add("http://localhost:8999/")
+$listener.Start()
+Write-Host "NetWatch Local Agent running on http://localhost:8999/"
+
+while ($true) {
+    try {
+        $context = $listener.GetContext()
+        $request = $context.Request
+        $response = $context.Response
+
+        # CORS Headers
+        $response.Headers.Add("Access-Control-Allow-Origin", "*")
+        $response.Headers.Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        $response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+        if ($request.HttpMethod -eq "OPTIONS") {
+            $response.StatusCode = 200
+            $response.Close()
+            continue
+        }
+
+        if ($request.HttpMethod -eq "POST") {
+            $reader = New-Object System.IO.StreamReader($request.InputStream)
+            $body = $reader.ReadToEnd()
+            $json = $body | ConvertFrom-Json
+
+            if ($json -and $json.ip) {
+                Write-Host "Launching RDP connection to: $($json.ip)"
+                Start-Process mstsc.exe "/v:$($json.ip)"
+                $resBody = '{"ok":true,"message":"RDP launched"}'
+            } else {
+                $response.StatusCode = 400
+                $resBody = '{"ok":false,"error":"Missing IP parameter"}'
+            }
+
+            $buffer = [System.Text.Encoding]::UTF8.GetBytes($resBody)
+            $response.ContentType = "application/json"
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+        } else {
+            $response.StatusCode = 405
+            $resBody = '{"ok":false,"error":"Method not allowed"}'
+            $buffer = [System.Text.Encoding]::UTF8.GetBytes($resBody)
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+        }
+    } catch {
+        Write-Error $_.Exception.Message
+    } finally {
+        if ($response) {
+            $response.Close()
+        }
+    }
+}
