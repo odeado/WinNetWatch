@@ -1109,7 +1109,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 className={`flex-1 sm:flex-none px-4 py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                   currentTab === 'dashboard'
                     ? 'bg-emerald-500 text-white shadow-md'
-                    : 'text-zinc-655 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white'
+                    : 'text-zinc-600 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 Monitoreo
@@ -1120,7 +1120,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   className={`flex-1 sm:flex-none px-4 py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                     currentTab === 'admin'
                       ? 'bg-emerald-500 text-white shadow-md'
-                      : 'text-zinc-655 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white'
+                      : 'text-zinc-600 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
                   Administración
@@ -1152,15 +1152,26 @@ function Dashboard({ token, user, theme, setTheme }) {
               <Panel title="Mapa de estado de red" icon={<Boxes size={18} />}>
                 <SubnetMap rows={bySubnet} getSubnetLabel={getSubnetLabel} />
               </Panel>
-              <Panel title="Tendencia historica" icon={<Activity size={18} />}>
+              <Panel title="Tendencia histórica" icon={<Activity size={18} />}>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.15} />
-                      <XAxis dataKey="time" />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip />
-                      <Area dataKey="eventos" stroke="#10b981" fill="#10b981" fillOpacity={0.25} />
+                      <defs>
+                        <linearGradient id="colorOnline" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorOffline" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                      <XAxis dataKey="time" stroke="currentColor" opacity={0.5} fontSize={10} />
+                      <YAxis allowDecimals={false} stroke="currentColor" opacity={0.5} fontSize={10} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
+                      <Area type="monotone" dataKey="Conexiones" stroke="#10b981" fill="url(#colorOnline)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="Desconexiones" stroke="#ef4444" fill="url(#colorOffline)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -1197,12 +1208,12 @@ function Dashboard({ token, user, theme, setTheme }) {
           <aside className="space-y-4">
             <Panel title="Ultimas alertas" icon={<Bell size={18} />}>
               <div className="feed-scroll">
-                <Feed rows={alerts} kind="alert" />
+                <Feed rows={alerts} kind="alert" devices={devices} />
               </div>
             </Panel>
             <Panel title="Auditoria y eventos" icon={<Clock3 size={18} />}>
               <div className="feed-scroll">
-                <Feed rows={events} kind="event" />
+                <Feed rows={events} kind="event" devices={devices} />
               </div>
             </Panel>
             <Panel title="Vista jerarquica" icon={<Building2 size={18} />}>
@@ -1213,12 +1224,12 @@ function Dashboard({ token, user, theme, setTheme }) {
       ) : (
         <div className="mx-auto max-w-7xl px-4 py-5">
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 shadow-xl text-zinc-950 dark:text-slate-100">
-            <div className="mb-6 flex flex-wrap border-b border-zinc-200 dark:border-slate-850 overflow-x-auto whitespace-nowrap scrollbar-none">
+            <div className="mb-6 flex flex-wrap border-b border-zinc-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => setAdminSubTab('employees')}
                 className={`border-b-2 px-5 py-3 text-sm font-bold transition-all -mb-[2px] ${
                   adminSubTab === 'employees'
-                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-450'
+                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:hover:text-white'
                 }`}
               >
@@ -1229,7 +1240,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 onClick={() => setAdminSubTab('devices')}
                 className={`border-b-2 px-5 py-3 text-sm font-bold transition-all -mb-[2px] ${
                   adminSubTab === 'devices'
-                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-450'
+                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:hover:text-white'
                 }`}
               >
@@ -1240,7 +1251,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 onClick={() => setAdminSubTab('config')}
                 className={`border-b-2 px-5 py-3 text-sm font-bold transition-all -mb-[2px] ${
                   adminSubTab === 'config'
-                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-450'
+                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:hover:text-white'
                 }`}
               >
@@ -1335,7 +1346,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                     (emp.workplace || emp.status) === 'Teletrabajo' || (emp.workplace || emp.status) === 'Remoto'
                                       ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/10 dark:text-blue-300'
-                                      : 'bg-zinc-100 text-zinc-800 dark:bg-slate-800 dark:text-slate-350'
+                                      : 'bg-zinc-100 text-zinc-800 dark:bg-slate-800 dark:text-slate-300'
                                   }`}>
                                     {emp.workplace || emp.status || 'Presencial'}
                                   </span>
@@ -1347,16 +1358,16 @@ function Dashboard({ token, user, theme, setTheme }) {
                                       {emp.vpn_type || 'Activa'}
                                     </span>
                                   ) : (
-                                    <span className="text-xs text-zinc-455 dark:text-slate-500">Inactiva</span>
+                                    <span className="text-xs text-zinc-400 dark:text-slate-500">Inactiva</span>
                                   )}
                                 </td>
                                 <td className="py-3 px-4">
                                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
                                     emp.active
                                       ? 'bg-green-100 text-green-850 dark:bg-green-500/10 dark:text-green-300'
-                                      : 'bg-red-100 text-red-850 dark:bg-red-500/10 dark:text-red-300'
+                                      : 'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-300'
                                   }`}>
-                                    <span className={`h-1.5 w-1.5 rounded-full ${emp.active ? 'bg-green-500' : 'bg-red-550'}`}></span>
+                                    <span className={`h-1.5 w-1.5 rounded-full ${emp.active ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                     {emp.active ? 'Activo' : 'Inactivo'}
                                   </span>
                                 </td>
@@ -1371,7 +1382,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                                     </button>
                                     <button
                                       onClick={() => deleteEmployee(emp.id)}
-                                      className="button py-1 px-2.5 text-xs text-red-550 border-red-200 dark:border-red-900/30 hover:border-red-500 hover:bg-red-500/10"
+                                      className="button py-1 px-2.5 text-xs text-red-500 border-red-200 dark:border-red-900/30 hover:border-red-500 hover:bg-red-500/10"
                                     >
                                       Eliminar
                                     </button>
@@ -1397,7 +1408,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                       className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
                         inventoryTab === tab
                           ? 'bg-emerald-500 text-white shadow-sm'
-                          : 'text-zinc-650 dark:text-slate-400 hover:text-zinc-950 dark:hover:text-white'
+                          : 'text-zinc-600 dark:text-slate-400 hover:text-zinc-950 dark:hover:text-white'
                       }`}
                     >
                       {tab === 'Todos' ? 'Todos' : tab === 'PC' ? 'PC de Escritorio' : tab}
@@ -1445,64 +1456,78 @@ function Dashboard({ token, user, theme, setTheme }) {
                             </td>
                           </tr>
                         ) : (
-                          filteredAdminDevicesByTab.map((dev) => (
-                            <tr
-                              key={dev.id}
-                              onClick={() => setDeviceModal({ mode: 'edit', form: dev })}
-                              className="cursor-pointer border-b border-zinc-100 dark:border-slate-800/50 hover:bg-zinc-50/50 dark:hover:bg-slate-800/30 transition duration-150"
-                            >
-                              <td className="py-3 px-4 font-semibold">
-                                <div className="flex items-center gap-2.5">
-                                  {dev.image_url ? (
-                                    <img src={dev.image_url} alt={dev.hostname} className="w-8 h-8 rounded object-cover border border-zinc-200 dark:border-slate-700 flex-shrink-0" />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 text-zinc-400 dark:text-slate-500 flex items-center justify-center flex-shrink-0">
-                                      <Laptop size={16} />
+                          filteredAdminDevicesByTab.map((dev) => {
+                            const emp = employees.find(e => e.id === dev.employee_id);
+                            const isRemote = emp && (emp.vpn_active || emp.workplace === 'Teletrabajo');
+                            const rowClass = isRemote
+                              ? "cursor-pointer border-b border-sky-100 dark:border-sky-950/40 bg-sky-50/40 dark:bg-sky-950/15 hover:bg-sky-100/50 dark:hover:bg-sky-950/25 transition duration-150"
+                              : "cursor-pointer border-b border-zinc-100 dark:border-slate-800/50 hover:bg-zinc-50/50 dark:hover:bg-slate-800/30 transition duration-150";
+                            return (
+                              <tr
+                                key={dev.id}
+                                onClick={() => setDeviceModal({ mode: 'edit', form: dev })}
+                                className={rowClass}
+                              >
+                                <td className="py-3 px-4 font-semibold">
+                                  <div className="flex items-center gap-2.5">
+                                    {dev.image_url ? (
+                                      <img src={dev.image_url} alt={dev.hostname} className="w-8 h-8 rounded object-cover border border-zinc-200 dark:border-slate-700 flex-shrink-0" />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 text-zinc-400 dark:text-slate-500 flex items-center justify-center flex-shrink-0">
+                                        <Laptop size={16} />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span>{dev.hostname || 'Equipo sin nombre'}</span>
+                                        {dev.critical && <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-extrabold text-slate-950 tracking-wider">CRÍTICO</span>}
+                                      </div>
+                                      <span className="text-xs text-zinc-400 dark:text-slate-400 block font-normal">{dev.brand} {dev.model}</span>
                                     </div>
-                                  )}
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <span>{dev.hostname || 'Equipo sin nombre'}</span>
-                                      {dev.critical && <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-extrabold text-slate-950 tracking-wider">CRÍTICO</span>}
-                                    </div>
-                                    <span className="text-xs text-zinc-450 dark:text-slate-450 block font-normal">{dev.brand} {dev.model}</span>
                                   </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4 text-zinc-550 dark:text-slate-350 font-mono">{dev.ip}</td>
-                              <td className="py-3 px-4">
-                                <span className="rounded bg-slate-100 dark:bg-slate-800 text-zinc-700 dark:text-slate-300 px-2 py-0.5 text-xs font-semibold">
-                                  {dev.device_type || 'PC'}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="font-semibold text-zinc-800 dark:text-slate-200">{dev.responsible_user || 'Sin asignar'}</div>
-                                {dev.email && <span className="text-xs text-zinc-450 dark:text-slate-500 block font-normal">{dev.email}</span>}
-                              </td>
-                              <td className="py-3 px-4 font-bold text-xs text-emerald-600 dark:text-emerald-450">
-                                {dev.location || 'Matta'}
-                              </td>
-                              <td className="py-3 px-4">
-                                <StatusPill status={dev.status} />
-                              </td>
-                              <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex justify-end gap-2">
-                                  <button
-                                    onClick={() => setDeviceModal({ mode: 'edit', form: dev })}
-                                    className="button secondary py-1 px-2.5 text-xs hover:border-emerald-500"
-                                  >
-                                    Editar
-                                  </button>
-                                  <button
-                                    onClick={() => deleteDevice(dev.id)}
-                                    className="button py-1 px-2.5 text-xs text-red-500 border-red-200 dark:border-red-900/30 hover:border-red-500"
-                                  >
-                                    Eliminar
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
+                                </td>
+                                <td className="py-3 px-4 text-zinc-550 dark:text-slate-350 font-mono">{dev.ip}</td>
+                                <td className="py-3 px-4">
+                                  <span className="rounded bg-slate-100 dark:bg-slate-800 text-zinc-700 dark:text-slate-300 px-2 py-0.5 text-xs font-semibold">
+                                    {dev.device_type || 'PC'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="font-semibold text-zinc-800 dark:text-slate-200">{dev.responsible_user || 'Sin asignar'}</div>
+                                  {dev.email && <span className="text-xs text-zinc-400 dark:text-slate-500 block font-normal">{dev.email}</span>}
+                                </td>
+                                <td className="py-3 px-4 font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                                  <div className="flex flex-col gap-1">
+                                    <span>{dev.location || 'Matta'}</span>
+                                    {isRemote && (
+                                      <span className="inline-block self-start rounded bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-350 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide border border-sky-200 dark:border-sky-800/50 shadow-sm">
+                                        VPN / Teletrabajo
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <StatusPill status={dev.status} />
+                                </td>
+                                <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => setDeviceModal({ mode: 'edit', form: dev })}
+                                      className="button secondary py-1 px-2.5 text-xs hover:border-emerald-500"
+                                    >
+                                      Editar
+                                    </button>
+                                    <button
+                                      onClick={() => deleteDevice(dev.id)}
+                                      className="button py-1 px-2.5 text-xs text-red-500 border-red-200 dark:border-red-900/30 hover:border-red-500"
+                                    >
+                                      Eliminar
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -1514,7 +1539,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 {/* COLUMN 1: Mapeo de Subredes */}
                 <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-slate-800/80 p-5 shadow-sm space-y-4">
                   <div>
-                    <h3 className="text-base font-bold text-zinc-850 dark:text-white flex items-center gap-2">
+                    <h3 className="text-base font-bold text-zinc-800 dark:text-white flex items-center gap-2">
                       <Network size={18} className="text-emerald-500" />
                       Mapeo de Subredes
                     </h3>
@@ -1531,7 +1556,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                     setNewSubnetLabel('');
                   }} className="space-y-3">
                     <div>
-                      <label className="text-xs font-bold text-zinc-550 dark:text-slate-450 block mb-1">Subred IP (ej. 172.30.100.0 o 100.0)</label>
+                      <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Subred IP (ej. 172.30.100.0 o 100.0)</label>
                       <input 
                         type="text"
                         className="input w-full text-sm"
@@ -1542,7 +1567,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-zinc-550 dark:text-slate-450 block mb-1">Nombre Descriptivo</label>
+                      <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Nombre Descriptivo</label>
                       <input 
                         type="text"
                         className="input w-full text-sm"
@@ -1560,7 +1585,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   <div className="border border-zinc-100 dark:border-slate-800/50 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto feed-scroll">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
-                        <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-105 dark:border-slate-800/50">
+                        <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-100 dark:border-slate-800/50">
                           <th className="p-2.5">Subred</th>
                           <th className="p-2.5">Nombre</th>
                           <th className="p-2.5 text-right">Acción</th>
@@ -1574,7 +1599,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                         ) : (
                           subnetMappings.map((m) => (
                             <tr key={m.subnet} className="border-b border-zinc-50 dark:border-slate-800/30 hover:bg-zinc-50/50 dark:hover:bg-slate-800/20 transition duration-150">
-                              <td className="p-2.5 font-mono text-zinc-650 dark:text-slate-300 font-semibold">{m.subnet}</td>
+                              <td className="p-2.5 font-mono text-zinc-600 dark:text-slate-300 font-semibold">{m.subnet}</td>
                               <td className="p-2.5 text-zinc-800 dark:text-slate-200 font-semibold">{m.label}</td>
                               <td className="p-2.5 text-right">
                                 <button 
@@ -1596,7 +1621,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 {/* COLUMN 2: Departamentos */}
                 <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-slate-800/80 p-5 shadow-sm space-y-4">
                   <div>
-                    <h3 className="text-base font-bold text-zinc-850 dark:text-white flex items-center gap-2">
+                    <h3 className="text-base font-bold text-zinc-800 dark:text-white flex items-center gap-2">
                       <Briefcase size={18} className="text-emerald-500" />
                       Departamentos / Áreas
                     </h3>
@@ -1612,7 +1637,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                     setNewDeptName('');
                   }} className="space-y-3">
                     <div>
-                      <label className="text-xs font-bold text-zinc-550 dark:text-slate-450 block mb-1">Nombre del Departamento</label>
+                      <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Nombre del Departamento</label>
                       <input 
                         type="text"
                         className="input w-full text-sm"
@@ -1630,7 +1655,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   <div className="border border-zinc-100 dark:border-slate-800/50 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto feed-scroll">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
-                        <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-105 dark:border-slate-800/50">
+                        <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-100 dark:border-slate-800/50">
                           <th className="p-2.5">Departamento</th>
                           <th className="p-2.5 text-right">Acción</th>
                         </tr>
@@ -1664,7 +1689,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 {/* COLUMN 3: Ciudades */}
                 <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-slate-800/80 p-5 shadow-sm space-y-4">
                   <div>
-                    <h3 className="text-base font-bold text-zinc-850 dark:text-white flex items-center gap-2">
+                    <h3 className="text-base font-bold text-zinc-800 dark:text-white flex items-center gap-2">
                       <MapPin size={18} className="text-emerald-500" />
                       Ciudades / Sucursales
                     </h3>
@@ -1680,7 +1705,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                     setNewCityName('');
                   }} className="space-y-3">
                     <div>
-                      <label className="text-xs font-bold text-zinc-550 dark:text-slate-450 block mb-1">Nombre de la Ciudad</label>
+                      <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Nombre de la Ciudad</label>
                       <input 
                         type="text"
                         className="input w-full text-sm"
@@ -1698,7 +1723,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   <div className="border border-zinc-100 dark:border-slate-800/50 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto feed-scroll">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
-                        <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-105 dark:border-slate-800/50">
+                        <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-100 dark:border-slate-800/50">
                           <th className="p-2.5">Ciudad</th>
                           <th className="p-2.5 text-right">Acción</th>
                         </tr>
@@ -1758,7 +1783,7 @@ function Dashboard({ token, user, theme, setTheme }) {
             key={toast.id}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 font-semibold text-white pointer-events-auto border-l-4 ${
               toast.type === 'offline'
-                ? 'bg-gradient-to-r from-red-650 to-rose-700 border-red-400'
+                ? 'bg-gradient-to-r from-red-600 to-rose-700 border-red-400'
                 : 'bg-gradient-to-r from-emerald-600 to-teal-700 border-emerald-400'
             }`}
           >
@@ -1828,7 +1853,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                     <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium">{employeeModal.form.email || 'Sin correo registrado'}</p>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 bg-zinc-50 dark:bg-slate-950 p-3 rounded-xl border border-zinc-150 dark:border-slate-800">
+                  <div className="grid gap-3 sm:grid-cols-2 bg-zinc-50 dark:bg-slate-950 p-3 rounded-xl border border-zinc-200 dark:border-slate-800">
                     <div>
                       <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Teléfono</span>
                       <span className="text-xs font-medium">{employeeModal.form.phone || '—'}</span>
@@ -1842,16 +1867,16 @@ function Dashboard({ token, user, theme, setTheme }) {
                       <span className="text-xs font-medium">{employeeModal.form.department || '—'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-555 uppercase block tracking-wider">Ciudad</span>
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Ciudad</span>
                       <span className="text-xs font-medium">{employeeModal.form.city || '—'}</span>
                     </div>
                     <div className="sm:col-span-2 flex items-center gap-3 mt-1 pt-2 border-t border-zinc-200/50 dark:border-slate-800/50">
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-555 uppercase block tracking-wider">Conexión VPN</span>
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Conexión VPN</span>
                       <div className="flex items-center gap-2">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                           employeeModal.form.vpn_active
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                            : 'bg-zinc-200 text-zinc-650 dark:bg-slate-800 dark:text-slate-400'
+                            : 'bg-zinc-200 text-zinc-600 dark:bg-slate-800 dark:text-slate-400'
                         }`}>
                           {employeeModal.form.vpn_active ? 'VPN Conectada' : 'Sin VPN'}
                         </span>
@@ -1879,7 +1904,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                       <div className="max-h-40 overflow-y-auto">
                         <table className="w-full text-left border-collapse text-[11px]">
                           <thead>
-                            <tr className="bg-zinc-100 dark:bg-slate-905 border-b border-zinc-200 dark:border-slate-800 text-zinc-500 dark:text-slate-400 font-semibold">
+                            <tr className="bg-zinc-100 dark:bg-slate-900 border-b border-zinc-200 dark:border-slate-800 text-zinc-500 dark:text-slate-400 font-semibold">
                               <th className="py-2 px-3">Equipo</th>
                               <th className="py-2 px-3">IP</th>
                               <th className="py-2 px-3">Estado</th>
@@ -1889,7 +1914,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                           <tbody>
                             {devices.filter(d => d.employee_id === employeeModal.form.id).map(dev => (
                               <tr key={dev.id} className="border-b border-zinc-100 dark:border-slate-800/40 hover:bg-zinc-100/50 dark:hover:bg-slate-900/30">
-                                <td className="py-2 px-3 font-semibold text-zinc-850 dark:text-slate-200">{dev.hostname || 'Sin nombre'}</td>
+                                <td className="py-2 px-3 font-semibold text-zinc-800 dark:text-slate-200">{dev.hostname || 'Sin nombre'}</td>
                                 <td className="py-2 px-3 font-mono text-zinc-500 dark:text-slate-400">{dev.ip}</td>
                                 <td className="py-2 px-3"><StatusPill status={dev.status} /></td>
                                 <td className="py-2 px-3 text-right">
@@ -1932,7 +1957,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                     <User className="text-emerald-500" size={20} />
                     {employeeModal.mode === 'create' ? 'Agregar Nuevo Empleado' : 'Editar Información Empleado'}
                   </h3>
-                  <button className="text-2xl text-zinc-455 hover:text-zinc-655 dark:hover:text-slate-200" onClick={() => setEmployeeModal(null)}>×</button>
+                  <button className="text-2xl text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200" onClick={() => setEmployeeModal(null)}>×</button>
                 </div>
 
                 <div className="p-6 grid gap-4 sm:grid-cols-2 max-h-[60vh] overflow-y-auto pr-2">
@@ -1985,7 +2010,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                           </button>
                         </div>
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-750 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-550">
+                        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-500">
                           <User size={24} />
                         </div>
                       )}
@@ -1993,7 +2018,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                         <input
                           type="file"
                           accept="image/*"
-                          className="text-xs text-zinc-650 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
+                          className="text-xs text-zinc-600 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
                           onChange={(e) => {
                             const file = e.target.files[0];
                             if (!file) return;
@@ -2111,7 +2136,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                             form: { ...employeeModal.form, vpn_active: e.target.checked }
                           })
                         }
-                        className="rounded border-zinc-355 text-emerald-500 focus:ring-emerald-500 dark:border-slate-805 h-4 w-4"
+                        className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
                       />
                       <span className="text-sm font-semibold">Tiene VPN Activa</span>
                     </label>
@@ -2126,14 +2151,14 @@ function Dashboard({ token, user, theme, setTheme }) {
                             form: { ...employeeModal.form, active: e.target.checked }
                           })
                         }
-                        className="rounded border-zinc-355 text-emerald-500 focus:ring-emerald-500 dark:border-slate-805 h-4 w-4"
+                        className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
                       />
                       <span className="text-sm font-semibold">Empleado Activo</span>
                     </label>
                   </div>
                 </div>
 
-                <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-4 flex justify-end gap-2 border-t border-zinc-150 dark:border-slate-800">
+                <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
                   <button
                     className="button secondary"
                     onClick={() => {
@@ -2192,21 +2217,21 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
   const [locationType, setLocationType] = useState(isCustomLocation ? 'Otro' : (form.location || 'Matta'));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-955/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-955 dark:text-slate-100 overflow-hidden my-8 transition-all duration-300">
-        <div className="px-6 py-4 border-b border-zinc-105 dark:border-slate-800 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-900 dark:text-slate-100 overflow-hidden my-8 transition-all duration-300">
+        <div className="px-6 py-4 border-b border-zinc-100 dark:border-slate-800 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2 leading-tight">
               <Laptop className="text-emerald-500" size={20} />
               {deviceModal.mode === 'create' ? 'Registrar Equipo Manual' : 'Ficha de Equipo'}
             </h3>
             {deviceModal.mode === 'edit' && (
-              <p className="text-xs text-zinc-505 dark:text-slate-450 mt-1 font-mono">
+              <p className="text-xs text-zinc-500 dark:text-slate-400 mt-1 font-mono">
                 IP: {form.ip} · MAC: {form.mac || 'No detectada'} · OS: {form.os || 'No identificado'}
               </p>
             )}
           </div>
-          <button className="text-2xl text-zinc-450 hover:text-zinc-655 dark:hover:text-slate-200" onClick={() => setDeviceModal(null)}>×</button>
+          <button className="text-2xl text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200" onClick={() => setDeviceModal(null)}>×</button>
         </div>
 
         <div className="p-6 grid gap-4 sm:grid-cols-2 max-h-[60vh] overflow-y-auto pr-2">
@@ -2248,7 +2273,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                   </button>
                 </div>
               ) : (
-                <div className="w-24 h-16 rounded bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-750 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-500">
+                <div className="w-24 h-16 rounded bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-500">
                   <Laptop size={24} />
                 </div>
               )}
@@ -2256,7 +2281,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 <input
                   type="file"
                   accept="image/*"
-                  className="text-xs text-zinc-650 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
+                  className="text-xs text-zinc-600 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
                   onChange={(e) => {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -2458,7 +2483,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
           </label>
 
           {/* Hardware specifications module */}
-          <div className="sm:col-span-2 border-t border-zinc-150 dark:border-slate-800 pt-4 mt-2">
+          <div className="sm:col-span-2 border-t border-zinc-200 dark:border-slate-800 pt-4 mt-2">
             <h4 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 flex items-center gap-1.5">
               <Cpu size={14} className="text-emerald-500" />
               Especificaciones de Hardware
@@ -2527,7 +2552,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 type="checkbox"
                 checked={form.critical || false}
                 onChange={(e) => setForm({ ...form, critical: e.target.checked })}
-                className="rounded border-zinc-350 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
+                className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
               />
               <span className="text-sm font-semibold">Equipo Crítico</span>
             </label>
@@ -2536,7 +2561,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 type="checkbox"
                 checked={form.managed || false}
                 onChange={(e) => setForm({ ...form, managed: e.target.checked })}
-                className="rounded border-zinc-350 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
+                className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
               />
               <span className="text-sm font-semibold">Administrado / Monitoreado</span>
             </label>
@@ -2551,7 +2576,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             />
           </label>
         </div>
-        <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-4 flex justify-end gap-2 border-t border-zinc-150 dark:border-slate-800">
+        <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
           <button className="button secondary" onClick={() => setDeviceModal(null)}>Cancelar</button>
           <button className="button primary" onClick={() => saveDevice(form)}>Guardar Equipo</button>
         </div>
@@ -2579,7 +2604,7 @@ function Stats({ summary }) {
 function Panel({ title, icon, children }) {
   return (
     <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-      <div className="mb-4 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-slate-205 uppercase tracking-wider border-b border-zinc-100 dark:border-slate-800/80 pb-2">{icon}{title}</div>
+      <div className="mb-4 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-slate-200 uppercase tracking-wider border-b border-zinc-100 dark:border-slate-800/80 pb-2">{icon}{title}</div>
       {children}
     </section>
   );
@@ -2596,7 +2621,7 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
   const label = getSubnetLabel ? getSubnetLabel(device.subnet) : device.subnet;
 
   return (
-    <article className={`rounded-xl border border-l-4 border-zinc-200 bg-white p-4 dark:border-slate-850 dark:bg-slate-900 shadow-sm transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${tone}`}>
+    <article className={`rounded-xl border border-l-4 border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${tone}`}>
       <div className="flex items-start justify-between gap-2">
         <button onClick={onOpen} className="min-w-0 text-left">
           {label && (
@@ -2607,28 +2632,28 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
           <h3 className="truncate text-base font-bold text-zinc-900 dark:text-white">
             {device.responsible_user || 'Sin responsable'}
           </h3>
-          <p className="text-xs text-zinc-550 dark:text-slate-400 font-mono mt-0.5">
+          <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">
             {device.ip}
           </p>
-          <p className="text-xs text-zinc-450 dark:text-slate-550 font-semibold truncate mt-1">
+          <p className="text-xs text-zinc-400 dark:text-slate-500 font-semibold truncate mt-1">
             {device.hostname || 'Equipo sin nombre'}
           </p>
         </button>
-        {device.managed && <span className="rounded-full bg-sky-500/10 text-sky-605 dark:text-sky-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide border border-sky-500/20 shadow-sm">Admin</span>}
+        {device.managed && <span className="rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide border border-sky-500/20 shadow-sm">Admin</span>}
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-650 dark:text-slate-350 border-t border-b border-zinc-100 dark:border-slate-800 py-2">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-600 dark:text-slate-300 border-t border-b border-zinc-100 dark:border-slate-800 py-2">
         <span className="truncate">{device.department || 'Sin departamento'}</span>
-        <span className="text-right truncate text-emerald-600 dark:text-emerald-450 font-semibold">{device.location || 'Matta'}</span>
+        <span className="text-right truncate text-emerald-600 dark:text-emerald-400 font-semibold">{device.location || 'Matta'}</span>
         <div className="pt-0.5"><StatusPill status={device.status} /></div>
         <span className="text-right pt-0.5 font-semibold text-zinc-500 dark:text-slate-400">{device.rdp_available ? 'RDP habilitado' : 'RDP inactivo'}</span>
       </div>
       <div className="mt-2.5 flex items-center justify-between">
-        <span className="text-[11px] font-mono text-zinc-450 dark:text-slate-550">
+        <span className="text-[11px] font-mono text-zinc-400 dark:text-slate-500">
           Ping: {device.latency_ms ?? '—'} ms
         </span>
         {device.rdp_available && (
           <button
-            className="icon-button h-8 w-8 text-emerald-600 dark:text-emerald-450 hover:bg-emerald-500/10 hover:border-emerald-500 shadow-sm"
+            className="icon-button h-8 w-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500 shadow-sm"
             title="Conectar por RDP"
             onClick={onConnectRdp}
           >
@@ -2721,7 +2746,7 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
   return (
     <div className="fixed inset-0 z-20 bg-slate-950/65 backdrop-blur-sm flex justify-end">
       <aside className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-900 border-l border-zinc-200 dark:border-slate-800 transition-all duration-300">
-        <div className="flex items-start justify-between border-b border-zinc-150 dark:border-slate-800 pb-4">
+        <div className="flex items-start justify-between border-b border-zinc-200 dark:border-slate-800 pb-4">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-950 dark:text-white">
               <Laptop className="text-emerald-500" size={22} />
@@ -2733,7 +2758,7 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
         </div>
 
         {/* Device Image Section */}
-        <div className="mt-4 bg-zinc-50 dark:bg-slate-955 p-4 rounded-xl border border-zinc-200 dark:border-slate-800">
+        <div className="mt-4 bg-zinc-50 dark:bg-slate-900 p-4 rounded-xl border border-zinc-200 dark:border-slate-800">
           <h4 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-2">Foto del Equipo</h4>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {form.image_url ? (
@@ -2748,7 +2773,7 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
                 </button>
               </div>
             ) : (
-              <div className="w-32 h-20 rounded bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-750 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-550">
+              <div className="w-32 h-20 rounded bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-500">
                 <Laptop size={32} />
               </div>
             )}
@@ -2756,7 +2781,7 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
               <input
                 type="file"
                 accept="image/*"
-                className="text-xs text-zinc-650 dark:text-slate-400 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
+                className="text-xs text-zinc-600 dark:text-slate-400 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
                 onChange={(e) => {
                   const file = e.target.files[0];
                   if (!file) return;
@@ -2781,16 +2806,16 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
         <div className="mt-5">
           <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-2">Acciones Remotas</h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-850" onClick={onConnectRdp}><Cable size={16} className="text-sky-500" /> RDP</button>
-            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-850" onClick={() => action('wake-on-lan')}><Play size={16} className="text-emerald-500" /> WOL</button>
-            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-850" onClick={() => action('restart')}><RefreshCw size={16} className="text-amber-500" /> Reinicio</button>
-            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-850" onClick={() => action('powershell')}><TerminalSquare size={16} className="text-indigo-500" /> Script</button>
+            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={onConnectRdp}><Cable size={16} className="text-sky-500" /> RDP</button>
+            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={() => action('wake-on-lan')}><Play size={16} className="text-emerald-500" /> WOL</button>
+            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={() => action('restart')}><RefreshCw size={16} className="text-amber-500" /> Reinicio</button>
+            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={() => action('powershell')}><TerminalSquare size={16} className="text-indigo-500" /> Script</button>
           </div>
         </div>
 
         {/* General details */}
         <div className="mt-6">
-          <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-150 dark:border-slate-800">Detalles de Asignación y Ubicación</h3>
+          <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-200 dark:border-slate-800">Detalles de Asignación y Ubicación</h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="label">Responsable</span>
@@ -2885,7 +2910,7 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
 
         {/* Hardware specifications */}
         <div className="mt-6">
-          <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-150 dark:border-slate-800 flex items-center gap-1.5">
+          <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-200 dark:border-slate-800 flex items-center gap-1.5">
             <Cpu size={14} className="text-emerald-500" />
             Especificaciones de Hardware
           </h3>
@@ -2920,7 +2945,7 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
         </label>
 
         {/* Footer Actions */}
-        <div className="mt-6 flex justify-end gap-2 border-t border-zinc-150 dark:border-slate-800 pt-4 pb-6">
+        <div className="mt-6 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 pt-4 pb-6">
           <button className="button secondary" onClick={onClose}>Cancelar</button>
           <button className="button primary" onClick={save}>Guardar Cambios</button>
         </div>
@@ -2938,10 +2963,10 @@ function SubnetMap({ rows, getSubnetLabel }) {
   return <div className="grid gap-3 md:grid-cols-2">{Object.entries(grouped).map(([subnet, stats]) => (
     <div className="rounded-xl border border-zinc-200 p-3 dark:border-slate-800" key={subnet}>
       <div className="mb-2 font-bold text-xs uppercase tracking-wide text-zinc-600 dark:text-slate-400">{getSubnetLabel(subnet)}</div>
-      <div className="flex h-3 overflow-hidden rounded bg-zinc-200 dark:bg-slate-850">
+      <div className="flex h-3 overflow-hidden rounded bg-zinc-200 dark:bg-slate-800">
         {stats.map((row) => <div key={row.status} className={barColor(row.status)} style={{ width: `${Math.max(row.total * 8, 10)}%` }} />)}
       </div>
-      <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-550 dark:text-slate-450">
+      <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-500 dark:text-slate-400">
         {stats.map((row) => <span key={row.status} className="font-semibold">{row.status}: {row.total}</span>)}
       </div>
     </div>
@@ -2957,7 +2982,7 @@ function NetworkGroups({ rows, getSubnetLabel }) {
   ))}</div>;
 }
 
-function Feed({ rows, kind }) {
+function Feed({ rows, kind, devices }) {
   if (!rows.length) {
     return (
       <p className="text-sm text-zinc-500 dark:text-slate-400">
@@ -2971,11 +2996,20 @@ function Feed({ rows, kind }) {
       {rows.map((row) => {
         const isOffline =
           row.title?.toLowerCase().includes('fuera de linea') ||
-          row.message?.toLowerCase().includes('offline');
+          row.message?.toLowerCase().includes('offline') ||
+          row.title?.toLowerCase().includes('se desconectó') ||
+          row.message?.toLowerCase().includes('desconectó');
 
         const isOnline =
           row.title?.toLowerCase().includes('disponible nuevamente') ||
-          row.message?.toLowerCase().includes('online');
+          row.message?.toLowerCase().includes('online') ||
+          row.title?.toLowerCase().includes('volvió a estar disponible') ||
+          row.message?.toLowerCase().includes('disponible');
+
+        const device = devices?.find(d => d.id === row.device_id);
+        const ip = row.ip || device?.ip;
+        const hostname = row.hostname || device?.hostname;
+        const responsible = row.responsible_user || device?.responsible_user;
 
         return (
           <div
@@ -2999,21 +3033,21 @@ function Feed({ rows, kind }) {
                   isOffline
                     ? 'text-red-400'
                     : isOnline
-                    ? 'text-emerald-450'
-                    : 'text-zinc-800 dark:text-slate-205'
+                    ? 'text-emerald-400'
+                    : 'text-zinc-800 dark:text-slate-200'
                 }
               `}
             >
               {kind === 'alert' ? row.title : row.message}
             </p>
-            {(row.responsible_user || row.ip) && (
-              <p className="mt-1 text-xs text-sky-550 dark:text-sky-400 font-medium">
-                {row.responsible_user || 'Sin responsable'}
-                {row.ip && ` · ${row.ip}`}
-                {row.hostname && ` · ${row.hostname}`}
+            {(responsible || ip || hostname) && (
+              <p className="mt-1 text-xs text-sky-600 dark:text-sky-400 font-medium">
+                {responsible || 'Equipo sin asignar'}
+                {ip && ` · ${ip}`}
+                {hostname && ` · ${hostname}`}
               </p>
             )}
-            <p className="text-[11px] text-zinc-450 dark:text-slate-550 mt-0.5">
+            <p className="text-[11px] text-zinc-400 dark:text-slate-500 mt-0.5">
               {new Date(row.created_at).toLocaleString()}
             </p>
           </div>
@@ -3033,8 +3067,8 @@ function IconButton({ title, onClick, children }) {
 
 function statusClass(status) {
   return {
-    online: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-205 border border-emerald-500/10',
-    offline: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-205 border border-red-500/10',
+    online: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200 border border-emerald-500/10',
+    offline: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200 border border-red-500/10',
     slow: 'bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-100 border border-amber-500/10'
   }[status] || 'bg-zinc-200 text-zinc-700 dark:bg-slate-800 dark:text-slate-200';
 }
@@ -3048,12 +3082,34 @@ function barColor(status) {
 }
 
 function buildChart(events) {
+  // Sort events chronologically first
+  const sortedEvents = [...events].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  
   const buckets = {};
-  for (const event of events) {
+  for (const event of sortedEvents) {
     const time = new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    buckets[time] = (buckets[time] || 0) + 1;
+    buckets[time] ||= { online: 0, offline: 0, otros: 0 };
+    
+    const msg = (event.message || '').toLowerCase();
+    const type = (event.type || '').toLowerCase();
+    const isOffline = type.includes('offline') || msg.includes('desconectado') || msg.includes('desconectó');
+    const isOnline = type.includes('online') || msg.includes('disponible') || msg.includes('conectado') || msg.includes('disponible nuevamente');
+    
+    if (isOffline) {
+      buckets[time].offline += 1;
+    } else if (isOnline) {
+      buckets[time].online += 1;
+    } else {
+      buckets[time].otros += 1;
+    }
   }
-  return Object.entries(buckets).reverse().map(([time, eventos]) => ({ time, eventos }));
+  
+  return Object.entries(buckets).map(([time, counts]) => ({
+    time,
+    'Conexiones': counts.online,
+    'Desconexiones': counts.offline,
+    'Otros': counts.otros
+  }));
 }
 
 createRoot(document.getElementById('root')).render(<App />);
