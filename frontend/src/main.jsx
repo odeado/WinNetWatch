@@ -208,6 +208,11 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [userModal, setUserModal] = useState(null);
   const [userFilter, setUserFilter] = useState('');
 
+  // Infrastructure inventory states
+  const [infrastructure, setInfrastructure] = useState([]);
+  const [infraModal, setInfraModal] = useState(null);
+  const [infraFilter, setInfraFilter] = useState('');
+
   const prevDevicesRef = useRef({});
 
   // Dynamic Subnet Name Mappings
@@ -327,12 +332,23 @@ function Dashboard({ token, user, theme, setTheme }) {
       );
     });
 
+    const getStatusPriority = (status) => {
+      if (status === 'offline') return 0;
+      if (status === 'slow') return 1;
+      if (status === 'online') return 2;
+      return 3;
+    };
+
     const parseIp = (ip) => {
       if (!ip) return [999, 999, 999, 999];
       return ip.split('.').map(n => parseInt(n, 10) || 0);
     };
 
     return list.sort((a, b) => {
+      const prioA = getStatusPriority(a.status);
+      const prioB = getStatusPriority(b.status);
+      if (prioA !== prioB) return prioA - prioB;
+
       const partsA = parseIp(a.ip);
       const partsB = parseIp(b.ip);
       for (let i = 0; i < 4; i++) {
@@ -364,7 +380,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   useEffect(() => {
     if (!token || useLocalApi) return;
 
-    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubEvents, unsubAlerts;
+    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubEvents, unsubAlerts, unsubInfra;
 
     const handleFirebaseError = (err) => {
       console.warn('Firestore subscription failed, switching to local API polling:', err);
@@ -376,6 +392,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       if (unsubCities) unsubCities();
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
+      if (unsubInfra) unsubInfra();
     };
 
     try {
@@ -480,6 +497,14 @@ function Dashboard({ token, user, theme, setTheme }) {
         });
         setAlerts(list);
       }, handleFirebaseError);
+
+      unsubInfra = onSnapshot(collection(db, 'infrastructure'), (snapshot) => {
+        const list = [];
+        snapshot.forEach(d => {
+          list.push({ id: d.id, ...d.data() });
+        });
+        setInfrastructure(list);
+      }, handleFirebaseError);
     } catch (err) {
       handleFirebaseError(err);
     }
@@ -492,6 +517,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       if (unsubCities) unsubCities();
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
+      if (unsubInfra) unsubInfra();
     };
   }, [token, useLocalApi]);
 
@@ -580,6 +606,10 @@ function Dashboard({ token, user, theme, setTheme }) {
         setEvents(data.events || []);
         setAlerts(data.alerts || []);
       }
+
+      // 7. Fetch infrastructure
+      const infraRes = await fetch(`${API_URL}/api/infrastructure`, { headers });
+      if (infraRes.ok) setInfrastructure(await infraRes.json());
     } catch (err) {
       console.error('Error polling local API:', err);
     }
@@ -1114,6 +1144,52 @@ function Dashboard({ token, user, theme, setTheme }) {
     }
   }
 
+  // Infrastructure CRUD functions
+  async function saveInfrastructure(form) {
+    try {
+      const isEdit = !!form.id;
+      const response = await fetch(
+        `${API_URL}/api/infrastructure${isEdit ? '/' + form.id : ''}`,
+        {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(form)
+        }
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        alert(err.error || 'Error al guardar elemento');
+        return;
+      }
+      triggerToast(isEdit ? 'Elemento actualizado' : 'Elemento creado', 'success');
+      setInfraModal(null);
+      if (useLocalApi) {
+        const res = await fetch(`${API_URL}/api/infrastructure`, { headers: { authorization: `Bearer ${token}` } });
+        if (res.ok) setInfrastructure(await res.json());
+      }
+    } catch (err) {
+      alert('Error al guardar elemento de infraestructura');
+    }
+  }
+
+  async function deleteInfrastructure(id) {
+    if (!confirm('¿Estás seguro de eliminar este elemento del inventario?')) return;
+    try {
+      const response = await fetch(`${API_URL}/api/infrastructure/${id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error();
+      triggerToast('Elemento eliminado', 'success');
+      if (useLocalApi) {
+        const res = await fetch(`${API_URL}/api/infrastructure`, { headers: { authorization: `Bearer ${token}` } });
+        if (res.ok) setInfrastructure(await res.json());
+      }
+    } catch (err) {
+      alert('Error al eliminar elemento de infraestructura');
+    }
+  }
+
   // Load users when switching to the users tab
   useEffect(() => {
     if (adminSubTab === 'users' && appUsers.length === 0) {
@@ -1352,6 +1428,17 @@ function Dashboard({ token, user, theme, setTheme }) {
                 }`}
               >
                 Usuarios del Sistema
+              </button>
+
+              <button
+                onClick={() => setAdminSubTab('infrastructure')}
+                className={`border-b-2 px-5 py-3 text-sm font-bold transition-all -mb-[2px] ${
+                  adminSubTab === 'infrastructure'
+                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:hover:text-white'
+                }`}
+              >
+                Infraestructura (Switches/Monitores)
               </button>
             </div>
 

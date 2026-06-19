@@ -274,6 +274,65 @@ async function syncCityFromFirestore(fsData) {
   }
 }
 
+async function syncInfrastructureFromFirestore(fsData) {
+  try {
+    const { rows } = await query('SELECT * FROM network_infrastructure WHERE id = $1', [fsData.id]);
+    const local = rows[0];
+    if (!local) {
+      await query(
+        `INSERT INTO network_infrastructure (id, type, brand, model, serial_number, ports_count, location, status, acquired_at, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          fsData.id,
+          fsData.type,
+          fsData.brand || '',
+          fsData.model || '',
+          fsData.serial_number || '',
+          fsData.ports_count || null,
+          fsData.location || 'Matta',
+          fsData.status || 'nuevo',
+          fsData.acquired_at || null,
+          fsData.notes || ''
+        ]
+      );
+    } else {
+      const diff =
+        local.type !== fsData.type ||
+        local.brand !== (fsData.brand || '') ||
+        local.model !== (fsData.model || '') ||
+        local.serial_number !== (fsData.serial_number || '') ||
+        local.ports_count !== (fsData.ports_count || null) ||
+        local.location !== (fsData.location || 'Matta') ||
+        local.status !== (fsData.status || 'nuevo') ||
+        local.acquired_at !== (fsData.acquired_at || null) ||
+        local.notes !== (fsData.notes || '');
+
+      if (diff) {
+        await query(
+          `UPDATE network_infrastructure
+           SET type = $2, brand = $3, model = $4, serial_number = $5, ports_count = $6,
+               location = $7, status = $8, acquired_at = $9, notes = $10, updated_at = now()
+           WHERE id = $1`,
+          [
+            fsData.id,
+            fsData.type,
+            fsData.brand || '',
+            fsData.model || '',
+            fsData.serial_number || '',
+            fsData.ports_count || null,
+            fsData.location || 'Matta',
+            fsData.status || 'nuevo',
+            fsData.acquired_at || null,
+            fsData.notes || ''
+          ]
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing infrastructure from Firestore:', err);
+  }
+}
+
 // ------------------------------------------------------------
 // Action queue worker (Firestore Actions -> Local Execution)
 // ------------------------------------------------------------
@@ -449,6 +508,33 @@ export async function pushCityToFirebase(city) {
   }
 }
 
+export async function pushInfrastructureToFirebase(item) {
+  try {
+    const docRef = doc(db, 'infrastructure', item.id);
+    await setDoc(docRef, {
+      type: item.type,
+      brand: item.brand || '',
+      model: item.model || '',
+      serial_number: item.serial_number || '',
+      ports_count: item.ports_count || null,
+      location: item.location || 'Matta',
+      status: item.status || 'nuevo',
+      acquired_at: item.acquired_at ? new Date(item.acquired_at).toISOString().split('T')[0] : null,
+      notes: item.notes || ''
+    });
+  } catch (err) {
+    console.error('[FirebaseSync] Error al subir infraestructura a Firebase:', err);
+  }
+}
+
+export async function deleteInfrastructureFromFirebase(id) {
+  try {
+    await deleteDoc(doc(db, 'infrastructure', id));
+  } catch (err) {
+    console.error('[FirebaseSync] Error al eliminar infraestructura de Firebase:', err);
+  }
+}
+
 export async function pushEventToFirebase(event) {
   try {
     const id = `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -513,6 +599,9 @@ async function runInitialSync() {
 
       const { rows: alerts } = await query('SELECT * FROM alerts ORDER BY created_at DESC LIMIT 50');
       for (const al of alerts) await pushAlertToFirebase(al);
+
+      const { rows: infra } = await query('SELECT * FROM network_infrastructure');
+      for (const item of infra) await pushInfrastructureToFirebase(item);
 
       console.log('[FirebaseSync] Sembrado inicial completado con éxito!');
     } else {
@@ -585,6 +674,17 @@ export async function initFirebaseSync() {
         await syncCityFromFirestore(data);
       } else if (change.type === 'removed') {
         await query('DELETE FROM cities WHERE id = $1', [change.doc.id]);
+      }
+    });
+  });
+
+  onSnapshot(collection(db, 'infrastructure'), (snapshot) => {
+    snapshot.docChanges().forEach(async (change) => {
+      const data = { id: change.doc.id, ...change.doc.data() };
+      if (change.type === 'added' || change.type === 'modified') {
+        await syncInfrastructureFromFirestore(data);
+      } else if (change.type === 'removed') {
+        await query('DELETE FROM network_infrastructure WHERE id = $1', [change.doc.id]);
       }
     });
   });

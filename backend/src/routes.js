@@ -15,7 +15,9 @@ import {
   pushDepartmentToFirebase,
   pushCityToFirebase,
   pushEventToFirebase,
-  pushAlertToFirebase
+  pushAlertToFirebase,
+  pushInfrastructureToFirebase,
+  deleteInfrastructureFromFirebase
 } from './firebaseSync.js';
 
 export const router = express.Router();
@@ -879,6 +881,97 @@ router.delete('/settings/users/:id', requirePermission('users:write'), async (re
     if (!before) return res.status(404).json({ error: 'Usuario no encontrado' });
     await query('DELETE FROM app_users WHERE id = $1', [req.params.id]);
     await audit(req.user.sub, 'delete', 'app_user', req.params.id, JSON.stringify(before), null);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =============================================
+// Infrastructure (Switches/Monitores) Routes
+// =============================================
+router.get('/infrastructure', requirePermission('devices:read'), async (_req, res, next) => {
+  try {
+    const { rows } = await query('SELECT * FROM network_infrastructure ORDER BY type, brand, model');
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/infrastructure', requirePermission('devices:write'), async (req, res, next) => {
+  try {
+    const { type, brand, model, serial_number, ports_count, location, status, acquired_at, notes } = req.body;
+    const { rows } = await query(
+      `INSERT INTO network_infrastructure (type, brand, model, serial_number, ports_count, location, status, acquired_at, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [
+        type || 'Switch',
+        brand || '',
+        model || '',
+        serial_number || '',
+        ports_count ? parseInt(ports_count, 10) : null,
+        location || 'Matta',
+        status || 'nuevo',
+        acquired_at || new Date().toISOString().split('T')[0],
+        notes || ''
+      ]
+    );
+    const item = rows[0];
+    await pushInfrastructureToFirebase(item);
+    await audit(req.user.sub, 'infrastructure.create', 'infrastructure', item.id, null, item);
+    res.json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/infrastructure/:id', requirePermission('devices:write'), async (req, res, next) => {
+  try {
+    const before = (await query('SELECT * FROM network_infrastructure WHERE id = $1', [req.params.id])).rows[0];
+    if (!before) return res.status(404).json({ error: 'Elemento de infraestructura no encontrado' });
+
+    const allowed = ['type', 'brand', 'model', 'serial_number', 'ports_count', 'location', 'status', 'acquired_at', 'notes'];
+    const fields = [];
+    const values = [req.params.id];
+    let idx = 2;
+
+    for (const key of allowed) {
+      if (Object.hasOwn(req.body, key)) {
+        fields.push(`${key} = $${idx++}`);
+        let val = req.body[key];
+        if (key === 'ports_count') {
+          val = val ? parseInt(val, 10) : null;
+        }
+        values.push(val);
+      }
+    }
+
+    if (fields.length === 0) {
+      return res.json(before);
+    }
+
+    const sql = `UPDATE network_infrastructure SET ${fields.join(', ')}, updated_at = now() WHERE id = $1 RETURNING *`;
+    const { rows } = await query(sql, values);
+    const after = rows[0];
+
+    await pushInfrastructureToFirebase(after);
+    await audit(req.user.sub, 'infrastructure.update', 'infrastructure', req.params.id, before, after);
+    res.json(after);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/infrastructure/:id', requirePermission('devices:write'), async (req, res, next) => {
+  try {
+    const before = (await query('SELECT * FROM network_infrastructure WHERE id = $1', [req.params.id])).rows[0];
+    if (!before) return res.status(404).json({ error: 'Elemento de infraestructura no encontrado' });
+
+    await query('DELETE FROM network_infrastructure WHERE id = $1', [req.params.id]);
+    await deleteInfrastructureFromFirebase(req.params.id);
+    await audit(req.user.sub, 'infrastructure.delete', 'infrastructure', req.params.id, before, null);
     res.json({ success: true });
   } catch (error) {
     next(error);

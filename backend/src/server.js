@@ -108,6 +108,24 @@ async function runMigrations() {
       )
     `);
 
+    // 7. Create network_infrastructure table
+    await query(`
+      CREATE TABLE IF NOT EXISTS network_infrastructure (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        type TEXT NOT NULL,
+        brand TEXT,
+        model TEXT,
+        serial_number TEXT,
+        ports_count INTEGER,
+        location TEXT DEFAULT 'Matta',
+        status TEXT DEFAULT 'nuevo',
+        acquired_at DATE DEFAULT CURRENT_DATE,
+        notes TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
     // Seed default mappings if empty
     const { rows: mappingCount } = await query('SELECT count(*)::int FROM subnet_mappings');
     if (mappingCount[0].count === 0) {
