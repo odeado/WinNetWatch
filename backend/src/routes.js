@@ -174,7 +174,7 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
       'hostname', 'os', 'city', 'branch', 'department', 'responsible_user', 'job_title', 'phone', 'email',
       'notes', 'brand', 'model', 'serial_number', 'acquired_at', 'warranty_until', 'asset_status',
       'critical', 'managed', 'tags', 'employee_id', 'cpu', 'ram', 'storage', 'gpu', 'motherboard',
-      'image_url', 'device_type', 'location'
+      'image_url', 'device_type', 'location', 'office', 'antivirus', 'authorized_systems'
     ];
     const fields = [];
     const values = [req.params.id];
@@ -448,14 +448,17 @@ router.post('/employees', requirePermission('users:write'), async (req, res, nex
     const imageUrl = req.body.imageUrl || req.body.image_url || '';
     const active = req.body.active !== undefined ? req.body.active : true;
 
+    const jobTitle = req.body.jobTitle || req.body.job_title || '';
+    const authorizedSystems = req.body.authorizedSystems || req.body.authorized_systems || '';
+
     if (!fullName) {
       return res.status(400).json({ error: 'El nombre completo es obligatorio' });
     }
     const { rows } = await query(
-      `INSERT INTO employees(full_name, email, department, city, status, phone, workplace, vpn_active, vpn_type, image_url, active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO employees(full_name, email, department, city, status, phone, workplace, vpn_active, vpn_type, image_url, active, job_title, authorized_systems)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
-      [fullName, email, department, city, status, phone, workplace, vpnActive, vpnType, imageUrl, active]
+      [fullName, email, department, city, status, phone, workplace, vpnActive, vpnType, imageUrl, active, jobTitle, authorizedSystems]
     );
     const employee = rows[0];
 
@@ -487,7 +490,7 @@ router.patch('/employees/:id', requirePermission('users:write'), async (req, res
     if (!before) return res.status(404).json({ error: 'Empleado no encontrado' });
 
     const allowed = [
-      'full_name', 'email', 'department', 'city', 'status', 'phone', 'workplace', 'vpn_active', 'vpn_type', 'image_url', 'active'
+      'full_name', 'email', 'department', 'city', 'status', 'phone', 'workplace', 'vpn_active', 'vpn_type', 'image_url', 'active', 'job_title', 'authorized_systems'
     ];
     
     const body = { ...req.body };
@@ -495,6 +498,8 @@ router.patch('/employees/:id', requirePermission('users:write'), async (req, res
     if (body.vpnActive !== undefined) body.vpn_active = body.vpnActive;
     if (body.vpnType !== undefined) body.vpn_type = body.vpnType;
     if (body.imageUrl !== undefined) body.image_url = body.imageUrl;
+    if (body.jobTitle !== undefined) body.job_title = body.jobTitle;
+    if (body.authorizedSystems !== undefined) body.authorized_systems = body.authorizedSystems;
 
     const fields = [];
     const values = [req.params.id];
@@ -522,10 +527,11 @@ router.patch('/employees/:id', requirePermission('users:write'), async (req, res
         responsible_user = $2,
         email = $3,
         department = $4,
-        city = $5
+        city = $5,
+        job_title = $6
        WHERE employee_id = $1
        RETURNING *`,
-      [req.params.id, after.full_name, after.email, after.department, after.city]
+      [req.params.id, after.full_name, after.email, after.department, after.city, after.job_title]
     );
 
     for (const dev of updatedDevices) {
@@ -593,7 +599,8 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
       hostname, ip, mac, os, status = 'unknown', city, branch, department,
       responsible_user, job_title, phone, email, notes, brand, model, serial_number,
       asset_status = 'active', critical = false, managed = false, tags = [],
-      employee_id, cpu, ram, storage, gpu, motherboard, image_url, device_type = 'PC', location = 'Matta'
+      employee_id, cpu, ram, storage, gpu, motherboard, image_url, device_type = 'PC', location = 'Matta',
+      office, antivirus, authorized_systems
     } = req.body;
 
     if (!ip) {
@@ -605,14 +612,16 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
     let finalEmail = email;
     let finalDept = department;
     let finalCity = city;
+    let finalJobTitle = job_title;
 
     if (employee_id) {
-      const emp = (await query('SELECT full_name, email, department, city FROM employees WHERE id = $1', [employee_id])).rows[0];
+      const emp = (await query('SELECT full_name, email, department, city, job_title FROM employees WHERE id = $1', [employee_id])).rows[0];
       if (emp) {
         finalResponsible = emp.full_name;
         finalEmail = emp.email;
         finalDept = emp.department;
         finalCity = emp.city;
+        finalJobTitle = emp.job_title;
       }
     }
 
@@ -625,18 +634,18 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
         hostname, ip, mac, os, status, rdp_available, subnet, city, branch, department,
         responsible_user, job_title, phone, email, notes, brand, model, serial_number,
         asset_status, critical, managed, tags, employee_id, cpu, ram, storage, gpu, motherboard,
-        image_url, device_type, location
+        image_url, device_type, location, office, antivirus, authorized_systems
       ) VALUES (
         $1, $2, $3, $4, $5, false, $6, $7, $8, $9,
         $10, $11, $12, $13, $14, $15, $16, $17,
         $18, $19, $20, $21, $22, $23, $24, $25, $26, $27,
-        $28, $29, $30
+        $28, $29, $30, $31, $32, $33
       ) RETURNING *`,
       [
         hostname, ip, mac, os, status, subnet, finalCity, branch, finalDept,
-        finalResponsible, job_title, phone, finalEmail, notes, brand, model, serial_number,
+        finalResponsible, finalJobTitle, phone, finalEmail, notes, brand, model, serial_number,
         asset_status, critical, managed, tags, employee_id || null, cpu, ram, storage, gpu, motherboard,
-        image_url, device_type, location
+        image_url, device_type, location, office, antivirus, authorized_systems
       ]
     );
 

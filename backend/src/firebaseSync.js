@@ -41,8 +41,8 @@ async function syncEmployeeFromFirestore(fsData) {
     const local = rows[0];
     if (!local) {
       await query(
-        `INSERT INTO employees (id, full_name, email, department, city, status, phone, workplace, vpn_active, vpn_type, image_url, active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        `INSERT INTO employees (id, full_name, email, department, city, status, phone, workplace, vpn_active, vpn_type, image_url, active, job_title, authorized_systems)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           fsData.id,
           fsData.full_name || '',
@@ -55,7 +55,9 @@ async function syncEmployeeFromFirestore(fsData) {
           fsData.vpn_active || false,
           fsData.vpn_type || 'Ninguno',
           fsData.image_url || null,
-          fsData.active !== undefined ? fsData.active : true
+          fsData.active !== undefined ? fsData.active : true,
+          fsData.job_title || null,
+          fsData.authorized_systems || null
         ]
       );
       console.log(`[FirebaseSync] Sincronizado empleado nuevo: ${fsData.full_name}`);
@@ -71,12 +73,14 @@ async function syncEmployeeFromFirestore(fsData) {
         local.vpn_active !== (fsData.vpn_active || false) ||
         local.vpn_type !== (fsData.vpn_type || 'Ninguno') ||
         local.image_url !== (fsData.image_url || null) ||
-        local.active !== (fsData.active !== undefined ? fsData.active : true);
+        local.active !== (fsData.active !== undefined ? fsData.active : true) ||
+        local.job_title !== (fsData.job_title || null) ||
+        local.authorized_systems !== (fsData.authorized_systems || null);
 
       if (diff) {
         await query(
           `UPDATE employees
-           SET full_name = $2, email = $3, department = $4, city = $5, status = $6, phone = $7, workplace = $8, vpn_active = $9, vpn_type = $10, image_url = $11, active = $12, updated_at = now()
+           SET full_name = $2, email = $3, department = $4, city = $5, status = $6, phone = $7, workplace = $8, vpn_active = $9, vpn_type = $10, image_url = $11, active = $12, job_title = $13, authorized_systems = $14, updated_at = now()
            WHERE id = $1`,
           [
             fsData.id,
@@ -90,7 +94,9 @@ async function syncEmployeeFromFirestore(fsData) {
             fsData.vpn_active || false,
             fsData.vpn_type || 'Ninguno',
             fsData.image_url || null,
-            fsData.active !== undefined ? fsData.active : true
+            fsData.active !== undefined ? fsData.active : true,
+            fsData.job_title || null,
+            fsData.authorized_systems || null
           ]
         );
         console.log(`[FirebaseSync] Empleado actualizado: ${fsData.full_name}`);
@@ -110,11 +116,11 @@ async function syncDeviceFromFirestore(fsData) {
         `INSERT INTO devices (
           id, hostname, ip, mac, os, status, rdp_available, latency_ms, subnet, city, branch, department,
           responsible_user, phone, email, notes, brand, model, serial_number, critical, managed, employee_id,
-          cpu, ram, storage, gpu, motherboard, image_url, device_type, location
+          cpu, ram, storage, gpu, motherboard, image_url, device_type, location, office, antivirus
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
           $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
-          $23, $24, $25, $26, $27, $28, $29, $30
+          $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
         )`,
         [
           fsData.id,
@@ -146,7 +152,9 @@ async function syncDeviceFromFirestore(fsData) {
           fsData.motherboard || null,
           fsData.image_url || null,
           fsData.device_type || 'PC',
-          fsData.location || 'Matta'
+          fsData.location || 'Matta',
+          fsData.office || null,
+          fsData.antivirus || null
         ]
       );
       console.log(`[FirebaseSync] Equipo creado desde la nube: ${fsData.hostname || fsData.ip}`);
@@ -180,7 +188,9 @@ async function syncDeviceFromFirestore(fsData) {
         local.motherboard !== (fsData.motherboard || null) ||
         local.image_url !== (fsData.image_url || null) ||
         local.device_type !== (fsData.device_type || 'PC') ||
-        local.location !== (fsData.location || 'Matta');
+        local.location !== (fsData.location || 'Matta') ||
+        local.office !== (fsData.office || null) ||
+        local.antivirus !== (fsData.antivirus || null);
 
       if (diff) {
         await query(
@@ -189,7 +199,7 @@ async function syncDeviceFromFirestore(fsData) {
                subnet = $9, city = $10, branch = $11, department = $12, responsible_user = $13, phone = $14,
                email = $15, notes = $16, brand = $17, model = $18, serial_number = $19, critical = $20,
                managed = $21, employee_id = $22, cpu = $23, ram = $24, storage = $25, gpu = $26,
-               motherboard = $27, image_url = $28, device_type = $29, location = $30, updated_at = now()
+               motherboard = $27, image_url = $28, device_type = $29, location = $30, office = $31, antivirus = $32, updated_at = now()
            WHERE id = $1`,
           [
             fsData.id,
@@ -221,7 +231,9 @@ async function syncDeviceFromFirestore(fsData) {
             fsData.motherboard || null,
             fsData.image_url || null,
             fsData.device_type || 'PC',
-            fsData.location || 'Matta'
+            fsData.location || 'Matta',
+            fsData.office || null,
+            fsData.antivirus || null
           ]
         );
         console.log(`[FirebaseSync] Equipo actualizado desde la nube: ${fsData.hostname || fsData.ip}`);
@@ -447,7 +459,9 @@ export async function pushDeviceToFirebase(device) {
       image_url: device.image_url || '',
       device_type: device.device_type || 'PC',
       location: device.location || 'Matta',
-      last_seen: device.last_seen ? new Date(device.last_seen).toISOString() : new Date().toISOString()
+      last_seen: device.last_seen ? new Date(device.last_seen).toISOString() : new Date().toISOString(),
+      office: device.office || '',
+      antivirus: device.antivirus || ''
     });
   } catch (err) {
     console.error('[FirebaseSync] Error al subir equipo a Firebase:', err);
@@ -468,7 +482,9 @@ export async function pushEmployeeToFirebase(employee) {
       vpn_active: employee.vpn_active || false,
       vpn_type: employee.vpn_type || 'Ninguno',
       image_url: employee.image_url || '',
-      active: employee.active !== undefined ? employee.active : true
+      active: employee.active !== undefined ? employee.active : true,
+      job_title: employee.job_title || '',
+      authorized_systems: employee.authorized_systems || ''
     });
   } catch (err) {
     console.error('[FirebaseSync] Error al subir empleado a Firebase:', err);

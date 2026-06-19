@@ -71,7 +71,22 @@ async function runMigrations() {
       ADD COLUMN IF NOT EXISTS motherboard TEXT,
       ADD COLUMN IF NOT EXISTS image_url TEXT,
       ADD COLUMN IF NOT EXISTS device_type TEXT DEFAULT 'PC',
-      ADD COLUMN IF NOT EXISTS location TEXT DEFAULT 'Matta'
+      ADD COLUMN IF NOT EXISTS location TEXT DEFAULT 'Matta',
+      ADD COLUMN IF NOT EXISTS office TEXT,
+      ADD COLUMN IF NOT EXISTS antivirus TEXT
+    `);
+
+    // Add job_title and systems columns to app_users/employees
+    await query(`
+      ALTER TABLE app_users
+      ADD COLUMN IF NOT EXISTS job_title TEXT,
+      ADD COLUMN IF NOT EXISTS authorized_systems TEXT
+    `);
+
+    await query(`
+      ALTER TABLE employees
+      ADD COLUMN IF NOT EXISTS job_title TEXT,
+      ADD COLUMN IF NOT EXISTS authorized_systems TEXT
     `);
 
     // 3. Update permissions for Administrador role

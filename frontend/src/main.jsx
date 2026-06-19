@@ -186,6 +186,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [devices, setDevices] = useState([]);
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState({ q: '', status: '' });
+  const [deviceSortOption, setDeviceSortOption] = useState('ip'); // 'ip' or 'name'
   
   // Custom Settings parameter states
   const [subnetMappings, setSubnetMappings] = useState([]);
@@ -349,6 +350,12 @@ function Dashboard({ token, user, theme, setTheme }) {
       const prioB = getStatusPriority(b.status);
       if (prioA !== prioB) return prioA - prioB;
 
+      if (deviceSortOption === 'name') {
+        const nameA = (a.hostname || '').toLowerCase();
+        const nameB = (b.hostname || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      }
+
       const partsA = parseIp(a.ip);
       const partsB = parseIp(b.ip);
       for (let i = 0; i < 4; i++) {
@@ -356,7 +363,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       }
       return 0;
     });
-  }, [devices, filter, getSubnetLabel]);
+  }, [devices, filter, getSubnetLabel, deviceSortOption]);
 
   // Toast Helper
   const triggerToast = (text, type) => {
@@ -927,6 +934,44 @@ function Dashboard({ token, user, theme, setTheme }) {
     }
   }
 
+  async function linkDevice(deviceId, employeeId) {
+    try {
+      const dev = devices.find(d => d.id === deviceId);
+      const emp = employees.find(e => e.id === employeeId);
+      if (!dev || !emp) return;
+
+      const payload = {
+        employee_id: emp.id,
+        responsible_user: emp.full_name,
+        email: emp.email || '',
+        department: emp.department || '',
+        city: emp.city || '',
+        phone: emp.phone || '',
+        job_title: emp.job_title || ''
+      };
+
+      if (useLocalApi) {
+        const response = await fetch(`${API_URL}/api/devices/${deviceId}`, {
+          method: 'PATCH',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error('Failed to link device via local API');
+        triggerToast('Equipo asignado con éxito', 'success');
+        return;
+      }
+
+      await setDoc(doc(db, 'devices', deviceId), {
+        ...dev,
+        ...payload
+      });
+      triggerToast('Equipo asignado con éxito', 'success');
+    } catch (err) {
+      console.error('Error linking device:', err);
+      alert('Error al asignar equipo: ' + err.message);
+    }
+  }
+
   // Queue remote action in Firebase Actions or execute directly via Local API
   async function executeRemoteAction(deviceId, actionName) {
     try {
@@ -1281,15 +1326,23 @@ function Dashboard({ token, user, theme, setTheme }) {
   const chartData = useMemo(() => buildChart(events), [events]);
 
   const downloadDevicesCSV = () => {
-    const headers = ['Hostname', 'IP', 'MAC', 'OS', 'Status', 'RDP Habilitado', 'Responsable', 'City', 'Branch', 'Department', 'Brand', 'Model', 'Serial Number', 'Location'];
+    const headers = [
+      'Hostname', 'IP', 'MAC', 'OS', 'Office', 'Antivirus', 'Status', 'RDP Habilitado',
+      'Responsable', 'Cargo', 'Sistemas', 'City', 'Branch', 'Department', 'Brand', 'Model',
+      'Serial Number', 'Location'
+    ];
     const rows = devices.map(d => [
       d.hostname || '',
       d.ip || '',
       d.mac || '',
       d.os || '',
+      d.office || '',
+      d.antivirus || '',
       d.status || 'unknown',
       d.rdp_available ? 'SI' : 'NO',
       d.responsible_user || '',
+      d.job_title || '',
+      d.authorized_systems || '',
       d.city || '',
       d.branch || '',
       d.department || '',
@@ -1298,23 +1351,63 @@ function Dashboard({ token, user, theme, setTheme }) {
       d.serial_number || '',
       d.location || ''
     ]);
-    
-    // Build CSV string
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(r => r.map(val => `"${String(val).replaceAll('"', '""')}"`).join(','))
-    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Build Excel-friendly HTML Table structure
+    let excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8"/>
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Inventario de Equipos</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          table { border-collapse: collapse; font-family: Segoe UI, sans-serif; }
+          th { background-color: #10b981; color: white; font-weight: bold; border: 1px solid #d1d5db; padding: 6px; }
+          td { border: 1px solid #e5e7eb; padding: 6px; }
+          .title { font-size: 16px; font-weight: bold; color: #065f46; padding-bottom: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="title">Win NetWatch RMM - Inventario Completo de Equipos</div>
+        <table>
+          <thead>
+            <tr>
+              ${headers.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                ${r.map(val => `<td>${String(val).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'inventario_equipos.csv';
+    anchor.download = 'inventario_equipos.xls';
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-    triggerToast('Listado exportado como CSV', 'success');
+    triggerToast('Inventario exportado como Excel estructurado', 'success');
   };
 
   return (
@@ -1421,13 +1514,17 @@ function Dashboard({ token, user, theme, setTheme }) {
             </div>
 
             <Panel title="Equipos" icon={<Laptop size={18} />}>
-              <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px]">
+              <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_150px_150px]">
                 <div className="relative">
                   <input className="input pr-10" placeholder="Buscar por nombre, IP, responsable, ubicación..." value={filter.q} onChange={(e) => setFilter({ ...filter, q: e.target.value })} />
                   <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                 </div>
+                <select className="input" value={deviceSortOption} onChange={(e) => setDeviceSortOption(e.target.value)}>
+                  <option value="ip">Ordenar por IP</option>
+                  <option value="name">Ordenar por Nombre</option>
+                </select>
                 <select className="input" value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })}>
-                  <option value="">Todos</option>
+                  <option value="">Todos los estados</option>
                   <option value="online">Online</option>
                   <option value="offline">Offline</option>
                   <option value="slow">Respuesta lenta</option>
@@ -1628,10 +1725,10 @@ function Dashboard({ token, user, theme, setTheme }) {
                                 <td className="py-3 px-4">
                                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
                                     emp.active
-                                      ? 'bg-green-100 text-green-850 dark:bg-green-500/10 dark:text-green-300'
-                                      : 'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-300'
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-500/10 dark:text-rose-300'
                                   }`}>
-                                    <span className={`h-1.5 w-1.5 rounded-full ${emp.active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                    <span className={`h-1.5 w-1.5 rounded-full ${emp.active ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                                     {emp.active ? 'Activo' : 'Inactivo'}
                                   </span>
                                 </td>
@@ -1960,7 +2057,11 @@ function Dashboard({ token, user, theme, setTheme }) {
                             required
                           >
                             <option value="">Seleccionar rol...</option>
-                            {appRoles.map((r) => (
+                            {(appRoles.length > 0 ? appRoles : [
+                              { id: '1', name: 'Administrador' },
+                              { id: '2', name: 'Solo Lectura' },
+                              { id: '3', name: 'Soporte TI' }
+                            ]).map((r) => (
                               <option key={r.id} value={r.id}>
                                 {r.name}{r.name === 'Solo Lectura' ? ' (solo ver, sin editar)' : ''}
                               </option>
@@ -2519,10 +2620,10 @@ function Dashboard({ token, user, theme, setTheme }) {
                   <div className="absolute right-4 top-4">
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold shadow-sm ${
                       employeeModal.form.active
-                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                        : 'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-500/30'
+                        : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-500/30'
                     }`}>
-                      <span className={`h-2 w-2 rounded-full ${employeeModal.form.active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                      <span className={`h-2 w-2 rounded-full ${employeeModal.form.active ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                       {employeeModal.form.active ? 'Activo' : 'Inactivo'}
                     </span>
                   </div>
@@ -2541,6 +2642,10 @@ function Dashboard({ token, user, theme, setTheme }) {
                       <span className="text-xs font-medium">{employeeModal.form.phone || '—'}</span>
                     </div>
                     <div>
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Cargo</span>
+                      <span className="text-xs font-medium">{employeeModal.form.job_title || '—'}</span>
+                    </div>
+                    <div>
                       <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Lugar de Trabajo</span>
                       <span className="text-xs font-medium">{employeeModal.form.workplace || employeeModal.form.status || 'Presencial'}</span>
                     </div>
@@ -2551,6 +2656,10 @@ function Dashboard({ token, user, theme, setTheme }) {
                     <div>
                       <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Ciudad</span>
                       <span className="text-xs font-medium">{employeeModal.form.city || '—'}</span>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Sistemas Autorizados</span>
+                      <span className="text-xs font-medium">{employeeModal.form.authorized_systems || '—'}</span>
                     </div>
                     <div className="sm:col-span-2 flex items-center gap-3 mt-1 pt-2 border-t border-zinc-200/50 dark:border-slate-800/50">
                       <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Conexión VPN</span>
@@ -2613,6 +2722,26 @@ function Dashboard({ token, user, theme, setTheme }) {
                         </table>
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Assign existing device selector */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <select
+                      className="input py-1 text-xs max-w-xs flex-1"
+                      defaultValue=""
+                      onChange={(e) => {
+                        const devId = e.target.value;
+                        if (devId) {
+                          linkDevice(devId, employeeModal.form.id);
+                          e.target.value = '';
+                        }
+                      }}
+                    >
+                      <option value="">+ Vincular/Asignar Equipo disponible...</option>
+                      {devices.filter(d => !d.employee_id).map(dev => (
+                        <option key={dev.id} value={dev.id}>{dev.hostname || dev.ip} ({dev.ip})</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -2790,6 +2919,36 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </label>
 
                   <label className="block">
+                    <span className="label">Cargo (Responsabilidad)</span>
+                    <input
+                      className="input"
+                      value={employeeModal.form.job_title || ''}
+                      onChange={(e) =>
+                        setEmployeeModal({
+                          ...employeeModal,
+                          form: { ...employeeModal.form, job_title: e.target.value }
+                        })
+                      }
+                      placeholder="ej. Ejecutivo de Ventas / TI"
+                    />
+                  </label>
+
+                  <label className="block sm:col-span-2">
+                    <span className="label">Sistemas Autorizados / Aplicaciones</span>
+                    <input
+                      className="input"
+                      value={employeeModal.form.authorized_systems || ''}
+                      onChange={(e) =>
+                        setEmployeeModal({
+                          ...employeeModal,
+                          form: { ...employeeModal.form, authorized_systems: e.target.value }
+                        })
+                      }
+                      placeholder="ej. Milenium, CRM Ventas, ERP Contabilidad"
+                    />
+                  </label>
+
+                  <label className="block">
                     <span className="label">Tipo VPN</span>
                     <select
                       className="input"
@@ -2923,7 +3082,33 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
               className="input"
               disabled={deviceModal.mode === 'edit'}
               value={form.ip}
-              onChange={(e) => setForm({ ...form, ip: e.target.value })}
+              onChange={(e) => {
+                const newIp = e.target.value;
+                const ipParts = newIp.split('.');
+                let autoCity = form.city;
+                let autoBranch = form.branch;
+                if (ipParts.length >= 3) {
+                  const subnet = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24`;
+                  // Basándonos en mapeo de subredes del sistema
+                  if (subnet === '172.30.100.0/24') {
+                    autoCity = 'Antofagasta';
+                    autoBranch = 'Rendic';
+                  } else if (subnet === '172.30.101.0/24') {
+                    autoCity = 'Antofagasta';
+                    autoBranch = 'Matta';
+                  } else if (subnet === '172.30.102.0/24') {
+                    autoCity = 'Antofagasta';
+                    autoBranch = 'Diario';
+                  } else if (subnet === '172.30.110.0/24') {
+                    autoCity = 'Arica';
+                    autoBranch = 'Arica';
+                  } else if (subnet === '172.30.112.0/24') {
+                    autoCity = 'Iquique';
+                    autoBranch = 'Iquique';
+                  }
+                }
+                setForm({ ...form, ip: newIp, city: autoCity, branch: autoBranch });
+              }}
               placeholder="ej. 172.30.100.15"
             />
           </label>
@@ -3045,6 +3230,26 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
               placeholder="ej. Windows 11 Pro"
             />
           </label>
+
+          <label className="block">
+            <span className="label">Versión de Office</span>
+            <input
+              className="input"
+              value={form.office || ''}
+              onChange={(e) => setForm({ ...form, office: e.target.value })}
+              placeholder="ej. Office LTSC 2021 / 365"
+            />
+          </label>
+
+          <label className="block">
+            <span className="label">Antivirus</span>
+            <input
+              className="input"
+              value={form.antivirus || ''}
+              onChange={(e) => setForm({ ...form, antivirus: e.target.value })}
+              placeholder="ej. Windows Defender / Kaspersky"
+            />
+          </label>
           
           <label className="block">
             <span className="label">Responsable Asignado</span>
@@ -3062,7 +3267,8 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                     email: '',
                     department: '',
                     city: '',
-                    phone: ''
+                    phone: '',
+                    job_title: ''
                   });
                 } else {
                   setForm({
@@ -3072,7 +3278,8 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                     email: employee.email || '',
                     department: employee.department || '',
                     city: employee.city || '',
-                    phone: employee.phone || ''
+                    phone: employee.phone || '',
+                    job_title: employee.job_title || ''
                   });
                 }
               }}
@@ -3578,6 +3785,14 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
             <label className="block">
               <span className="label">Correo</span>
               <input className="input" type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </label>
+            <label className="block">
+              <span className="label">Versión de Office</span>
+              <input className="input" value={form.office || ''} onChange={(e) => setForm({ ...form, office: e.target.value })} placeholder="ej. Office LTSC 2021 / 365" />
+            </label>
+            <label className="block">
+              <span className="label">Antivirus</span>
+              <input className="input" value={form.antivirus || ''} onChange={(e) => setForm({ ...form, antivirus: e.target.value })} placeholder="ej. Kaspersky / Defender" />
             </label>
             <label className="block">
               <span className="label">Estado Activo</span>
