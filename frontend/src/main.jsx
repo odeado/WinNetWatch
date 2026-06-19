@@ -2121,6 +2121,238 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </div>
                 </div>
               </div>
+            ) : adminSubTab === 'infrastructure' ? (
+              <div className="space-y-4 w-full">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
+                    <input
+                      className="input pl-10"
+                      placeholder="Buscar switch o monitor..."
+                      value={infraFilter}
+                      onChange={(e) => setInfraFilter(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
+                    onClick={() => setInfraModal({ mode: 'create', form: { type: 'Switch', brand: '', model: '', serial_number: '', ports_count: 24, location: 'Matta', status: 'nuevo', acquired_at: new Date().toISOString().split('T')[0], notes: '' } })}
+                  >
+                    <Plus size={16} /> Agregar Infraestructura
+                  </button>
+                </div>
+
+                <div className="overflow-hidden border border-zinc-200 dark:border-slate-800 rounded-xl shadow-sm bg-white dark:bg-slate-900">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-zinc-200 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-semibold">
+                          <th className="py-3.5 px-4">Tipo</th>
+                          <th className="py-3.5 px-4">Marca / Modelo</th>
+                          <th className="py-3.5 px-4">N° Serie</th>
+                          <th className="py-3.5 px-4">Bocas / Puertos</th>
+                          <th className="py-3.5 px-4">Ubicación</th>
+                          <th className="py-3.5 px-4">Estado</th>
+                          <th className="py-3.5 px-4">Fecha Ingreso</th>
+                          <th className="py-3.5 px-4 text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {infrastructure.filter(i => {
+                          const query = infraFilter.toLowerCase();
+                          return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query);
+                        }).length === 0 ? (
+                          <tr>
+                            <td colSpan="8" className="py-8 text-center text-zinc-500 dark:text-slate-400 font-semibold">
+                              No se encontraron elementos de infraestructura.
+                            </td>
+                          </tr>
+                        ) : (
+                          infrastructure.filter(i => {
+                            const query = infraFilter.toLowerCase();
+                            return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query);
+                          }).map((item) => (
+                            <tr
+                              key={item.id}
+                              className="border-b border-zinc-100 dark:border-slate-800/50 hover:bg-zinc-50/50 dark:hover:bg-slate-800/30 transition duration-150 cursor-pointer"
+                              onClick={() => setInfraModal({ mode: 'edit', form: item })}
+                            >
+                              <td className="py-3 px-4 font-semibold text-zinc-950 dark:text-white">
+                                {item.type}
+                              </td>
+                              <td className="py-3 px-4 font-semibold">
+                                {item.brand} {item.model}
+                              </td>
+                              <td className="py-3 px-4 font-mono text-xs">
+                                {item.serial_number || '—'}
+                              </td>
+                              <td className="py-3 px-4">
+                                {item.type === 'Switch' ? `${item.ports_count || 0} Bocas` : '—'}
+                              </td>
+                              <td className="py-3 px-4">
+                                {item.location}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                  item.status === 'nuevo'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                    : 'bg-zinc-100 text-zinc-800 dark:bg-slate-800 dark:text-slate-350'
+                                }`}>
+                                  {item.status === 'nuevo' ? 'Nuevo' : 'Usado'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-xs font-mono">
+                                {item.acquired_at ? new Date(item.acquired_at).toLocaleDateString() : '—'}
+                              </td>
+                              <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    onClick={() => setInfraModal({ mode: 'edit', form: item })}
+                                    className="button secondary py-1 px-2.5 text-xs hover:border-emerald-500"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={() => deleteInfrastructure(item.id)}
+                                    className="button py-1 px-2.5 text-xs text-red-500 border-red-200 dark:border-red-900/30 hover:border-red-500"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Infrastructure Edit/Create Modal */}
+                {infraModal && (
+                  <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-zinc-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 text-zinc-950 dark:text-slate-100">
+                      <h3 className="text-lg font-bold flex items-center gap-2 mb-5">
+                        <Boxes size={20} className="text-emerald-500" />
+                        {infraModal.mode === 'create' ? 'Agregar Infraestructura' : 'Editar Elemento'}
+                      </h3>
+                      <form onSubmit={(e) => { e.preventDefault(); saveInfrastructure(infraModal.form); }} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Tipo de Elemento</label>
+                            <select
+                              className="input w-full"
+                              value={infraModal.form.type}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, type: e.target.value } })}
+                              required
+                            >
+                              <option value="Switch">Switch</option>
+                              <option value="Monitor">Monitor</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Estado</label>
+                            <select
+                              className="input w-full"
+                              value={infraModal.form.status}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, status: e.target.value } })}
+                              required
+                            >
+                              <option value="nuevo">Nuevo</option>
+                              <option value="usado">Usado</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Marca</label>
+                            <input
+                              className="input w-full"
+                              placeholder="ej. Cisco, HP, Dell"
+                              value={infraModal.form.brand}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, brand: e.target.value } })}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Modelo</label>
+                            <input
+                              className="input w-full"
+                              placeholder="ej. Catalyst 2960"
+                              value={infraModal.form.model}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, model: e.target.value } })}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Número de Serie</label>
+                            <input
+                              className="input w-full"
+                              placeholder="N° de Serie"
+                              value={infraModal.form.serial_number}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, serial_number: e.target.value } })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Ubicación</label>
+                            <input
+                              className="input w-full"
+                              placeholder="ej. Oficina TI, Sala 2"
+                              value={infraModal.form.location}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, location: e.target.value } })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          {infraModal.form.type === 'Switch' && (
+                            <div>
+                              <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Bocas / Puertos</label>
+                              <input
+                                className="input w-full"
+                                type="number"
+                                placeholder="ej. 24, 48"
+                                value={infraModal.form.ports_count || ''}
+                                onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, ports_count: parseInt(e.target.value, 10) || 0 } })}
+                              />
+                            </div>
+                          )}
+                          <div className={infraModal.form.type !== 'Switch' ? 'col-span-2' : ''}>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Fecha Ingreso</label>
+                            <input
+                              className="input w-full"
+                              type="date"
+                              value={infraModal.form.acquired_at ? infraModal.form.acquired_at.split('T')[0] : ''}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, acquired_at: e.target.value } })}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Observaciones</label>
+                          <textarea
+                            className="input w-full min-h-16"
+                            placeholder="Detalles adicionales..."
+                            value={infraModal.form.notes}
+                            onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, notes: e.target.value } })}
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-slate-800">
+                          <button type="button" className="button secondary" onClick={() => setInfraModal(null)}>Cancelar</button>
+                          <button type="submit" className="button primary flex items-center gap-1.5">
+                            <Plus size={14} />
+                            {infraModal.mode === 'create' ? 'Agregar Elemento' : 'Guardar Cambios'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="p-4 text-center text-zinc-500">Subpestaña no configurada.</div>
             )}
