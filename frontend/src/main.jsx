@@ -284,6 +284,10 @@ function Dashboard({ token, user, theme, setTheme }) {
       const text = `
         ${dev.hostname || ''}
         ${dev.ip || ''}
+        ${dev.mac || ''}
+        ${dev.os || ''}
+        ${dev.office || ''}
+        ${dev.antivirus || ''}
         ${dev.brand || ''}
         ${dev.model || ''}
         ${dev.responsible_user || ''}
@@ -1627,7 +1631,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       ) : (
         <div className="mx-auto max-w-7xl px-4 py-5">
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 shadow-xl text-zinc-950 dark:text-slate-100">
-            <div className="mb-6 flex flex-wrap border-b border-zinc-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap scrollbar-none">
+            <div className="mb-6 flex border-b border-zinc-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => setAdminSubTab('employees')}
                 className={`border-b-2 px-5 py-3 text-sm font-bold transition-all -mb-[2px] ${
@@ -1879,6 +1883,10 @@ function Dashboard({ token, user, theme, setTheme }) {
                         <tr className="border-b border-zinc-200 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-semibold">
                           <th className="py-3.5 px-4">Equipo (Hostname)</th>
                           <th className="py-3.5 px-4">Dirección IP</th>
+                          <th className="py-3.5 px-4">MAC</th>
+                          <th className="py-3.5 px-4">Sistema Op.</th>
+                          <th className="py-3.5 px-4">Office</th>
+                          <th className="py-3.5 px-4">Antivirus</th>
                           <th className="py-3.5 px-4">Categoría</th>
                           <th className="py-3.5 px-4">Responsable</th>
                           <th className="py-3.5 px-4">Ubicación / Sala</th>
@@ -1889,7 +1897,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                       <tbody>
                         {filteredAdminDevicesByTab.length === 0 ? (
                           <tr>
-                            <td colSpan="7" className="py-8 text-center text-zinc-500 dark:text-slate-400">
+                            <td colSpan="11" className="py-8 text-center text-zinc-500 dark:text-slate-400">
                               No se encontraron equipos en esta sección.
                             </td>
                           </tr>
@@ -1925,13 +1933,27 @@ function Dashboard({ token, user, theme, setTheme }) {
                                   </div>
                                 </td>
                                 <td className="py-3 px-4 text-zinc-550 dark:text-slate-350 font-mono">{dev.ip}</td>
+                                <td className="py-3 px-4 text-zinc-500 dark:text-slate-400 font-mono text-xs">{dev.mac || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium">{dev.os || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium">{dev.office || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium">{dev.antivirus || '—'}</td>
                                 <td className="py-3 px-4">
                                   <span className="rounded bg-slate-100 dark:bg-slate-800 text-zinc-700 dark:text-slate-300 px-2 py-0.5 text-xs font-semibold">
                                     {dev.device_type || 'PC'}
                                   </span>
                                 </td>
-                                <td className="py-3 px-4">
-                                  <div className="font-semibold text-zinc-800 dark:text-slate-200">{dev.responsible_user || 'Sin asignar'}</div>
+                                <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                                  {emp ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEmployeeModal({ mode: 'view', form: emp })}
+                                      className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left"
+                                    >
+                                      {dev.responsible_user || 'Sin asignar'}
+                                    </button>
+                                  ) : (
+                                    <div className="font-semibold text-zinc-800 dark:text-slate-200">{dev.responsible_user || 'Sin asignar'}</div>
+                                  )}
                                   {dev.email && <span className="text-xs text-zinc-400 dark:text-slate-500 block font-normal">{dev.email}</span>}
                                 </td>
                                 <td className="py-3 px-4 font-bold text-xs text-emerald-600 dark:text-emerald-400">
@@ -2681,6 +2703,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           existingCities={existingCities}
           existingDepartments={existingDepartments}
           useLocalApi={useLocalApi}
+          setEmployeeModal={setEmployeeModal}
         />
       )}
 
@@ -2791,10 +2814,21 @@ function Dashboard({ token, user, theme, setTheme }) {
                               <th className="py-2 px-3 text-right">Acción</th>
                             </tr>
                           </thead>
-                          <tbody>
+                           <tbody>
                             {devices.filter(d => d.employee_id === employeeModal.form.id).map(dev => (
                               <tr key={dev.id} className="border-b border-zinc-100 dark:border-slate-800/40 hover:bg-zinc-100/50 dark:hover:bg-slate-900/30">
-                                <td className="py-2 px-3 font-semibold text-zinc-800 dark:text-slate-200">{dev.hostname || 'Sin nombre'}</td>
+                                <td className="py-2 px-3 font-semibold text-zinc-800 dark:text-slate-200">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelected(dev);
+                                      setEmployeeModal(null);
+                                    }}
+                                    className="text-emerald-600 dark:text-emerald-400 hover:underline text-left font-bold"
+                                  >
+                                    {dev.hostname || 'Sin nombre'}
+                                  </button>
+                                </td>
                                 <td className="py-2 px-3 font-mono text-zinc-500 dark:text-slate-400">{dev.ip}</td>
                                 <td className="py-2 px-3"><StatusPill status={dev.status} /></td>
                                 <td className="py-2 px-3 text-right">
@@ -3643,7 +3677,7 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
   );
 }
 
-function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi }) {
+function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal }) {
   const [form, setForm] = useState(device);
 
   async function save() {
@@ -3795,8 +3829,25 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
         <div className="mt-6">
           <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-200 dark:border-slate-800">Detalles de Asignación y Ubicación</h3>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="label">Responsable</span>
+            <div className="block">
+              <div className="flex items-center justify-between mb-1">
+                <span className="label mb-0">Responsable</span>
+                {form.employee_id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const emp = employees.find(e => String(e.id) === String(form.employee_id));
+                      if (emp) {
+                        setEmployeeModal({ mode: 'view', form: emp });
+                        onClose(); // Close the DeviceDrawer
+                      }
+                    }}
+                    className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 hover:underline"
+                  >
+                    Ver Ficha Empleado
+                  </button>
+                )}
+              </div>
               <select
                 className="input"
                 value={form.employee_id || ''}
@@ -3807,7 +3858,7 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
                   <option key={emp.id} value={emp.id}>{emp.full_name}</option>
                 ))}
               </select>
-            </label>
+            </div>
             <label className="block">
               <span className="label">Categoría / Tipo de Equipo</span>
               <select
