@@ -280,7 +280,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   }, [employees, employeeFilter]);
 
   const filteredAdminDevices = useMemo(() => {
-    return devices.filter(dev => {
+    const list = devices.filter(dev => {
       const text = `
         ${dev.hostname || ''}
         ${dev.ip || ''}
@@ -291,7 +291,38 @@ function Dashboard({ token, user, theme, setTheme }) {
       `.toLowerCase();
       return text.includes(deviceFilter.toLowerCase());
     });
-  }, [devices, deviceFilter]);
+
+    const getStatusPriority = (status) => {
+      if (status === 'offline') return 0;
+      if (status === 'slow') return 1;
+      if (status === 'online') return 2;
+      return 3;
+    };
+
+    const parseIp = (ip) => {
+      if (!ip) return [999, 999, 999, 999];
+      return ip.split('.').map(n => parseInt(n, 10) || 0);
+    };
+
+    return list.sort((a, b) => {
+      const prioA = getStatusPriority(a.status);
+      const prioB = getStatusPriority(b.status);
+      if (prioA !== prioB) return prioA - prioB;
+
+      if (deviceSortOption === 'name') {
+        const nameA = (a.hostname || '').toLowerCase();
+        const nameB = (b.hostname || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      }
+
+      const partsA = parseIp(a.ip);
+      const partsB = parseIp(b.ip);
+      for (let i = 0; i < 4; i++) {
+        if (partsA[i] !== partsB[i]) return partsA[i] - partsB[i];
+      }
+      return 0;
+    });
+  }, [devices, deviceFilter, deviceSortOption]);
 
   const filteredAdminDevicesByTab = useMemo(() => {
     return filteredAdminDevices.filter(dev => {
@@ -1179,7 +1210,12 @@ function Dashboard({ token, user, theme, setTheme }) {
       // Cloud mode fallback to Firestore
       const userId = isEdit ? form.id : `user_${Date.now()}`;
       // Resolve role name for local mapping/UI
-      const selectedRole = appRoles.find(r => r.id === form.role_id);
+      const defaultRoles = [
+        { id: '1', name: 'Administrador' },
+        { id: '2', name: 'Solo Lectura' },
+        { id: '3', name: 'Soporte TI' }
+      ];
+      const selectedRole = appRoles.find(r => r.id === form.role_id) || defaultRoles.find(r => r.id === form.role_id);
       const payload = {
         email: form.email.trim().toLowerCase(),
         full_name: form.full_name.trim(),
@@ -1331,28 +1367,60 @@ function Dashboard({ token, user, theme, setTheme }) {
       'Responsable', 'Cargo', 'Sistemas', 'City', 'Branch', 'Department', 'Brand', 'Model',
       'Serial Number', 'Location'
     ];
-    const rows = devices.map(d => [
-      d.hostname || '',
-      d.ip || '',
-      d.mac || '',
-      d.os || '',
-      d.office || '',
-      d.antivirus || '',
-      d.status || 'unknown',
-      d.rdp_available ? 'SI' : 'NO',
-      d.responsible_user || '',
-      d.job_title || '',
-      d.authorized_systems || '',
-      d.city || '',
-      d.branch || '',
-      d.department || '',
-      d.brand || '',
-      d.model || '',
-      d.serial_number || '',
-      d.location || ''
-    ]);
+    // Build Excel-friendly HTML Table structure with styling for VPN, No City and Status
+    const rowsHtml = devices.map(d => {
+      const city = d.city || '';
+      const hasNoCity = !city || city.trim().toLowerCase() === 'no asignada' || city.trim() === '';
+      const ip = d.ip || '';
+      const isVpn = ip.startsWith('10.8.') || ip.startsWith('172.16.') || 
+                    city.toLowerCase().includes('vpn') || 
+                    (d.branch && d.branch.toLowerCase().includes('vpn'));
 
-    // Build Excel-friendly HTML Table structure
+      const rdp = d.rdp_available ? 'SI' : 'NO';
+      const status = d.status || 'unknown';
+
+      let rowStyle = '';
+      if (isVpn) {
+        rowStyle = 'style="background-color: #e0f2fe; color: #0369a1;"'; // soft blue for VPN
+      } else if (hasNoCity) {
+        rowStyle = 'style="background-color: #fef3c7; color: #b45309;"'; // soft amber/yellow for no city
+      }
+
+      const columns = [
+        d.hostname || '',
+        ip,
+        d.mac || '',
+        d.os || '',
+        d.office || '',
+        d.antivirus || '',
+        status,
+        rdp,
+        d.responsible_user || '',
+        d.job_title || '',
+        d.authorized_systems || '',
+        city,
+        d.branch || '',
+        d.department || '',
+        d.brand || '',
+        d.model || '',
+        d.serial_number || '',
+        d.location || ''
+      ];
+
+      return `
+        <tr ${rowStyle}>
+          ${columns.map((val, idx) => {
+            let cellStyle = '';
+            if (idx === 6) { // Status column
+              if (val === 'online' || val === 'up') cellStyle = 'style="background-color: #d1fae5; color: #065f46; font-weight: bold; border: 1px solid #d1d5db;"';
+              else if (val === 'offline' || val === 'down') cellStyle = 'style="background-color: #fee2e2; color: #991b1b; font-weight: bold; border: 1px solid #d1d5db;"';
+            }
+            return `<td ${cellStyle}>${String(val).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
+          }).join('')}
+        </tr>
+      `;
+    }).join('');
+
     let excelHtml = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head>
@@ -1387,11 +1455,7 @@ function Dashboard({ token, user, theme, setTheme }) {
             </tr>
           </thead>
           <tbody>
-            ${rows.map(r => `
-              <tr>
-                ${r.map(val => `<td>${String(val).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`).join('')}
-              </tr>
-            `).join('')}
+            ${rowsHtml}
           </tbody>
         </table>
       </body>
@@ -1778,14 +1842,27 @@ function Dashboard({ token, user, theme, setTheme }) {
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="relative flex-1 max-w-md">
-                    <input
-                      className="input pr-10"
-                      placeholder="Buscar equipo por hostname, IP, marca, modelo, ubicación..."
-                      value={deviceFilter}
-                      onChange={(e) => setDeviceFilter(e.target.value)}
-                    />
-                    <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
+                  <div className="flex flex-wrap items-center gap-3 flex-1">
+                    <div className="relative flex-1 max-w-md">
+                      <input
+                        className="input pr-10"
+                        placeholder="Buscar equipo por hostname, IP, marca, modelo, ubicación..."
+                        value={deviceFilter}
+                        onChange={(e) => setDeviceFilter(e.target.value)}
+                      />
+                      <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-zinc-500 dark:text-slate-400">Ordenar por:</span>
+                      <select
+                        className="input text-xs py-1.5 font-semibold bg-white dark:bg-slate-900 border border-zinc-200 dark:border-slate-800 rounded-lg px-2 text-zinc-700 dark:text-slate-300"
+                        value={deviceSortOption}
+                        onChange={(e) => setDeviceSortOption(e.target.value)}
+                      >
+                        <option value="ip">Dirección IP</option>
+                        <option value="name">Nombre / Hostname</option>
+                      </select>
+                    </div>
                   </div>
                   <button
                     onClick={() => setDeviceModal({ mode: 'create', form: { ip: '', hostname: '', mac: '', os: '', city: '', branch: '', department: '', responsible_user: '', job_title: '', phone: '', email: '', notes: '', brand: '', model: '', serial_number: '', asset_status: 'active', critical: false, managed: false, tags: [], cpu: '', ram: '', storage: '', gpu: '', motherboard: '', image_url: '', device_type: 'PC', location: 'Matta', employee_id: null } })}
@@ -1983,7 +2060,19 @@ function Dashboard({ token, user, theme, setTheme }) {
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <button
-                                  onClick={() => setUserModal({ mode: 'edit', form: { id: u.id, email: u.email, full_name: u.full_name, role_id: u.role_id, active: u.active, password: '' } })}
+                                  onClick={() => {
+                                    const defaultRoles = [
+                                      { id: '1', name: 'Administrador' },
+                                      { id: '2', name: 'Solo Lectura' },
+                                      { id: '3', name: 'Soporte TI' }
+                                    ];
+                                    let resolvedRoleId = u.role_id;
+                                    if (!resolvedRoleId && u.role_name) {
+                                      const found = (appRoles.length > 0 ? appRoles : defaultRoles).find(r => r.name === u.role_name);
+                                      if (found) resolvedRoleId = found.id;
+                                    }
+                                    setUserModal({ mode: 'edit', form: { id: u.id, email: u.email, full_name: u.full_name, role_id: resolvedRoleId, active: u.active, password: '' } });
+                                  }}
                                   className="text-sky-500 hover:text-sky-700 p-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/30 transition"
                                   title="Editar"
                                 >
