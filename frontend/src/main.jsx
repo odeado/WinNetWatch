@@ -505,6 +505,23 @@ function Dashboard({ token, user, theme, setTheme }) {
         });
         setInfrastructure(list);
       }, handleFirebaseError);
+
+      // Listen to users and roles for Cloud fallback
+      onSnapshot(collection(db, 'app_users'), (snapshot) => {
+        const list = [];
+        snapshot.forEach(d => {
+          list.push({ id: d.id, ...d.data() });
+        });
+        setAppUsers(list);
+      }, handleFirebaseError);
+
+      onSnapshot(collection(db, 'roles'), (snapshot) => {
+        const list = [];
+        snapshot.forEach(d => {
+          list.push({ id: d.id, ...d.data() });
+        });
+        setAppRoles(list);
+      }, handleFirebaseError);
     } catch (err) {
       handleFirebaseError(err);
     }
@@ -1074,6 +1091,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   // App Users CRUD
   // ============================================================
   async function loadAppUsers() {
+    if (!useLocalApi) return; // Managed by Firestore collection snapshot listeners on Cloud mode
     try {
       const [usersRes, rolesRes] = await Promise.all([
         fetch(`${API_URL}/api/settings/users`, { headers: { authorization: `Bearer ${token}` } }),
@@ -1093,23 +1111,46 @@ function Dashboard({ token, user, theme, setTheme }) {
       if (form.password) body.password = form.password;
       if (isEdit && form.active !== undefined) body.active = form.active;
 
-      const response = await fetch(
-        `${API_URL}/api/settings/users${isEdit ? '/' + form.id : ''}`,
-        {
-          method: isEdit ? 'PATCH' : 'POST',
-          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify(isEdit ? body : { ...body, password: form.password })
+      if (useLocalApi) {
+        const response = await fetch(
+          `${API_URL}/api/settings/users${isEdit ? '/' + form.id : ''}`,
+          {
+            method: isEdit ? 'PATCH' : 'POST',
+            headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+            body: JSON.stringify(isEdit ? body : { ...body, password: form.password })
+          }
+        );
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.error || 'Error al guardar usuario');
+          return;
         }
-      );
-      if (!response.ok) {
-        const err = await response.json();
-        alert(err.error || 'Error al guardar usuario');
+        triggerToast(isEdit ? 'Usuario actualizado' : 'Usuario creado', 'success');
+        setUserModal(null);
+        loadAppUsers();
         return;
       }
-      triggerToast(isEdit ? 'Usuario actualizado' : 'Usuario creado', 'success');
+
+      // Cloud mode fallback to Firestore
+      const userId = isEdit ? form.id : `user_${Date.now()}`;
+      // Resolve role name for local mapping/UI
+      const selectedRole = appRoles.find(r => r.id === form.role_id);
+      const payload = {
+        email: form.email.trim().toLowerCase(),
+        full_name: form.full_name.trim(),
+        role_id: form.role_id,
+        role_name: selectedRole ? selectedRole.name : 'Solo Lectura',
+        active: form.active !== undefined ? form.active : true,
+        created_at: form.created_at || new Date().toISOString()
+      };
+      if (form.password) {
+        payload.password_plain = form.password; // Sync to local agent securely via Firestore
+      }
+      await setDoc(doc(db, 'app_users', userId), payload, { merge: true });
+      triggerToast(isEdit ? 'Usuario actualizado (Nube)' : 'Usuario creado (Nube)', 'success');
       setUserModal(null);
-      loadAppUsers();
     } catch (err) {
+      console.error(err);
       alert('Error de conexión al guardar usuario');
     }
   }
@@ -1117,13 +1158,20 @@ function Dashboard({ token, user, theme, setTheme }) {
   async function deleteAppUser(id) {
     if (!confirm('¿Eliminar este usuario del sistema? Esta acción es irreversible.')) return;
     try {
-      const response = await fetch(`${API_URL}/api/settings/users/${id}`, {
-        method: 'DELETE',
-        headers: { authorization: `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error();
-      triggerToast('Usuario eliminado', 'success');
-      loadAppUsers();
+      if (useLocalApi) {
+        const response = await fetch(`${API_URL}/api/settings/users/${id}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error();
+        triggerToast('Usuario eliminado', 'success');
+        loadAppUsers();
+        return;
+      }
+
+      // Cloud mode fallback to Firestore
+      await deleteDoc(doc(db, 'app_users', id));
+      triggerToast('Usuario eliminado (Nube)', 'success');
     } catch (err) {
       alert('Error al eliminar usuario');
     }
@@ -1131,14 +1179,21 @@ function Dashboard({ token, user, theme, setTheme }) {
 
   async function toggleAppUser(id, currentActive) {
     try {
-      const response = await fetch(`${API_URL}/api/settings/users/${id}`, {
-        method: 'PATCH',
-        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ active: !currentActive })
-      });
-      if (!response.ok) throw new Error();
-      triggerToast(currentActive ? 'Usuario desactivado' : 'Usuario activado', 'success');
-      loadAppUsers();
+      if (useLocalApi) {
+        const response = await fetch(`${API_URL}/api/settings/users/${id}`, {
+          method: 'PATCH',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ active: !currentActive })
+        });
+        if (!response.ok) throw new Error();
+        triggerToast(currentActive ? 'Usuario desactivado' : 'Usuario activado', 'success');
+        loadAppUsers();
+        return;
+      }
+
+      // Cloud mode fallback to Firestore
+      await setDoc(doc(db, 'app_users', id), { active: !currentActive }, { merge: true });
+      triggerToast(currentActive ? 'Usuario desactivado (Nube)' : 'Usuario activado (Nube)', 'success');
     } catch (err) {
       alert('Error al cambiar estado de usuario');
     }
@@ -2221,7 +2276,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                   item.status === 'nuevo'
                                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300'
-                                    : 'bg-zinc-100 text-zinc-800 dark:bg-slate-800 dark:text-slate-350'
+                                    : 'bg-amber-100 text-amber-850 dark:bg-amber-500/10 dark:text-amber-350'
                                 }`}>
                                   {item.status === 'nuevo' ? 'Nuevo' : 'Usado'}
                                 </span>
