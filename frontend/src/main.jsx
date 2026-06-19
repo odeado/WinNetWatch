@@ -1423,8 +1423,8 @@ function Dashboard({ token, user, theme, setTheme }) {
             <Panel title="Equipos" icon={<Laptop size={18} />}>
               <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px]">
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
-                  <input className="input pl-10" placeholder="Buscar por nombre, IP, responsable, ubicación..." value={filter.q} onChange={(e) => setFilter({ ...filter, q: e.target.value })} />
+                  <input className="input pr-10" placeholder="Buscar por nombre, IP, responsable, ubicación..." value={filter.q} onChange={(e) => setFilter({ ...filter, q: e.target.value })} />
+                  <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                 </div>
                 <select className="input" value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })}>
                   <option value="">Todos</option>
@@ -1527,13 +1527,13 @@ function Dashboard({ token, user, theme, setTheme }) {
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
                     <input
-                      className="input pl-10"
+                      className="input pr-10"
                       placeholder="Buscar empleado por nombre, email, dpto, ciudad..."
                       value={employeeFilter}
                       onChange={(e) => setEmployeeFilter(e.target.value)}
                     />
+                    <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                   </div>
                   <button
                     onClick={() =>
@@ -1682,13 +1682,13 @@ function Dashboard({ token, user, theme, setTheme }) {
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
                     <input
-                      className="input pl-10"
+                      className="input pr-10"
                       placeholder="Buscar equipo por hostname, IP, marca, modelo, ubicación..."
                       value={deviceFilter}
                       onChange={(e) => setDeviceFilter(e.target.value)}
                     />
+                    <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                   </div>
                   <button
                     onClick={() => setDeviceModal({ mode: 'create', form: { ip: '', hostname: '', mac: '', os: '', city: '', branch: '', department: '', responsible_user: '', job_title: '', phone: '', email: '', notes: '', brand: '', model: '', serial_number: '', asset_status: 'active', critical: false, managed: false, tags: [], cpu: '', ram: '', storage: '', gpu: '', motherboard: '', image_url: '', device_type: 'PC', location: 'Matta', employee_id: null } })}
@@ -1802,13 +1802,13 @@ function Dashboard({ token, user, theme, setTheme }) {
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
                     <input
-                      className="input pl-10"
+                      className="input pr-10"
                       placeholder="Buscar usuario por nombre o correo..."
                       value={userFilter}
                       onChange={(e) => setUserFilter(e.target.value)}
                     />
+                    <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                   </div>
                   <button
                     className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
@@ -2206,13 +2206,13 @@ function Dashboard({ token, user, theme, setTheme }) {
               <div className="space-y-4 w-full">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
                     <input
-                      className="input pl-10"
+                      className="input pr-10"
                       placeholder="Buscar switch o monitor..."
                       value={infraFilter}
                       onChange={(e) => setInfraFilter(e.target.value)}
                     />
+                    <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                   </div>
                   <button
                     className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
