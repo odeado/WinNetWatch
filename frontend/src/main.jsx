@@ -1901,7 +1901,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : adminSubTab === 'config' ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* COLUMN 1: Mapeo de Subredes */}
                 <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-slate-800/80 p-5 shadow-sm space-y-4">
@@ -2121,6 +2121,8 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="p-4 text-center text-zinc-500">Subpestaña no configurada.</div>
             )}
           </div>
         </div>
