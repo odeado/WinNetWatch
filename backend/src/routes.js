@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { login, requireAuth, requirePermission } from './auth.js';
 import { encryptSecret } from './crypto.js';
 import { query } from './db.js';
@@ -785,6 +786,105 @@ router.delete('/settings/cities/:id', requirePermission('users:write'), async (r
     next(error);
   }
 });
+
+// =============================================
+// User Management Routes
+// =============================================
+
+router.get('/settings/roles', requirePermission('users:read'), async (_req, res, next) => {
+  try {
+    const { rows } = await query('SELECT id, name, permissions FROM roles ORDER BY name');
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/settings/users', requirePermission('users:read'), async (_req, res, next) => {
+  try {
+    const { rows } = await query(`
+      SELECT u.id, u.email, u.full_name, u.active, u.created_at,
+             r.id AS role_id, r.name AS role_name, r.permissions
+      FROM app_users u
+      LEFT JOIN roles r ON r.id = u.role_id
+      ORDER BY u.created_at DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/settings/users', requirePermission('users:write'), async (req, res, next) => {
+  try {
+    const { email, password, full_name, role_id } = req.body;
+    if (!email || !password || !full_name || !role_id) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    const { rows } = await query(
+      `INSERT INTO app_users (email, password_hash, full_name, role_id, active)
+       VALUES ($1, $2, $3, $4, true)
+       RETURNING id, email, full_name, active, created_at`,
+      [email.trim().toLowerCase(), hash, full_name.trim(), role_id]
+    );
+    await audit(req.user.sub, 'create', 'app_user', rows[0].id, null, JSON.stringify(rows[0]));
+    res.json(rows[0]);
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe un usuario con ese correo' });
+    }
+    next(error);
+  }
+});
+
+router.patch('/settings/users/:id', requirePermission('users:write'), async (req, res, next) => {
+  try {
+    const { email, password, full_name, role_id, active } = req.body;
+    const before = (await query('SELECT id, email, full_name, role_id, active FROM app_users WHERE id = $1', [req.params.id])).rows[0];
+    if (!before) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const fields = [];
+    const values = [req.params.id];
+    let idx = 2;
+    if (email !== undefined) { fields.push(`email = $${idx++}`); values.push(email.trim().toLowerCase()); }
+    if (full_name !== undefined) { fields.push(`full_name = $${idx++}`); values.push(full_name.trim()); }
+    if (role_id !== undefined) { fields.push(`role_id = $${idx++}`); values.push(role_id); }
+    if (active !== undefined) { fields.push(`active = $${idx++}`); values.push(active); }
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      fields.push(`password_hash = $${idx++}`);
+      values.push(hash);
+    }
+
+    if (fields.length === 0) return res.status(400).json({ error: 'Nada que actualizar' });
+
+    const { rows } = await query(
+      `UPDATE app_users SET ${fields.join(', ')} WHERE id = $1 RETURNING id, email, full_name, role_id, active`,
+      values
+    );
+    await audit(req.user.sub, 'update', 'app_user', req.params.id, JSON.stringify(before), JSON.stringify(rows[0]));
+    res.json(rows[0]);
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe un usuario con ese correo' });
+    }
+    next(error);
+  }
+});
+
+router.delete('/settings/users/:id', requirePermission('users:write'), async (req, res, next) => {
+  try {
+    const before = (await query('SELECT id, email, full_name FROM app_users WHERE id = $1', [req.params.id])).rows[0];
+    if (!before) return res.status(404).json({ error: 'Usuario no encontrado' });
+    await query('DELETE FROM app_users WHERE id = $1', [req.params.id]);
+    await audit(req.user.sub, 'delete', 'app_user', req.params.id, JSON.stringify(before), null);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 function csvCell(value) {
   if (value === null || value === undefined) return '';
   return `"${String(value).replaceAll('"', '""')}"`;

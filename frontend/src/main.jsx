@@ -4,7 +4,7 @@ import {
   Activity, Bell, Boxes, Building2, Cable, CheckCircle2, Clock3, Download,
   FileDown, Laptop, Moon, Network, Play, RefreshCw, Search, Shield, Sun,
   TerminalSquare, Users, WifiOff, User, Plus, Trash2, Cpu, Eye, LogOut, Upload, Info,
-  Briefcase, MapPin
+  Briefcase, MapPin, Lock, UserPlus, Edit3, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -203,6 +203,10 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [deviceFilter, setDeviceFilter] = useState('');
   const [deviceModal, setDeviceModal] = useState(null);
   const [inventoryTab, setInventoryTab] = useState('Todos');
+  const [appUsers, setAppUsers] = useState([]);
+  const [appRoles, setAppRoles] = useState([]);
+  const [userModal, setUserModal] = useState(null);
+  const [userFilter, setUserFilter] = useState('');
 
   const prevDevicesRef = useRef({});
 
@@ -323,18 +327,18 @@ function Dashboard({ token, user, theme, setTheme }) {
       );
     });
 
-    const getStatusPriority = (status) => {
-      if (status === 'offline') return 0;
-      if (status === 'slow') return 1;
-      if (status === 'online') return 2;
-      return 3;
+    const parseIp = (ip) => {
+      if (!ip) return [999, 999, 999, 999];
+      return ip.split('.').map(n => parseInt(n, 10) || 0);
     };
 
     return list.sort((a, b) => {
-      const prioA = getStatusPriority(a.status);
-      const prioB = getStatusPriority(b.status);
-      if (prioA !== prioB) return prioA - prioB;
-      return (a.ip || '').localeCompare(b.ip || '');
+      const partsA = parseIp(a.ip);
+      const partsB = parseIp(b.ip);
+      for (let i = 0; i < 4; i++) {
+        if (partsA[i] !== partsB[i]) return partsA[i] - partsB[i];
+      }
+      return 0;
     });
   }, [devices, filter, getSubnetLabel]);
 
@@ -1036,6 +1040,87 @@ function Dashboard({ token, user, theme, setTheme }) {
     }
   }
 
+  // ============================================================
+  // App Users CRUD
+  // ============================================================
+  async function loadAppUsers() {
+    try {
+      const [usersRes, rolesRes] = await Promise.all([
+        fetch(`${API_URL}/api/settings/users`, { headers: { authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/settings/roles`, { headers: { authorization: `Bearer ${token}` } })
+      ]);
+      if (usersRes.ok) setAppUsers(await usersRes.json());
+      if (rolesRes.ok) setAppRoles(await rolesRes.json());
+    } catch (err) {
+      console.warn('Error loading users/roles:', err);
+    }
+  }
+
+  async function saveAppUser(form) {
+    try {
+      const isEdit = !!form.id;
+      const body = { email: form.email, full_name: form.full_name, role_id: form.role_id };
+      if (form.password) body.password = form.password;
+      if (isEdit && form.active !== undefined) body.active = form.active;
+
+      const response = await fetch(
+        `${API_URL}/api/settings/users${isEdit ? '/' + form.id : ''}`,
+        {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(isEdit ? body : { ...body, password: form.password })
+        }
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        alert(err.error || 'Error al guardar usuario');
+        return;
+      }
+      triggerToast(isEdit ? 'Usuario actualizado' : 'Usuario creado', 'success');
+      setUserModal(null);
+      loadAppUsers();
+    } catch (err) {
+      alert('Error de conexión al guardar usuario');
+    }
+  }
+
+  async function deleteAppUser(id) {
+    if (!confirm('¿Eliminar este usuario del sistema? Esta acción es irreversible.')) return;
+    try {
+      const response = await fetch(`${API_URL}/api/settings/users/${id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error();
+      triggerToast('Usuario eliminado', 'success');
+      loadAppUsers();
+    } catch (err) {
+      alert('Error al eliminar usuario');
+    }
+  }
+
+  async function toggleAppUser(id, currentActive) {
+    try {
+      const response = await fetch(`${API_URL}/api/settings/users/${id}`, {
+        method: 'PATCH',
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ active: !currentActive })
+      });
+      if (!response.ok) throw new Error();
+      triggerToast(currentActive ? 'Usuario desactivado' : 'Usuario activado', 'success');
+      loadAppUsers();
+    } catch (err) {
+      alert('Error al cambiar estado de usuario');
+    }
+  }
+
+  // Load users when switching to the users tab
+  useEffect(() => {
+    if (adminSubTab === 'users' && appUsers.length === 0) {
+      loadAppUsers();
+    }
+  }, [adminSubTab]);
+
   const chartData = useMemo(() => buildChart(events), [events]);
 
   const downloadDevicesCSV = () => {
@@ -1256,6 +1341,17 @@ function Dashboard({ token, user, theme, setTheme }) {
                 }`}
               >
                 Parámetros y Red
+              </button>
+
+              <button
+                onClick={() => setAdminSubTab('users')}
+                className={`border-b-2 px-5 py-3 text-sm font-bold transition-all -mb-[2px] ${
+                  adminSubTab === 'users'
+                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:hover:text-white'
+                }`}
+              >
+                Usuarios del Sistema
               </button>
             </div>
 
@@ -1533,6 +1629,190 @@ function Dashboard({ token, user, theme, setTheme }) {
                     </table>
                   </div>
                 </div>
+              </div>
+            ) : adminSubTab === 'users' ? (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
+                    <input
+                      className="input pl-10"
+                      placeholder="Buscar usuario por nombre o correo..."
+                      value={userFilter}
+                      onChange={(e) => setUserFilter(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
+                    onClick={() => setUserModal({ mode: 'create', form: { email: '', password: '', full_name: '', role_id: appRoles[0]?.id || '' } })}
+                  >
+                    <UserPlus size={16} /> Nuevo Usuario
+                  </button>
+                </div>
+
+                <div className="border border-zinc-200 dark:border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold text-xs uppercase border-b border-zinc-200 dark:border-slate-800">
+                        <th className="py-3 px-4">Nombre</th>
+                        <th className="py-3 px-4">Correo</th>
+                        <th className="py-3 px-4">Rol</th>
+                        <th className="py-3 px-4 text-center">Estado</th>
+                        <th className="py-3 px-4 text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {appUsers.filter(u => {
+                        const q = userFilter.toLowerCase();
+                        return !q || (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+                      }).length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="py-8 text-center text-zinc-500 dark:text-slate-400">No se encontraron usuarios.</td>
+                        </tr>
+                      ) : (
+                        appUsers.filter(u => {
+                          const q = userFilter.toLowerCase();
+                          return !q || (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+                        }).map((u) => (
+                          <tr key={u.id} className="border-b border-zinc-100 dark:border-slate-800/50 hover:bg-zinc-50/50 dark:hover:bg-slate-800/30 transition duration-150">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2.5">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                  u.active
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                    : 'bg-zinc-200 text-zinc-500 dark:bg-slate-800 dark:text-slate-500'
+                                }`}>
+                                  {getInitials(u.full_name)}
+                                </div>
+                                <span className="font-semibold text-zinc-800 dark:text-slate-100">{u.full_name}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-zinc-500 dark:text-slate-400 font-mono text-xs">{u.email}</td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                                u.role_name === 'Super Administrador' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
+                                : u.role_name === 'Administrador' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                                : u.role_name === 'Soporte TI' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                                : u.role_name === 'Solo Lectura' ? 'bg-zinc-100 text-zinc-600 dark:bg-slate-800 dark:text-slate-400'
+                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                              }`}>
+                                {u.role_name === 'Solo Lectura' && <Eye size={10} />}
+                                {u.role_name === 'Super Administrador' && <Shield size={10} />}
+                                {u.role_name}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <button
+                                onClick={() => toggleAppUser(u.id, u.active)}
+                                className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg transition ${
+                                  u.active
+                                    ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                                    : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+                                }`}
+                                title={u.active ? 'Desactivar' : 'Activar'}
+                              >
+                                {u.active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                                {u.active ? 'Activo' : 'Inactivo'}
+                              </button>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => setUserModal({ mode: 'edit', form: { id: u.id, email: u.email, full_name: u.full_name, role_id: u.role_id, active: u.active, password: '' } })}
+                                  className="text-sky-500 hover:text-sky-700 p-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/30 transition"
+                                  title="Editar"
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => deleteAppUser(u.id)}
+                                  className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* User create/edit modal */}
+                {userModal && (
+                  <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-zinc-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6">
+                      <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2 mb-5">
+                        <Lock size={20} className="text-emerald-500" />
+                        {userModal.mode === 'create' ? 'Nuevo Usuario' : 'Editar Usuario'}
+                      </h3>
+                      <form onSubmit={(e) => { e.preventDefault(); saveAppUser(userModal.form); }} className="space-y-4">
+                        <div>
+                          <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Nombre Completo</label>
+                          <input
+                            className="input w-full"
+                            placeholder="ej: Juan Pérez"
+                            value={userModal.form.full_name}
+                            onChange={(e) => setUserModal({ ...userModal, form: { ...userModal.form, full_name: e.target.value } })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Correo Electrónico</label>
+                          <input
+                            className="input w-full"
+                            type="email"
+                            placeholder="ej: usuario@empresa.cl"
+                            value={userModal.form.email}
+                            onChange={(e) => setUserModal({ ...userModal, form: { ...userModal.form, email: e.target.value } })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">
+                            {userModal.mode === 'create' ? 'Contraseña' : 'Nueva Contraseña (dejar vacío para no cambiar)'}
+                          </label>
+                          <input
+                            className="input w-full"
+                            type="password"
+                            placeholder={userModal.mode === 'create' ? 'Contraseña segura' : '••••••••'}
+                            value={userModal.form.password}
+                            onChange={(e) => setUserModal({ ...userModal, form: { ...userModal.form, password: e.target.value } })}
+                            {...(userModal.mode === 'create' ? { required: true } : {})}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Rol / Permisos</label>
+                          <select
+                            className="input w-full"
+                            value={userModal.form.role_id}
+                            onChange={(e) => setUserModal({ ...userModal, form: { ...userModal.form, role_id: e.target.value } })}
+                            required
+                          >
+                            <option value="">Seleccionar rol...</option>
+                            {appRoles.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name}{r.name === 'Solo Lectura' ? ' (solo ver, sin editar)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="mt-1 text-[10px] text-zinc-400 dark:text-slate-500">
+                            "Solo Lectura" permite ver el monitoreo sin acceso a editar ni administrar.
+                          </p>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-slate-800">
+                          <button type="button" className="button secondary" onClick={() => setUserModal(null)}>Cancelar</button>
+                          <button type="submit" className="button primary flex items-center gap-1.5">
+                            <Shield size={14} />
+                            {userModal.mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
