@@ -1148,26 +1148,46 @@ function Dashboard({ token, user, theme, setTheme }) {
   async function saveInfrastructure(form) {
     try {
       const isEdit = !!form.id;
-      const response = await fetch(
-        `${API_URL}/api/infrastructure${isEdit ? '/' + form.id : ''}`,
-        {
-          method: isEdit ? 'PATCH' : 'POST',
-          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify(form)
-        }
-      );
-      if (!response.ok) {
-        const err = await response.json();
-        alert(err.error || 'Error al guardar elemento');
-        return;
-      }
-      triggerToast(isEdit ? 'Elemento actualizado' : 'Elemento creado', 'success');
-      setInfraModal(null);
+      const payload = {
+        type: form.type,
+        brand: form.brand || '',
+        model: form.model || '',
+        serial_number: form.serial_number || '',
+        ports_count: form.ports_count ? parseInt(form.ports_count, 10) : null,
+        location: form.location || 'Matta',
+        status: form.status || 'nuevo',
+        acquired_at: form.acquired_at || new Date().toISOString().split('T')[0],
+        notes: form.notes || ''
+      };
+
       if (useLocalApi) {
+        const response = await fetch(
+          `${API_URL}/api/infrastructure${isEdit ? '/' + form.id : ''}`,
+          {
+            method: isEdit ? 'PATCH' : 'POST',
+            headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+            body: JSON.stringify(payload)
+          }
+        );
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.error || 'Error al guardar elemento');
+          return;
+        }
+        triggerToast(isEdit ? 'Elemento actualizado' : 'Elemento creado', 'success');
+        setInfraModal(null);
         const res = await fetch(`${API_URL}/api/infrastructure`, { headers: { authorization: `Bearer ${token}` } });
         if (res.ok) setInfrastructure(await res.json());
+        return;
       }
+
+      // Cloud mode: write directly to Firestore
+      const id = form.id || doc(collection(db, 'infrastructure')).id;
+      await setDoc(doc(db, 'infrastructure', id), { id, ...payload });
+      triggerToast(isEdit ? 'Elemento actualizado' : 'Elemento creado', 'success');
+      setInfraModal(null);
     } catch (err) {
+      console.error('Error saving infrastructure:', err);
       alert('Error al guardar elemento de infraestructura');
     }
   }
@@ -1175,17 +1195,23 @@ function Dashboard({ token, user, theme, setTheme }) {
   async function deleteInfrastructure(id) {
     if (!confirm('¿Estás seguro de eliminar este elemento del inventario?')) return;
     try {
-      const response = await fetch(`${API_URL}/api/infrastructure/${id}`, {
-        method: 'DELETE',
-        headers: { authorization: `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error();
-      triggerToast('Elemento eliminado', 'success');
       if (useLocalApi) {
+        const response = await fetch(`${API_URL}/api/infrastructure/${id}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error();
+        triggerToast('Elemento eliminado', 'success');
         const res = await fetch(`${API_URL}/api/infrastructure`, { headers: { authorization: `Bearer ${token}` } });
         if (res.ok) setInfrastructure(await res.json());
+        return;
       }
+
+      // Cloud mode: delete directly from Firestore
+      await deleteDoc(doc(db, 'infrastructure', id));
+      triggerToast('Elemento eliminado', 'success');
     } catch (err) {
+      console.error('Error deleting infrastructure:', err);
       alert('Error al eliminar elemento de infraestructura');
     }
   }
