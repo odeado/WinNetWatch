@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import './styles.css';
 import { db, auth } from './firebase.js';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
@@ -54,9 +54,31 @@ function Login({ onLogin }) {
       // 1. Try Firebase Authentication first
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const fbUser = userCredential.user;
+
+      // Look up role in Firestore
+      let userRole = 'Solo Lectura';
+      let fullName = 'Usuario Nube';
+      try {
+        const q = query(collection(db, 'app_users'), where('email', '==', fbUser.email.toLowerCase().trim()));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const userData = querySnapshot.docs[0].data();
+          userRole = userData.role_name || 'Solo Lectura';
+          fullName = userData.full_name || 'Usuario Nube';
+        } else {
+          // If not found in app_users, fallback based on email
+          if (fbUser.email.toLowerCase() === 'admin@local' || fbUser.email.toLowerCase().startsWith('admin')) {
+            userRole = 'Administrador';
+            fullName = 'Administrador Local';
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching user role from Firestore:', err);
+      }
+
       onLogin({
         token: await fbUser.getIdToken(),
-        user: { email: fbUser.email, role: 'Administrador', full_name: 'Administrador Local' }
+        user: { email: fbUser.email, role: userRole, full_name: fullName }
       });
     } catch (fbErr) {
       console.warn('Firebase Auth failed, falling back to local Postgres login:', fbErr);
@@ -177,6 +199,7 @@ function getSubnetLabelGlobal(subnet) {
 }
 
 function Dashboard({ token, user, theme, setTheme }) {
+  const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
   const [toasts, setToasts] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [employeeModal, setEmployeeModal] = useState(null);
@@ -1687,7 +1710,7 @@ function Dashboard({ token, user, theme, setTheme }) {
 
             {/* Desktop-only action buttons */}
             <div className="hidden md:flex items-center gap-2">
-              <IconButton title="Ejecutar escaneo" onClick={() => executeRemoteAction(null, 'scan')}><RefreshCw size={18} /></IconButton>
+              {isAdmin && <IconButton title="Ejecutar escaneo" onClick={() => executeRemoteAction(null, 'scan')}><RefreshCw size={18} /></IconButton>}
               <IconButton title="Exportar CSV" onClick={downloadDevicesCSV}><FileDown size={18} /></IconButton>
               <IconButton title="Tema" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</IconButton>
               <IconButton title="Cerrar Sesión" onClick={async () => {
@@ -2877,6 +2900,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           employees={employees}
           infrastructure={infrastructure}
           token={token}
+          user={user}
           onClose={() => setSelected(null)}
           onSaved={loadData}
           onConnectRdp={() => connectRdp(selected)}
@@ -2893,6 +2917,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           onClose={() => setActiveSwitchForPorts(null)}
           devices={devices}
           token={token}
+          user={user}
           useLocalApi={useLocalApi}
           onSaved={loadData}
           onOpenDeviceDrawer={(device) => {
@@ -3871,8 +3896,9 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
   );
 }
 
-function DeviceDrawer({ device, employees, infrastructure = [], token, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal }) {
+function DeviceDrawer({ device, employees, infrastructure = [], token, user, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal }) {
   const [form, setForm] = useState(device);
+  const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
 
   async function save() {
     try {
@@ -3970,41 +3996,47 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, onClose, 
             {form.image_url ? (
               <div className="relative w-32 h-20 rounded border border-zinc-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden flex-shrink-0">
                 <img src={form.image_url} alt="Equipo" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, image_url: '' })}
-                  className="absolute inset-0 bg-black/60 hover:bg-black/85 text-white flex items-center justify-center text-xs font-bold transition duration-150"
-                >
-                  Cambiar / Eliminar
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, image_url: '' })}
+                    className="absolute inset-0 bg-black/60 hover:bg-black/85 text-white flex items-center justify-center text-xs font-bold transition duration-150"
+                  >
+                    Cambiar / Eliminar
+                  </button>
+                )}
               </div>
             ) : (
               <div className="w-32 h-20 rounded bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-500">
                 <Laptop size={32} />
               </div>
             )}
-            <div className="flex-1 space-y-2">
-              <input
-                type="file"
-                accept="image/*"
-                className="text-xs text-zinc-600 dark:text-slate-400 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setForm({ ...form, image_url: reader.result });
-                  };
-                  reader.readAsDataURL(file);
-                }}
-              />
-              <input
-                className="input text-xs py-1"
-                placeholder="Pegar URL de foto..."
-                value={form.image_url || ''}
-                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              />
-            </div>
+            {!isAdmin ? (
+              <p className="text-xs text-zinc-400 dark:text-slate-500">Solo lectura. No tienes permisos para editar la foto.</p>
+            ) : (
+              <div className="flex-1 space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-xs text-zinc-600 dark:text-slate-400 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setForm({ ...form, image_url: reader.result });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                <input
+                  className="input text-xs py-1"
+                  placeholder="Pegar URL de foto..."
+                  value={form.image_url || ''}
+                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -4013,9 +4045,9 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, onClose, 
           <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-2">Acciones Remotas</h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={onConnectRdp}><Cable size={16} className="text-sky-500" /> RDP</button>
-            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={() => action('wake-on-lan')}><Play size={16} className="text-emerald-500" /> WOL</button>
-            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={() => action('restart')}><RefreshCw size={16} className="text-amber-500" /> Reinicio</button>
-            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={() => action('powershell')}><TerminalSquare size={16} className="text-indigo-500" /> Script</button>
+            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled={!isAdmin} onClick={() => action('wake-on-lan')}><Play size={16} className="text-emerald-500" /> WOL</button>
+            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled={!isAdmin} onClick={() => action('restart')}><RefreshCw size={16} className="text-amber-500" /> Reinicio</button>
+            <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled={!isAdmin} onClick={() => action('powershell')}><TerminalSquare size={16} className="text-indigo-500" /> Script</button>
           </div>
         </div>
 
@@ -4044,6 +4076,7 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, onClose, 
         })()}
 
         {/* General details */}
+        <fieldset disabled={!isAdmin} className="contents">
         <div className="mt-6">
           <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-200 dark:border-slate-800">Detalles de Asignación y Ubicación</h3>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -4198,11 +4231,12 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, onClose, 
           <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-2">Observaciones</h3>
           <textarea className="input min-h-24" value={form.notes || ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
         </label>
+        </fieldset>
 
         {/* Footer Actions */}
         <div className="mt-6 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 pt-4 pb-6">
           <button className="button secondary" onClick={onClose}>Cancelar</button>
-          <button className="button primary" onClick={save}>Guardar Cambios</button>
+          {isAdmin && <button className="button primary" onClick={save}>Guardar Cambios</button>}
         </div>
       </aside>
     </div>
@@ -4372,12 +4406,14 @@ function SwitchPortMapModal({
   onClose,
   devices,
   token,
+  user,
   useLocalApi,
   onSaved,
   onOpenDeviceDrawer
 }) {
   const [selectedPort, setSelectedPort] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
 
   // Find all devices connected to this switch
   const connectedDevices = useMemo(() => {
@@ -4560,7 +4596,7 @@ function SwitchPortMapModal({
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] absolute top-1 right-1"></span>
                           </>
                         ) : (
-                          <Plus size={10} className="text-zinc-600 dark:text-slate-700" />
+                          isAdmin ? <Plus size={10} className="text-zinc-600 dark:text-slate-700" /> : <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-slate-700 block mx-auto mt-0.5"></span>
                         )}
                       </div>
                     );
@@ -4649,68 +4685,78 @@ function SwitchPortMapModal({
                         >
                           Ver Ficha Completa
                         </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`¿Desconectar el equipo ${selectedDevice.hostname || selectedDevice.ip} de la Boca #${selectedPort}?`)) {
-                              unbindDevice(selectedDevice.id);
-                            }
-                          }}
-                          className="button py-2.5 text-xs font-bold text-red-500 border-red-200 dark:border-red-950/40 hover:border-red-500 hover:bg-red-500/5 justify-center w-full"
-                        >
-                          <Trash2 size={14} className="mr-1.5" /> Desconectar Puerto
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`¿Desconectar el equipo ${selectedDevice.hostname || selectedDevice.ip} de la Boca #${selectedPort}?`)) {
+                                unbindDevice(selectedDevice.id);
+                              }
+                            }}
+                            className="button py-2.5 text-xs font-bold text-red-500 border-red-200 dark:border-red-950/40 hover:border-red-500 hover:bg-red-500/5 justify-center w-full"
+                          >
+                            <Trash2 size={14} className="mr-1.5" /> Desconectar Puerto
+                          </button>
+                        )}
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-xs font-bold text-zinc-405 dark:text-slate-550 block mb-1">ASOCIAR EQUIPO A ESTE PUERTO</label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Buscar por hostname, IP o usuario..."
-                            className="input text-xs w-full pl-9 pr-4 py-2"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                          />
-                          <Search className="absolute left-3 top-2.5 text-zinc-450 dark:text-slate-550" size={14} />
-                        </div>
-                      </div>
-
-                      <div className="max-h-[35vh] overflow-y-auto border border-zinc-200 dark:border-slate-800 rounded-xl divide-y divide-zinc-150 dark:divide-slate-800/60 bg-zinc-50/20">
-                        {eligibleDevices.length > 0 ? (
-                          eligibleDevices.map(dev => (
-                            <div
-                              key={dev.id}
-                              onClick={() => assignDeviceToPort(dev.id)}
-                              className="p-3 text-left hover:bg-zinc-50 dark:hover:bg-slate-855/30 cursor-pointer transition-colors duration-155"
-                            >
-                              <div className="flex justify-between items-start">
-                                <span className="font-bold text-xs truncate max-w-[170px] text-zinc-950 dark:text-white" title={dev.hostname}>
-                                  {dev.hostname || 'Sin Hostname'}
-                                </span>
-                                <span className="font-mono text-[10px] text-zinc-500 dark:text-slate-400">{dev.ip}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-[10px] text-zinc-450 dark:text-slate-500 mt-1">
-                                <span>{dev.responsible_user || 'Sin responsable'}</span>
-                                {dev.switch_id && (
-                                  <span className="text-[9px] bg-amber-500/10 text-amber-500 rounded px-1 font-semibold">
-                                    Reubicar (Boca #{dev.switch_port})
-                                  </span>
-                                )}
-                              </div>
+                      {isAdmin ? (
+                        <>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-405 dark:text-slate-555 block mb-1">ASOCIAR EQUIPO A ESTE PUERTO</label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="Buscar por hostname, IP o usuario..."
+                                className="input text-xs w-full pl-9 pr-4 py-2"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                              />
+                              <Search className="absolute left-3 top-2.5 text-zinc-455 dark:text-slate-550" size={14} />
                             </div>
-                          ))
-                        ) : searchQuery.trim() ? (
-                          <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-400">
-                            No se encontraron equipos coincidentes.
                           </div>
-                        ) : (
-                          <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-500">
-                            Ingresa un término de búsqueda para ver equipos disponibles en la red.
+
+                          <div className="max-h-[35vh] overflow-y-auto border border-zinc-200 dark:border-slate-800 rounded-xl divide-y divide-zinc-150 dark:divide-slate-800/60 bg-zinc-50/20">
+                            {eligibleDevices.length > 0 ? (
+                              eligibleDevices.map(dev => (
+                                <div
+                                  key={dev.id}
+                                  onClick={() => assignDeviceToPort(dev.id)}
+                                  className="p-3 text-left hover:bg-zinc-50 dark:hover:bg-slate-855/30 cursor-pointer transition-colors duration-155"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <span className="font-bold text-xs truncate max-w-[170px] text-zinc-950 dark:text-white" title={dev.hostname}>
+                                      {dev.hostname || 'Sin Hostname'}
+                                    </span>
+                                    <span className="font-mono text-[10px] text-zinc-500 dark:text-slate-400">{dev.ip}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-[10px] text-zinc-450 dark:text-slate-550 mt-1">
+                                    <span>{dev.responsible_user || 'Sin responsable'}</span>
+                                    {dev.switch_id && (
+                                      <span className="text-[9px] bg-amber-500/10 text-amber-500 rounded px-1 font-semibold">
+                                        Reubicar (Boca #{dev.switch_port})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))
+                            ) : searchQuery.trim() ? (
+                              <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-400">
+                                No se encontraron equipos coincidentes.
+                              </div>
+                            ) : (
+                              <div className="p-4 text-center text-xs text-zinc-555 dark:text-slate-400">
+                                Ingresa un término de búsqueda para ver equipos disponibles en la red.
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </>
+                      ) : (
+                        <div className="p-4 text-center text-xs text-zinc-550 dark:text-slate-400 font-medium">
+                          Modo de solo lectura. No tienes permisos para asociar equipos a este puerto.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
