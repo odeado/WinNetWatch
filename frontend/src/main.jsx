@@ -2104,9 +2104,9 @@ function Dashboard({ token, user, theme, setTheme }) {
                                 </td>
                                 <td className="py-3 px-4 text-zinc-550 dark:text-slate-350 font-mono">{dev.ip}</td>
                                 <td className="py-3 px-4 text-zinc-500 dark:text-slate-400 font-mono text-xs">{dev.mac || '—'}</td>
-                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium">{dev.os || '—'}</td>
-                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium">{dev.office || '—'}</td>
-                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium">{dev.antivirus || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[150px] truncate" title={dev.os || '—'}>{dev.os || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[180px] truncate" title={dev.office || '—'}>{dev.office || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[150px] truncate" title={dev.antivirus || '—'}>{dev.antivirus || '—'}</td>
                                 <td className="py-3 px-4">
                                   <span className="rounded bg-slate-100 dark:bg-slate-800 text-zinc-700 dark:text-slate-300 px-2 py-0.5 text-xs font-semibold">
                                     {dev.device_type || 'PC'}
