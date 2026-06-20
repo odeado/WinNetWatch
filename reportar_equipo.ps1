@@ -16,13 +16,20 @@ Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. Obtener la direccion IP local activa (excluyendo loopback y virtual switches de Docker/Hyper-V)
-$ipAddresses = Get-NetIPAddress -AddressFamily IPv4 | 
+$ipAddresses = @(Get-NetIPAddress -AddressFamily IPv4 | 
     Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" -and $_.InterfaceAlias -notlike "*vEthernet*" -and $_.InterfaceAlias -notlike "*Loopback*" } |
-    Sort-Object IPAddress
+    Sort-Object IPAddress)
+
+if ($ipAddresses.Count -eq 0) {
+    # Si los filtros iniciales excluyeron todo, hacemos un fallback menos restrictivo
+    $ipAddresses = @(Get-NetIPAddress -AddressFamily IPv4 | 
+        Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } |
+        Sort-Object IPAddress)
+}
 
 $ip = $null
 if ($ipAddresses.Count -eq 1) {
-    $ip = $ipAddresses.IPAddress
+    $ip = $ipAddresses[0].IPAddress
 } elseif ($ipAddresses.Count -gt 1) {
     # Preferir IPs del segmento 172.30.* o similar si existe
     $vpnIp = $ipAddresses | Where-Object { $_.IPAddress -like "172.30.*" } | Select-Object -First 1
