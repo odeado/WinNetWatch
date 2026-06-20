@@ -36,6 +36,110 @@ router.post('/auth/login', async (req, res, next) => {
   }
 });
 
+// Public Endpoint for client-side hardware inventory reporting agents
+router.post('/devices/agent-report', async (req, res, next) => {
+  try {
+    const {
+      hostname, ip, mac, os, brand, model, serial_number,
+      cpu, ram, storage, gpu, motherboard, office, antivirus
+    } = req.body;
+
+    if (!ip) {
+      return res.status(400).json({ error: 'La direccion IP es obligatoria' });
+    }
+
+    // Calculate subnet
+    const ipParts = ip.split('.');
+    const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'unknown';
+
+    // Find if device already exists by IP
+    const existing = (await query('SELECT * FROM devices WHERE ip = $1', [ip])).rows[0];
+
+    let device;
+    if (existing) {
+      // Update existing device with client agent specs
+      device = (await query(
+        `UPDATE devices
+         SET hostname = COALESCE($1, hostname),
+             mac = COALESCE($2, mac),
+             os = COALESCE($3, os),
+             brand = COALESCE($4, brand),
+             model = COALESCE($5, model),
+             serial_number = COALESCE($6, serial_number),
+             cpu = COALESCE($7, cpu),
+             ram = COALESCE($8, ram),
+             storage = COALESCE($9, storage),
+             gpu = COALESCE($10, gpu),
+             motherboard = COALESCE($11, motherboard),
+             office = COALESCE($12, office),
+             antivirus = COALESCE($13, antivirus),
+             status = 'online',
+             last_seen = now(),
+             updated_at = now()
+         WHERE id = $14
+         RETURNING *`,
+        [
+          hostname || null,
+          mac || null,
+          os || null,
+          brand || null,
+          model || null,
+          serial_number || null,
+          cpu || null,
+          ram || null,
+          storage || null,
+          gpu || null,
+          motherboard || null,
+          office || null,
+          antivirus || null,
+          existing.id
+        ]
+      )).rows[0];
+      console.log(`[AgentReport] Se actualizaron los datos del equipo ${ip} (${hostname})`);
+    } else {
+      // Insert new device
+      device = (await query(
+        `INSERT INTO devices(
+          hostname, ip, mac, os, status, subnet,
+          brand, model, serial_number, cpu, ram, storage, gpu, motherboard,
+          office, antivirus, last_seen
+        ) VALUES (
+          $1, $2, $3, $4, 'online', $5,
+          $6, $7, $8, $9, $10, $11, $12, $13,
+          $14, $15, now()
+        ) RETURNING *`,
+        [
+          hostname || null,
+          ip,
+          mac || null,
+          os || null,
+          subnet,
+          brand || null,
+          model || null,
+          serial_number || null,
+          cpu || null,
+          ram || null,
+          storage || null,
+          gpu || null,
+          motherboard || null,
+          office || null,
+          antivirus || null
+        ]
+      )).rows[0];
+      console.log(`[AgentReport] Se creo un nuevo equipo a partir del reporte: ${ip} (${hostname})`);
+    }
+
+    // Sync to Firebase/Firestore
+    if (device) {
+      await pushDeviceToFirebase(device);
+    }
+
+    res.json({ ok: true, message: 'Reporte procesado correctamente' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.use(requireAuth);
 
 router.get('/dashboard/summary', async (_req, res, next) => {
