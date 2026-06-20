@@ -141,6 +141,13 @@ async function runMigrations() {
       )
     `);
 
+    // 8. Add switch_id and switch_port columns to devices table
+    await query(`
+      ALTER TABLE devices
+      ADD COLUMN IF NOT EXISTS switch_id UUID REFERENCES network_infrastructure(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS switch_port INTEGER
+    `);
+
     // Seed default mappings if empty
     const { rows: mappingCount } = await query('SELECT count(*)::int FROM subnet_mappings');
     if (mappingCount[0].count === 0) {

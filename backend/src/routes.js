@@ -274,11 +274,46 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
       }
     }
 
+    // Normalize switch_id and switch_port
+    if (Object.hasOwn(req.body, 'switch_id')) {
+      if (!req.body.switch_id || req.body.switch_id === 'null' || req.body.switch_id === '') {
+        req.body.switch_id = null;
+        req.body.switch_port = null;
+      }
+    }
+    if (Object.hasOwn(req.body, 'switch_port')) {
+      if (req.body.switch_port === 'null' || req.body.switch_port === '') {
+        req.body.switch_port = null;
+      } else if (req.body.switch_port !== null) {
+        req.body.switch_port = Number(req.body.switch_port);
+      }
+    }
+
+    // Handle port reassignment (unbind any other device from the target switch port)
+    const targetSwitchId = req.body.switch_id;
+    const targetSwitchPort = req.body.switch_port;
+    if (targetSwitchId !== undefined && targetSwitchPort !== undefined && targetSwitchId !== null && targetSwitchPort !== null) {
+      const otherDevices = (await query(
+        'SELECT id FROM devices WHERE switch_id = $1 AND switch_port = $2 AND id != $3',
+        [targetSwitchId, targetSwitchPort, req.params.id]
+      )).rows;
+
+      for (const other of otherDevices) {
+        const { rows: updatedRows } = await query(
+          'UPDATE devices SET switch_id = NULL, switch_port = NULL, updated_at = now() WHERE id = $1 RETURNING *',
+          [other.id]
+        );
+        if (updatedRows[0]) {
+          await pushDeviceToFirebase(updatedRows[0]);
+        }
+      }
+    }
+
     const allowed = [
       'hostname', 'os', 'city', 'branch', 'department', 'responsible_user', 'job_title', 'phone', 'email',
       'notes', 'brand', 'model', 'serial_number', 'acquired_at', 'warranty_until', 'asset_status',
       'critical', 'managed', 'tags', 'employee_id', 'cpu', 'ram', 'storage', 'gpu', 'motherboard',
-      'image_url', 'device_type', 'location', 'office', 'antivirus', 'authorized_systems'
+      'image_url', 'device_type', 'location', 'office', 'antivirus', 'authorized_systems', 'switch_id', 'switch_port'
     ];
     const fields = [];
     const values = [req.params.id];

@@ -213,6 +213,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [infrastructure, setInfrastructure] = useState([]);
   const [infraModal, setInfraModal] = useState(null);
   const [infraFilter, setInfraFilter] = useState('');
+  const [activeSwitchForPorts, setActiveSwitchForPorts] = useState(null);
 
   const prevDevicesRef = useRef({});
 
@@ -2668,6 +2669,14 @@ function Dashboard({ token, user, theme, setTheme }) {
                               </td>
                               <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-end gap-2">
+                                  {item.type === 'Switch' && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setActiveSwitchForPorts(item); }}
+                                      className="button primary py-1 px-2.5 text-xs flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 border-0"
+                                    >
+                                      <Network size={12} /> Puertos
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => setInfraModal({ mode: 'edit', form: item })}
                                     className="button secondary py-1 px-2.5 text-xs hover:border-emerald-500"
@@ -2866,6 +2875,7 @@ function Dashboard({ token, user, theme, setTheme }) {
         <DeviceDrawer
           device={selected}
           employees={employees}
+          infrastructure={infrastructure}
           token={token}
           onClose={() => setSelected(null)}
           onSaved={loadData}
@@ -2874,6 +2884,20 @@ function Dashboard({ token, user, theme, setTheme }) {
           existingDepartments={existingDepartments}
           useLocalApi={useLocalApi}
           setEmployeeModal={setEmployeeModal}
+        />
+      )}
+
+      {activeSwitchForPorts && (
+        <SwitchPortMapModal
+          activeSwitch={activeSwitchForPorts}
+          onClose={() => setActiveSwitchForPorts(null)}
+          devices={devices}
+          token={token}
+          useLocalApi={useLocalApi}
+          onSaved={loadData}
+          onOpenDeviceDrawer={(device) => {
+            setSelected(device);
+          }}
         />
       )}
 
@@ -3847,7 +3871,7 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
   );
 }
 
-function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal }) {
+function DeviceDrawer({ device, employees, infrastructure = [], token, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal }) {
   const [form, setForm] = useState(device);
 
   async function save() {
@@ -3994,6 +4018,30 @@ function DeviceDrawer({ device, employees, token, onClose, onSaved, onConnectRdp
             <button className="button hover:bg-zinc-50 dark:hover:bg-slate-800" onClick={() => action('powershell')}><TerminalSquare size={16} className="text-indigo-500" /> Script</button>
           </div>
         </div>
+
+        {/* Physical network connection info */}
+        {(() => {
+          const matchedSwitch = form.switch_id ? infrastructure.find(i => i.id === form.switch_id) : null;
+          if (!matchedSwitch) return null;
+          return (
+            <div className="mt-5 bg-emerald-55/40 dark:bg-emerald-950/10 p-4 rounded-xl border border-emerald-250 dark:border-emerald-900/35 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                  <Network size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-zinc-450 dark:text-slate-500 uppercase tracking-wider">Conexión de Red Física</h4>
+                  <p className="text-sm font-extrabold text-zinc-950 dark:text-white mt-0.5">
+                    Switch: {matchedSwitch.brand} {matchedSwitch.model}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-slate-400 mt-0.5 font-medium">
+                    Ubicación: {matchedSwitch.location} · Puerto: <strong className="text-emerald-600 dark:text-emerald-400">#{form.switch_port}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* General details */}
         <div className="mt-6">
@@ -4317,6 +4365,380 @@ function buildChart(events) {
     'Desconexiones': counts.offline,
     'Otros': counts.otros
   }));
+}
+
+function SwitchPortMapModal({
+  activeSwitch,
+  onClose,
+  devices,
+  token,
+  useLocalApi,
+  onSaved,
+  onOpenDeviceDrawer
+}) {
+  const [selectedPort, setSelectedPort] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Find all devices connected to this switch
+  const connectedDevices = useMemo(() => {
+    return devices.filter(d => d.switch_id === activeSwitch.id);
+  }, [devices, activeSwitch.id]);
+
+  // Map of port number -> device
+  const portDeviceMap = useMemo(() => {
+    const map = {};
+    for (const d of connectedDevices) {
+      if (d.switch_port) {
+        map[d.switch_port] = d;
+      }
+    }
+    return map;
+  }, [connectedDevices]);
+
+  // Total ports count
+  const portsCount = activeSwitch.ports_count || 24;
+
+  // Search filtered devices that are eligible for binding
+  const eligibleDevices = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return devices.filter(d => {
+      if (d.switch_id === activeSwitch.id && d.switch_port === selectedPort) return false;
+      
+      const hostname = (d.hostname || '').toLowerCase();
+      const ip = (d.ip || '').toLowerCase();
+      const responsible = (d.responsible_user || '').toLowerCase();
+      const location = (d.location || '').toLowerCase();
+      
+      return hostname.includes(query) || ip.includes(query) || responsible.includes(query) || location.includes(query);
+    });
+  }, [devices, searchQuery, activeSwitch.id, selectedPort]);
+
+  async function assignDeviceToPort(deviceId) {
+    if (!selectedPort) return;
+    try {
+      if (useLocalApi) {
+        const res = await fetch(`${API_URL}/api/devices/${deviceId}`, {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            switch_id: activeSwitch.id,
+            switch_port: selectedPort
+          })
+        });
+        if (!res.ok) throw new Error('Error al actualizar el puerto en la API local.');
+      } else {
+        const previousOccupant = devices.find(d => d.switch_id === activeSwitch.id && d.switch_port === selectedPort);
+        if (previousOccupant && previousOccupant.id !== deviceId) {
+          await setDoc(doc(db, 'devices', previousOccupant.id), {
+            ...previousOccupant,
+            switch_id: null,
+            switch_port: null
+          });
+        }
+        const deviceToUpdate = devices.find(d => d.id === deviceId);
+        if (deviceToUpdate) {
+          await setDoc(doc(db, 'devices', deviceId), {
+            ...deviceToUpdate,
+            switch_id: activeSwitch.id,
+            switch_port: selectedPort
+          });
+        }
+      }
+      setSearchQuery('');
+      await onSaved();
+    } catch (err) {
+      console.error(err);
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function unbindDevice(deviceId) {
+    try {
+      if (useLocalApi) {
+        const res = await fetch(`${API_URL}/api/devices/${deviceId}`, {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            switch_id: null,
+            switch_port: null
+          })
+        });
+        if (!res.ok) throw new Error('Error al remover el puerto en la API local.');
+      } else {
+        const dev = devices.find(d => d.id === deviceId);
+        if (dev) {
+          await setDoc(doc(db, 'devices', deviceId), {
+            ...dev,
+            switch_id: null,
+            switch_port: null
+          });
+        }
+      }
+      await onSaved();
+    } catch (err) {
+      console.error(err);
+      alert('Error: ' + err.message);
+    }
+  }
+
+  const occupiedCount = Object.keys(portDeviceMap).length;
+  const freeCount = portsCount - occupiedCount;
+  const occupiedPct = Math.round((occupiedCount / portsCount) * 100) || 0;
+  const selectedDevice = selectedPort ? portDeviceMap[selectedPort] : null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 border border-zinc-200 dark:border-slate-800 shadow-2xl rounded-2xl max-w-5xl w-full h-[85vh] flex flex-col overflow-hidden text-zinc-950 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-zinc-200 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/50 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+              <Network className="text-emerald-500" size={22} />
+              Mapa de Puertos: {activeSwitch.brand} {activeSwitch.model}
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-slate-400 mt-0.5">
+              Ubicación: <strong>{activeSwitch.location}</strong> · N° Serie: <strong>{activeSwitch.serial_number || '—'}</strong> · Capacidad: <strong>{portsCount} puertos</strong>
+            </p>
+          </div>
+          <button className="text-2xl text-zinc-400 hover:text-zinc-650 dark:hover:text-slate-200 font-bold" onClick={onClose}>×</button>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden min-h-0">
+          
+          {/* Left Panel: Port Grid representing physical switch */}
+          <div className="flex-1 p-6 overflow-y-auto bg-zinc-100 dark:bg-slate-950/40 border-r border-zinc-250 dark:border-slate-800 flex flex-col gap-6 justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold uppercase text-zinc-450 dark:text-slate-500 tracking-wider">VISTA FRONTAL DEL SWITCH</span>
+                <div className="flex items-center gap-4 text-xs font-semibold">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"></span> Ocupado</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border border-dashed border-zinc-400 dark:border-slate-600"></span> Libre</span>
+                </div>
+              </div>
+
+              {/* The "Switch Bezel" */}
+              <div className="bg-zinc-800 dark:bg-slate-900 border-4 border-zinc-700 dark:border-slate-850 p-4 rounded-xl shadow-inner max-w-4xl mx-auto">
+                <div className="flex justify-between items-center text-[10px] text-zinc-400 font-mono mb-3">
+                  <span>{activeSwitch.brand.toUpperCase()} NETWORKING SYSTEM</span>
+                  <span className="flex items-center gap-1">
+                    SYS OK <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-3.5">
+                  {Array.from({ length: portsCount }, (_, i) => {
+                    const portNum = i + 1;
+                    const dev = portDeviceMap[portNum];
+                    const isSelected = selectedPort === portNum;
+                    return (
+                      <div
+                        key={portNum}
+                        onClick={() => setSelectedPort(portNum)}
+                        className={`relative aspect-square rounded border-2 flex flex-col items-center justify-center transition-all duration-150 ${
+                          dev
+                            ? 'border-emerald-500 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
+                            : 'border-zinc-650 dark:border-slate-800 border-dashed text-zinc-400 dark:text-slate-650 bg-zinc-900/30'
+                        } ${
+                          isSelected
+                            ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-zinc-800 border-sky-500 scale-[1.08] z-10'
+                            : 'hover:border-zinc-500 dark:hover:border-slate-600 hover:scale-105'
+                        } cursor-pointer`}
+                      >
+                        <span className="text-[10px] font-bold font-mono leading-none mb-1 text-zinc-450 dark:text-slate-500">{portNum}</span>
+                        {dev ? (
+                          <>
+                            <Cable size={14} className="text-emerald-500" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] absolute top-1 right-1"></span>
+                          </>
+                        ) : (
+                          <Plus size={10} className="text-zinc-600 dark:text-slate-700" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 border-t border-zinc-200 dark:border-slate-800 pt-4 text-center">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-slate-500 block">Capacidad</span>
+                <span className="text-lg font-extrabold">{portsCount} bocas</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-slate-500 block">Ocupados</span>
+                <span className="text-lg font-extrabold text-emerald-500">{occupiedCount} ({occupiedPct}%)</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-slate-500 block">Disponibles</span>
+                <span className="text-lg font-extrabold text-zinc-500 dark:text-slate-400">{freeCount}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel: Selected Port Details & Search */}
+          <div className="w-[380px] flex-shrink-0 p-6 overflow-y-auto bg-white dark:bg-slate-900 border-l border-zinc-200 dark:border-slate-800 flex flex-col min-h-0">
+            {selectedPort ? (
+              <div className="flex-1 flex flex-col justify-between min-h-0">
+                <div className="space-y-5">
+                  <div className="bg-zinc-50 dark:bg-slate-950/40 p-4 rounded-xl border border-zinc-200 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-zinc-450 dark:text-slate-500">Puerto seleccionado</span>
+                      <h4 className="text-xl font-black text-zinc-900 dark:text-white">BOCA #{selectedPort}</h4>
+                    </div>
+                    <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${
+                      selectedDevice
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        : 'bg-zinc-100 text-zinc-650 dark:bg-slate-800 dark:text-slate-400'
+                    }`}>
+                      {selectedDevice ? 'Ocupado' : 'Disponible'}
+                    </span>
+                  </div>
+
+                  {selectedDevice ? (
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-zinc-250 dark:border-slate-800 p-4 space-y-3.5 bg-zinc-50/50 dark:bg-slate-950/20">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                            <Laptop size={20} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="font-extrabold text-sm text-zinc-950 dark:text-white truncate">
+                              {selectedDevice.hostname || 'Sin Hostname'}
+                            </h5>
+                            <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">{selectedDevice.ip}</p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-zinc-200 dark:border-slate-850 pt-3 space-y-2.5 text-xs">
+                          {selectedDevice.responsible_user && (
+                            <p className="flex justify-between">
+                              <span className="text-zinc-455 dark:text-slate-500">Responsable:</span>
+                              <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.responsible_user}</span>
+                            </p>
+                          )}
+                          <p className="flex justify-between">
+                            <span className="text-zinc-455 dark:text-slate-500">Ubicación física:</span>
+                            <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.location || '—'}</span>
+                          </p>
+                          <p className="flex justify-between">
+                            <span className="text-zinc-455 dark:text-slate-500">Sistema Operativo:</span>
+                            <span className="font-mono text-zinc-800 dark:text-slate-200 truncate max-w-[180px]" title={selectedDevice.os}>
+                              {selectedDevice.os || '—'}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 pt-2">
+                        <button
+                          onClick={() => {
+                            onOpenDeviceDrawer(selectedDevice);
+                            onClose();
+                          }}
+                          className="button secondary py-2.5 text-xs font-bold w-full justify-center"
+                        >
+                          Ver Ficha Completa
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`¿Desconectar el equipo ${selectedDevice.hostname || selectedDevice.ip} de la Boca #${selectedPort}?`)) {
+                              unbindDevice(selectedDevice.id);
+                            }
+                          }}
+                          className="button py-2.5 text-xs font-bold text-red-500 border-red-200 dark:border-red-950/40 hover:border-red-500 hover:bg-red-500/5 justify-center w-full"
+                        >
+                          <Trash2 size={14} className="mr-1.5" /> Desconectar Puerto
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold text-zinc-405 dark:text-slate-550 block mb-1">ASOCIAR EQUIPO A ESTE PUERTO</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Buscar por hostname, IP o usuario..."
+                            className="input text-xs w-full pl-9 pr-4 py-2"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                          <Search className="absolute left-3 top-2.5 text-zinc-450 dark:text-slate-550" size={14} />
+                        </div>
+                      </div>
+
+                      <div className="max-h-[35vh] overflow-y-auto border border-zinc-200 dark:border-slate-800 rounded-xl divide-y divide-zinc-150 dark:divide-slate-800/60 bg-zinc-50/20">
+                        {eligibleDevices.length > 0 ? (
+                          eligibleDevices.map(dev => (
+                            <div
+                              key={dev.id}
+                              onClick={() => assignDeviceToPort(dev.id)}
+                              className="p-3 text-left hover:bg-zinc-50 dark:hover:bg-slate-855/30 cursor-pointer transition-colors duration-155"
+                            >
+                              <div className="flex justify-between items-start">
+                                <span className="font-bold text-xs truncate max-w-[170px] text-zinc-950 dark:text-white" title={dev.hostname}>
+                                  {dev.hostname || 'Sin Hostname'}
+                                </span>
+                                <span className="font-mono text-[10px] text-zinc-500 dark:text-slate-400">{dev.ip}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-[10px] text-zinc-450 dark:text-slate-500 mt-1">
+                                <span>{dev.responsible_user || 'Sin responsable'}</span>
+                                {dev.switch_id && (
+                                  <span className="text-[9px] bg-amber-500/10 text-amber-500 rounded px-1 font-semibold">
+                                    Reubicar (Boca #{dev.switch_port})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : searchQuery.trim() ? (
+                          <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-400">
+                            No se encontraron equipos coincidentes.
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-500">
+                            Ingresa un término de búsqueda para ver equipos disponibles en la red.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-zinc-400 dark:text-slate-550 mt-4 leading-normal bg-zinc-50 dark:bg-slate-950/20 p-3 rounded-lg border border-zinc-200/50 dark:border-slate-850">
+                  <span className="font-bold text-zinc-500 dark:text-slate-450 block mb-0.5">💡 Consejo NetWatch</span>
+                  Si el equipo ya estaba conectado a otro switch o puerto, se desvinculará de su puerto anterior de manera automática al asignarlo aquí.
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col justify-center items-center text-center p-6 space-y-4">
+                <div className="p-4 rounded-full bg-zinc-100 dark:bg-slate-800 text-zinc-455 dark:text-slate-500">
+                  <Info size={36} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-200 font-sans">Ningún Puerto Seleccionado</h4>
+                  <p className="text-xs text-zinc-555 dark:text-slate-400 max-w-xs mt-1 leading-relaxed">
+                    Haz clic sobre cualquier boca del switch a la izquierda para inspeccionar sus detalles, desvincular el equipo o buscar uno nuevo para asignarle.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
 }
 
 createRoot(document.getElementById('root')).render(<App />);

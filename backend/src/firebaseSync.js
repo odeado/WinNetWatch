@@ -126,11 +126,11 @@ async function syncDeviceFromFirestore(fsData) {
         `INSERT INTO devices (
           id, hostname, ip, mac, os, status, rdp_available, latency_ms, subnet, city, branch, department,
           responsible_user, phone, email, notes, brand, model, serial_number, critical, managed, employee_id,
-          cpu, ram, storage, gpu, motherboard, image_url, device_type, location, office, antivirus
+          cpu, ram, storage, gpu, motherboard, image_url, device_type, location, office, antivirus, switch_id, switch_port
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
           $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
-          $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
+          $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
         )`,
         [
           fsData.id,
@@ -164,7 +164,9 @@ async function syncDeviceFromFirestore(fsData) {
           fsData.device_type || 'PC',
           fsData.location || 'Matta',
           fsData.office || null,
-          fsData.antivirus || null
+          fsData.antivirus || null,
+          fsData.switch_id || null,
+          fsData.switch_port || null
         ]
       );
       console.log(`[FirebaseSync] Equipo creado desde la nube: ${fsData.hostname || fsData.ip}`);
@@ -200,7 +202,9 @@ async function syncDeviceFromFirestore(fsData) {
         local.device_type !== (fsData.device_type || 'PC') ||
         local.location !== (fsData.location || 'Matta') ||
         local.office !== (fsData.office || null) ||
-        local.antivirus !== (fsData.antivirus || null);
+        local.antivirus !== (fsData.antivirus || null) ||
+        local.switch_id !== (fsData.switch_id || null) ||
+        local.switch_port !== (fsData.switch_port || null);
 
       if (diff) {
         await query(
@@ -209,7 +213,8 @@ async function syncDeviceFromFirestore(fsData) {
                subnet = $9, city = $10, branch = $11, department = $12, responsible_user = $13, phone = $14,
                email = $15, notes = $16, brand = $17, model = $18, serial_number = $19, critical = $20,
                managed = $21, employee_id = $22, cpu = $23, ram = $24, storage = $25, gpu = $26,
-               motherboard = $27, image_url = $28, device_type = $29, location = $30, office = $31, antivirus = $32, updated_at = now()
+               motherboard = $27, image_url = $28, device_type = $29, location = $30, office = $31, antivirus = $32,
+               switch_id = $33, switch_port = $34, updated_at = now()
            WHERE id = $1`,
           [
             fsData.id,
@@ -243,7 +248,9 @@ async function syncDeviceFromFirestore(fsData) {
             fsData.device_type || 'PC',
             fsData.location || 'Matta',
             fsData.office || null,
-            fsData.antivirus || null
+            fsData.antivirus || null,
+            fsData.switch_id || null,
+            fsData.switch_port || null
           ]
         );
         console.log(`[FirebaseSync] Equipo actualizado desde la nube: ${fsData.hostname || fsData.ip}`);
@@ -474,7 +481,9 @@ export async function pushDeviceToFirebase(device) {
       location: device.location || 'Matta',
       last_seen: device.last_seen ? new Date(device.last_seen).toISOString() : new Date().toISOString(),
       office: device.office || '',
-      antivirus: device.antivirus || ''
+      antivirus: device.antivirus || '',
+      switch_id: device.switch_id || null,
+      switch_port: device.switch_port || null
     });
   } catch (err) {
     console.error('[FirebaseSync] Error al subir equipo a Firebase:', err);
