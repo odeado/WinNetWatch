@@ -146,13 +146,17 @@ try {
     Write-Host "[x] Error de conexion con el servidor. Verifica que la URL sea correcta y el backend este en ejecucion." -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host ""
-    Write-Host "[!] Como la red bloqueo la conexion directa, se ha guardado el archivo 'Ficha_Equipo.json' en esta misma carpeta." -ForegroundColor Yellow
+    
+    $safeIp = $ip.Replace('.', '_')
+    $fileName = "Ficha_$($hostname)_$safeIp.json"
+    
+    Write-Host "[!] Como la red bloqueo la conexion directa, se ha guardado el archivo '$fileName' en esta misma carpeta." -ForegroundColor Yellow
     Write-Host "[i] Puedes transferir este archivo a tu equipo de casa y cargarlo con el siguiente comando en PowerShell:" -ForegroundColor Cyan
-    Write-Host "    Invoke-RestMethod -Uri http://localhost:8080/api/devices/agent-report -Method Post -InFile .\Ficha_Equipo.json -ContentType 'application/json'" -ForegroundColor Gray
+    Write-Host "    Invoke-RestMethod -Uri http://localhost:8080/api/devices/agent-report -Method Post -InFile .\$fileName -ContentType 'application/json'" -ForegroundColor Gray
     
     try {
-        $payload | Out-File -FilePath ".\Ficha_Equipo.json" -Encoding utf8 -Force
-        Write-Host "[+] Archivo guardado correctamente como: .\Ficha_Equipo.json" -ForegroundColor Green
+        $payload | Out-File -FilePath ".\$fileName" -Encoding utf8 -Force
+        Write-Host "[+] Archivo guardado correctamente como: .\$fileName" -ForegroundColor Green
     } catch {
         Write-Host "[x] No se pudo escribir el archivo local: $_" -ForegroundColor Red
     }
