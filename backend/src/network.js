@@ -1,10 +1,11 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
-import { execFile } from 'node:child_process';
+import { execFile, exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config } from './config.js';
 
 const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 export function expandCidr(cidr) {
   const [base, maskText] = cidr.split('/');
@@ -69,22 +70,78 @@ export function checkPort(ip, port = 3389, timeout = config.rdpTimeoutMs) {
 }
 
 export async function resolveHostname(ip) {
+  // 1. Try DNS reverse first
   try {
     const names = await dns.reverse(ip);
-    return names[0] || null;
-  } catch {
-    return null;
+    if (names && names[0]) {
+      return names[0].split('.')[0].trim();
+    }
+  } catch {}
+
+  // 2. Try NetBIOS node status query (Windows host status on UDP port 137)
+  if (process.platform === 'win32') {
+    try {
+      const { stdout } = await execAsync(`nbtstat -A ${ip}`, { timeout: 2500 });
+      const lines = stdout.split('\n');
+      for (let line of lines) {
+        line = line.trim();
+        const match = line.match(/^([A-Za-z0-9\-]+)\s+<[0-9A-Fa-f]{2}>\s+UNIQUE/i);
+        if (match) {
+          const possibleName = match[1].trim();
+          if (possibleName && possibleName !== 'IS~' && !possibleName.startsWith('__MSBROWSE__')) {
+            return possibleName;
+          }
+        }
+      }
+    } catch {}
   }
+
+  // 3. Try ping -a reverse name lookup (native Windows DNS/LLMNR resolver helper)
+  try {
+    const cmd = process.platform === 'win32' ? `ping -a -n 1 -w 1000 ${ip}` : `ping -c 1 -W 1 ${ip}`;
+    const { stdout } = await execAsync(cmd, { timeout: 3000 });
+    const regex = process.platform === 'win32'
+      ? /(?:Pinging|Haciendo ping a)\s+([A-Za-z0-9\-\.]+)\s+\[/i
+      : /from\s+([A-Za-z0-9\-\.]+)\s+\(/i;
+    const match = stdout.match(regex);
+    if (match && match[1]) {
+      return match[1].split('.')[0].trim();
+    }
+  } catch {}
+
+  return null;
 }
 
 export async function lookupMac(ip) {
+  // 1. Try standard system ARP table lookup first
   try {
     const { stdout } = await execFileAsync(process.platform === 'win32' ? 'arp' : 'ip', process.platform === 'win32' ? ['-a', ip] : ['neigh', 'show', ip], { timeout: 1000 });
     const match = stdout.match(/([0-9a-f]{2}[:-]){5}[0-9a-f]{2}/i);
-    return match?.[0]?.toUpperCase() || null;
-  } catch {
-    return null;
+    if (match?.[0]) {
+      return match[0].toUpperCase().replace(/-/g, ':');
+    }
+  } catch {}
+
+  // 2. Fallback to NetBIOS status table if platform is Windows (nbtstat output prints the target MAC)
+  if (process.platform === 'win32') {
+    try {
+      const { stdout } = await execAsync(`nbtstat -A ${ip}`, { timeout: 2000 });
+      const lines = stdout.split('\n');
+      for (let line of lines) {
+        line = line.trim();
+        if (line.toLowerCase().includes('mac address') || line.toLowerCase().includes('dirección mac') || line.toLowerCase().includes('direccion mac')) {
+          const parts = line.split('=');
+          if (parts[1]) {
+            const cleanMac = parts[1].trim().replace(/-/g, ':').toUpperCase();
+            const match = cleanMac.match(/([0-9A-F]{2}:){5}[0-9A-F]{2}/i);
+            if (match?.[0]) return match[0];
+          }
+        }
+      }
+    } catch {}
   }
+
+  return null;
 }
 
 export async function probeWindowsHost(ip) {
