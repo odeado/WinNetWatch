@@ -14,10 +14,23 @@ import { db, auth } from './firebase.js';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
-const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-  ? import.meta.env.VITE_API_URL
-  : `${window.location.protocol}//${window.location.hostname}:8080`;
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
+let API_URL = localStorage.getItem('custom_api_url') || (
+  import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
+    ? import.meta.env.VITE_API_URL
+    : `${window.location.protocol}//${window.location.hostname}:8080`
+);
+
+function getWsUrl(apiUrl) {
+  try {
+    const url = new URL(apiUrl);
+    const wsProto = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProto}//${url.host}/ws`;
+  } catch (e) {
+    return 'ws://localhost:8080/ws';
+  }
+}
+
+let WS_URL = getWsUrl(API_URL);
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
@@ -45,10 +58,18 @@ function Login({ onLogin }) {
   const [email, setEmail] = useState('admin@local');
   const [password, setPassword] = useState('Admin123!');
   const [error, setError] = useState('');
+  const [showServerSettings, setShowServerSettings] = useState(false);
+  const [serverUrlInput, setServerUrlInput] = useState(API_URL);
 
   async function submit(event) {
     event.preventDefault();
     setError('');
+
+    // Save and apply custom Server URL
+    const cleanUrl = serverUrlInput.trim().replace(/\/$/, '');
+    localStorage.setItem('custom_api_url', cleanUrl);
+    API_URL = cleanUrl;
+    WS_URL = getWsUrl(cleanUrl);
     
     try {
       // 1. Try Firebase Authentication first
@@ -121,6 +142,32 @@ function Login({ onLogin }) {
         <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-4 py-2 font-semibold text-slate-950">
           <Shield size={18} /> Entrar
         </button>
+
+        {/* Server API URL Settings Toggle */}
+        <div className="mt-4 pt-4 border-t border-slate-800/80 text-center">
+          <button
+            type="button"
+            onClick={() => setShowServerSettings(!showServerSettings)}
+            className="text-xs text-zinc-405 hover:text-white transition duration-150 underline decoration-dotted underline-offset-4"
+          >
+            {showServerSettings ? 'Ocultar Configuración de Servidor' : 'Configurar Servidor Local / VPN'}
+          </button>
+        </div>
+
+        {showServerSettings && (
+          <div className="mt-3 space-y-2.5 p-3.5 bg-slate-950/80 rounded-xl border border-slate-800/50 animate-in fade-in duration-200 text-left">
+            <label className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase tracking-wider block">DIRECCIÓN DEL SERVIDOR API</label>
+            <input
+              className="input text-xs py-1.5 font-mono"
+              placeholder="ej. http://172.30.176.1:8080"
+              value={serverUrlInput}
+              onChange={(e) => setServerUrlInput(e.target.value)}
+            />
+            <p className="text-[10px] text-zinc-550 leading-relaxed font-medium">
+              Especifica la IP de la VPN o del host local si el backend corre en tu red privada (ej: <code>http://172.30.176.1:8080</code>).
+            </p>
+          </div>
+        )}
       </form>
     </main>
   );
