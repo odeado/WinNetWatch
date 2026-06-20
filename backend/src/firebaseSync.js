@@ -3,6 +3,16 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, updateDoc } fr
 import { query } from './db.js';
 import { scanAll } from './monitor.js';
 import dgram from 'node:dgram';
+import crypto from 'node:crypto';
+
+function stringToUUID(str) {
+  if (!str) return null;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(str)) return str;
+  const hash = crypto.createHash('md5').update(str).digest('hex');
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+}
+
 
 // WOL helper
 function sendWOLPacket(macAddress) {
@@ -260,12 +270,13 @@ async function syncSubnetMappingFromFirestore(fsData) {
 
 async function syncDepartmentFromFirestore(fsData) {
   try {
-    const { rows } = await query('SELECT * FROM departments WHERE id = $1', [fsData.id]);
+    const uuid = stringToUUID(fsData.id);
+    const { rows } = await query('SELECT * FROM departments WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
-      await query('INSERT INTO departments (id, name) VALUES ($1, $2)', [fsData.id, fsData.name]);
+      await query('INSERT INTO departments (id, name) VALUES ($1, $2)', [uuid, fsData.name]);
     } else if (local.name !== fsData.name) {
-      await query('UPDATE departments SET name = $2 WHERE id = $1', [fsData.id, fsData.name]);
+      await query('UPDATE departments SET name = $2 WHERE id = $1', [uuid, fsData.name]);
     }
   } catch (err) {
     console.error('Error syncing department from Firestore:', err);
@@ -274,12 +285,13 @@ async function syncDepartmentFromFirestore(fsData) {
 
 async function syncCityFromFirestore(fsData) {
   try {
-    const { rows } = await query('SELECT * FROM cities WHERE id = $1', [fsData.id]);
+    const uuid = stringToUUID(fsData.id);
+    const { rows } = await query('SELECT * FROM cities WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
-      await query('INSERT INTO cities (id, name) VALUES ($1, $2)', [fsData.id, fsData.name]);
+      await query('INSERT INTO cities (id, name) VALUES ($1, $2)', [uuid, fsData.name]);
     } else if (local.name !== fsData.name) {
-      await query('UPDATE cities SET name = $2 WHERE id = $1', [fsData.id, fsData.name]);
+      await query('UPDATE cities SET name = $2 WHERE id = $1', [uuid, fsData.name]);
     }
   } catch (err) {
     console.error('Error syncing city from Firestore:', err);
@@ -288,14 +300,15 @@ async function syncCityFromFirestore(fsData) {
 
 async function syncInfrastructureFromFirestore(fsData) {
   try {
-    const { rows } = await query('SELECT * FROM network_infrastructure WHERE id = $1', [fsData.id]);
+    const uuid = stringToUUID(fsData.id);
+    const { rows } = await query('SELECT * FROM network_infrastructure WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
       await query(
         `INSERT INTO network_infrastructure (id, type, brand, model, serial_number, ports_count, location, status, acquired_at, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
-          fsData.id,
+          uuid,
           fsData.type,
           fsData.brand || '',
           fsData.model || '',
@@ -326,7 +339,7 @@ async function syncInfrastructureFromFirestore(fsData) {
                location = $7, status = $8, acquired_at = $9, notes = $10, updated_at = now()
            WHERE id = $1`,
           [
-            fsData.id,
+            uuid,
             fsData.type,
             fsData.brand || '',
             fsData.model || '',

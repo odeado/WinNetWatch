@@ -71,76 +71,80 @@ export async function scanHost(ip, subnet) {
   const mac = probe.mac || previous?.mac;
   const status = !online ? 'offline' : probe.latencyMs && probe.latencyMs > config.slowThresholdMs ? 'slow' : 'online';
 
-if (
-  online &&
-  probe.latencyMs &&
-  probe.latencyMs > 300
-) {
-  console.log(
-    `LATENCIA ALTA ${ip}: ${probe.latencyMs} ms`
-  );
-}
+  // Automatic OS detection based on open Windows ports (3389, 445, 135, 139, 5985, 5986)
+  const isWindows = probe.openPorts && probe.openPorts.some(port => [3389, 445, 135, 139, 5985, 5986].includes(port));
+  const detectedOs = isWindows ? 'Windows' : null;
 
-if (
-  previous &&
-  previous.status === 'online' &&
-  status === 'offline'
-) {
-  console.log(
-    `POSIBLE CORTE VPN: ${ip}`
-  );
-}
+  if (
+    online &&
+    probe.latencyMs &&
+    probe.latencyMs > 300
+  ) {
+    console.log(
+      `LATENCIA ALTA ${ip}: ${probe.latencyMs} ms`
+    );
+  }
 
-
-
-if (ip === '172.30.110.194') {
-  console.log('======== IMPRESORA ARICA ========');
-  console.log('online:', online);
-  console.log('reachable:', probe.reachable);
-  console.log('latencia:', probe.latencyMs);
-  console.log('perdida:', probe.packetLossPct);
-  console.log('recibidos:', probe.ping.received);
-  console.log('enviados:', probe.ping.sent);
-  console.log('confidence:', probe.confidence);
-  console.log('puertos:', probe.openPorts);
-  console.log('rdp:', rdpAvailable);
-  console.log('status:', status);
-  console.log('=================================');
-}
+  if (
+    previous &&
+    previous.status === 'online' &&
+    status === 'offline'
+  ) {
+    console.log(
+      `POSIBLE CORTE VPN: ${ip}`
+    );
+  }
 
 
- if (!previous && probe.confidence < config.newDeviceMinConfidence) {
 
-console.log(
-  ip,
-  'ping=', probe.ping.received,
-  'lat=', probe.latencyMs,
-  'ports=', probe.openPorts,
-  'online=', probe.online
-);
+  if (ip === '172.30.110.194') {
+    console.log('======== IMPRESORA ARICA ========');
+    console.log('online:', online);
+    console.log('reachable:', probe.reachable);
+    console.log('latencia:', probe.latencyMs);
+    console.log('perdida:', probe.packetLossPct);
+    console.log('recibidos:', probe.ping.received);
+    console.log('enviados:', probe.ping.sent);
+    console.log('confidence:', probe.confidence);
+    console.log('puertos:', probe.openPorts);
+    console.log('rdp:', rdpAvailable);
+    console.log('status:', status);
+    console.log('=================================');
+  }
 
-  console.log(
-    'DESCARTADO:',
-    ip,
-    'confidence=',
-    probe.confidence,
-    'ping=',
-    probe.ping.received,
-    'ports=',
-    probe.openPorts
-  );
 
-  return;
-}
+  if (!previous && probe.confidence < config.newDeviceMinConfidence) {
+
+    console.log(
+      ip,
+      'ping=', probe.ping.received,
+      'lat=', probe.latencyMs,
+      'ports=', probe.openPorts,
+      'online=', probe.online
+    );
+
+    console.log(
+      'DESCARTADO:',
+      ip,
+      'confidence=',
+      probe.confidence,
+      'ping=',
+      probe.ping.received,
+      'ports=',
+      probe.openPorts
+    );
+
+    return;
+  }
 
   const result = await withTransaction(async (client) => {
     let device;
     if (!previous) {
       device = (await client.query(
-        `INSERT INTO devices(hostname, ip, mac, status, rdp_available, latency_ms, subnet, last_seen)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+        `INSERT INTO devices(hostname, ip, mac, status, rdp_available, latency_ms, subnet, os, last_seen)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
          RETURNING *`,
-        [hostname, ip, mac, status, rdpAvailable, probe.latencyMs, subnet]
+        [hostname, ip, mac, status, rdpAvailable, probe.latencyMs, subnet, detectedOs]
       )).rows[0];
       await client.query(
         `INSERT INTO events(device_id, type, severity, message, metadata)
@@ -158,11 +162,12 @@ console.log(
            rdp_available = $4,
            latency_ms = $5,
            subnet = $6,
-           last_seen = CASE WHEN $7 THEN now() ELSE last_seen END,
+           os = COALESCE(os, $7),
+           last_seen = CASE WHEN $8 THEN now() ELSE last_seen END,
            updated_at = now()
-      WHERE id = $8
+      WHERE id = $9
        RETURNING *`,
-      [hostname, mac, status, rdpAvailable, probe.latencyMs, subnet, online, previous.id]
+      [hostname, mac, status, rdpAvailable, probe.latencyMs, subnet, detectedOs, online, previous.id]
     )).rows[0];
 
     console.log(

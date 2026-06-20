@@ -1,5 +1,6 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
+import tls from 'node:tls';
 import { execFile, exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config } from './config.js';
@@ -69,6 +70,63 @@ export function checkPort(ip, port = 3389, timeout = config.rdpTimeoutMs) {
   });
 }
 
+export function getRdpHostname(targetIp) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    socket.setTimeout(2000);
+
+    socket.once('connect', () => {
+      const req = Buffer.from([
+        0x03, 0x00, 0x00, 0x13, // TPKT
+        0x0e, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00, // X.224 Connection Request
+        0x01, 0x00, 0x08, 0x00, // NegReq
+        0x01, 0x00, 0x00, 0x00  // PROTOCOL_SSL only (0x01)
+      ]);
+      socket.write(req);
+    });
+
+    socket.once('data', (data) => {
+      if (data.length >= 19 && data[15] === 0x01) {
+        try {
+          const secureSocket = tls.connect({
+            socket: socket,
+            rejectUnauthorized: false,
+            servername: targetIp,
+            minVersion: 'TLSv1',
+            ciphers: 'DEFAULT@SECLEVEL=0'
+          }, () => {
+            const cert = secureSocket.getPeerCertificate();
+            if (secureSocket.destroyed) return;
+            if (cert && cert.subject && cert.subject.CN) {
+              const cn = cert.subject.CN.split('.')[0].trim();
+              resolve(cn);
+            } else {
+              resolve(null);
+            }
+            secureSocket.destroy();
+          });
+
+          secureSocket.on('error', () => {
+            resolve(null);
+            socket.destroy();
+          });
+        } catch {
+          resolve(null);
+          socket.destroy();
+        }
+      } else {
+        resolve(null);
+        socket.destroy();
+      }
+    });
+
+    socket.on('timeout', () => { resolve(null); socket.destroy(); });
+    socket.on('error', () => { resolve(null); socket.destroy(); });
+
+    socket.connect(3389, targetIp);
+  });
+}
+
 export async function resolveHostname(ip) {
   // 1. Try DNS reverse first
   try {
@@ -78,7 +136,13 @@ export async function resolveHostname(ip) {
     }
   } catch {}
 
-  // 2. Try NetBIOS node status query (Windows host status on UDP port 137)
+  // 2. Try RDP TLS Handshake Certificate CN extraction (Very reliable for RDP-enabled hosts over VPN)
+  try {
+    const rdpName = await getRdpHostname(ip);
+    if (rdpName) return rdpName;
+  } catch {}
+
+  // 3. Try NetBIOS node status query (Windows host status on UDP port 137)
   if (process.platform === 'win32') {
     try {
       const { stdout } = await execAsync(`nbtstat -A ${ip}`, { timeout: 2500 });
@@ -96,7 +160,7 @@ export async function resolveHostname(ip) {
     } catch {}
   }
 
-  // 3. Try ping -a reverse name lookup (native Windows DNS/LLMNR resolver helper)
+  // 4. Try ping -a reverse name lookup (native Windows DNS/LLMNR resolver helper)
   try {
     const cmd = process.platform === 'win32' ? `ping -a -n 1 -w 1000 ${ip}` : `ping -c 1 -W 1 ${ip}`;
     const { stdout } = await execAsync(cmd, { timeout: 3000 });
