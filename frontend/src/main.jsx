@@ -71,8 +71,30 @@ function Login({ onLogin }) {
     API_URL = cleanUrl;
     WS_URL = getWsUrl(cleanUrl);
     
+    // Detect if email looks like a local/non-Firebase email (no real domain)
+    const isLocalEmail = !email.includes('.') || email.endsWith('@local') || email.endsWith('.local');
+
+    if (isLocalEmail) {
+      // Skip Firebase for local emails — go straight to local API
+      try {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (!response.ok) {
+          setError('Credenciales incorrectas');
+          return;
+        }
+        onLogin(await response.json());
+      } catch (localErr) {
+        setError('No se pudo conectar al servidor. Verifique la dirección del servidor.');
+      }
+      return;
+    }
+
     try {
-      // 1. Try Firebase Authentication first
+      // 1. Try Firebase Authentication first (for real email addresses)
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const fbUser = userCredential.user;
 
@@ -86,15 +108,9 @@ function Login({ onLogin }) {
           const userData = querySnapshot.docs[0].data();
           userRole = userData.role_name || 'Solo Lectura';
           fullName = userData.full_name || 'Usuario Nube';
-        } else {
-          // If not found in app_users, fallback based on email
-          if (fbUser.email.toLowerCase() === 'admin@local' || fbUser.email.toLowerCase().startsWith('admin')) {
-            userRole = 'Administrador';
-            fullName = 'Administrador Local';
-          }
         }
       } catch (err) {
-        console.warn('Error fetching user role from Firestore:', err);
+        console.warn('Error buscando rol en Firestore:', err);
       }
 
       onLogin({
@@ -102,9 +118,7 @@ function Login({ onLogin }) {
         user: { email: fbUser.email, role: userRole, full_name: fullName }
       });
     } catch (fbErr) {
-      console.warn('Firebase Auth failed, falling back to local Postgres login:', fbErr);
-      
-      // 2. Fallback to local Express API
+      // 2. Fallback to local Express API if Firebase fails
       try {
         const response = await fetch(`${API_URL}/api/auth/login`, {
           method: 'POST',
@@ -4472,12 +4486,16 @@ function SwitchPortMapModal({
     return devices.filter(d => d.switch_id === activeSwitch.id);
   }, [devices, activeSwitch.id]);
 
-  // Map of port number -> device
+  // Map of port number -> device (always use integer keys to avoid string/number mismatch)
   const portDeviceMap = useMemo(() => {
     const map = {};
     for (const d of connectedDevices) {
-      if (d.switch_port) {
-        map[d.switch_port] = d;
+      const portNum = parseInt(d.switch_port, 10);
+      if (!isNaN(portNum) && portNum > 0) {
+        // Last-write-wins: if duplicate, prefer online device
+        if (!map[portNum] || d.status === 'online') {
+          map[portNum] = d;
+        }
       }
     }
     return map;
@@ -4519,7 +4537,8 @@ function SwitchPortMapModal({
         });
         if (!res.ok) throw new Error('Error al actualizar el puerto en la API local.');
       } else {
-        const previousOccupant = devices.find(d => d.switch_id === activeSwitch.id && d.switch_port === selectedPort);
+        // Desconectar al ocupante anterior del mismo puerto
+        const previousOccupant = devices.find(d => d.switch_id === activeSwitch.id && parseInt(d.switch_port, 10) === selectedPort);
         if (previousOccupant && previousOccupant.id !== deviceId) {
           await setDoc(doc(db, 'devices', previousOccupant.id), {
             ...previousOccupant,
@@ -4527,7 +4546,11 @@ function SwitchPortMapModal({
             switch_port: null
           });
         }
+        // Si el dispositivo ya estaba en otro switch/puerto, limpiarlo primero
         const deviceToUpdate = devices.find(d => d.id === deviceId);
+        if (deviceToUpdate && deviceToUpdate.switch_id && deviceToUpdate.switch_id !== activeSwitch.id) {
+          // No hace falta limpiar el anterior explícitamente, setDoc lo sobreescribe
+        }
         if (deviceToUpdate) {
           await setDoc(doc(db, 'devices', deviceId), {
             ...deviceToUpdate,
