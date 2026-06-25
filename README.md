@@ -11,10 +11,11 @@ Sistema web local para descubrimiento, monitoreo y administracion de equipos Win
 
 ## Redes configuradas
 
-- `172.30.100.0/24`
-- `172.30.101.0/24`
-- `172.30.110.0/24`
-- `172.30.112.0/24`
+- `172.30.100.0/24` - Antofagasta Rendic
+- `172.30.101.0/24` - Antofagasta Matta
+- `172.30.102.0/24` - Antofagasta Diario
+- `172.30.110.0/24` - Arica
+- `172.30.112.0/24` - Iquique
 
 ## Inicio rapido
 

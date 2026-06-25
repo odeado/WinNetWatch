@@ -3907,14 +3907,14 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
               {label}
             </span>
           )}
-          <h3 className="truncate text-base font-bold text-zinc-900 dark:text-white">
-            {device.responsible_user || 'Sin responsable'}
+          <h3 className="truncate text-base font-bold text-zinc-900 dark:text-white" title={device.hostname}>
+            {device.hostname || 'Equipo sin nombre'}
           </h3>
           <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">
             {device.ip}
           </p>
           <p className="text-xs text-zinc-400 dark:text-slate-500 font-semibold truncate mt-1">
-            {device.hostname || 'Equipo sin nombre'}
+            {device.responsible_user ? `Responsable: ${device.responsible_user}` : 'Sin responsable'}
           </p>
         </button>
         {device.managed && <span className="rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide border border-sky-500/20 shadow-sm">Admin</span>}
@@ -4460,7 +4460,12 @@ function SwitchPortMapModal({
 }) {
   const [selectedPort, setSelectedPort] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDeviceToAssign, setSelectedDeviceToAssign] = useState(null);
   const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
+
+  useEffect(() => {
+    setSelectedDeviceToAssign(null);
+  }, [selectedPort]);
 
   // Find all devices connected to this switch
   const connectedDevices = useMemo(() => {
@@ -4577,8 +4582,8 @@ function SwitchPortMapModal({
   const selectedDevice = selectedPort ? portDeviceMap[selectedPort] : null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-zinc-200 dark:border-slate-800 shadow-2xl rounded-2xl max-w-5xl w-full h-[85vh] flex flex-col overflow-hidden text-zinc-950 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[9999] bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-0 md:p-4">
+      <div className="bg-white dark:bg-slate-900 border-0 md:border border-zinc-200 dark:border-slate-800 shadow-2xl md:rounded-2xl rounded-none w-full h-full md:h-[85vh] md:max-w-5xl flex flex-col overflow-hidden text-zinc-950 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-200 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/50 flex items-center justify-between flex-shrink-0">
@@ -4595,10 +4600,10 @@ function SwitchPortMapModal({
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-0">
           
           {/* Left Panel: Port Grid representing physical switch */}
-          <div className="flex-1 p-6 overflow-y-auto bg-zinc-100 dark:bg-slate-950/40 border-r border-zinc-250 dark:border-slate-800 flex flex-col gap-6 justify-between">
+          <div className="flex-1 p-6 overflow-y-auto bg-zinc-100 dark:bg-slate-950/40 border-b md:border-b-0 md:border-r border-zinc-250 dark:border-slate-800 flex flex-col gap-6 justify-between flex-shrink-0 md:flex-shrink">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-bold uppercase text-zinc-450 dark:text-slate-500 tracking-wider">VISTA FRONTAL DEL SWITCH</span>
@@ -4669,13 +4674,13 @@ function SwitchPortMapModal({
           </div>
 
           {/* Right Panel: Selected Port Details & Search */}
-          <div className="w-[380px] flex-shrink-0 p-6 overflow-y-auto bg-white dark:bg-slate-900 border-l border-zinc-200 dark:border-slate-800 flex flex-col min-h-0">
+          <div className="w-full md:w-[380px] flex-shrink-0 p-6 overflow-y-auto bg-white dark:bg-slate-900 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-slate-800 flex flex-col min-h-0">
             {selectedPort ? (
               <div className="flex-1 flex flex-col justify-between min-h-0">
                 <div className="space-y-5">
                   <div className="bg-zinc-50 dark:bg-slate-950/40 p-4 rounded-xl border border-zinc-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-zinc-450 dark:text-slate-500">Puerto seleccionado</span>
+                      <span className="text-[10px] uppercase font-bold text-zinc-455 dark:text-slate-500">Puerto seleccionado</span>
                       <h4 className="text-xl font-black text-zinc-900 dark:text-white">BOCA #{selectedPort}</h4>
                     </div>
                     <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${
@@ -4705,16 +4710,16 @@ function SwitchPortMapModal({
                         <div className="border-t border-zinc-200 dark:border-slate-850 pt-3 space-y-2.5 text-xs">
                           {selectedDevice.responsible_user && (
                             <p className="flex justify-between">
-                              <span className="text-zinc-455 dark:text-slate-500">Responsable:</span>
+                              <span className="text-zinc-455 dark:text-slate-550">Responsable:</span>
                               <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.responsible_user}</span>
                             </p>
                           )}
                           <p className="flex justify-between">
-                            <span className="text-zinc-455 dark:text-slate-500">Ubicación física:</span>
+                            <span className="text-zinc-455 dark:text-slate-550">Ubicación física:</span>
                             <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.location || '—'}</span>
                           </p>
                           <p className="flex justify-between">
-                            <span className="text-zinc-455 dark:text-slate-500">Sistema Operativo:</span>
+                            <span className="text-zinc-455 dark:text-slate-550">Sistema Operativo:</span>
                             <span className="font-mono text-zinc-800 dark:text-slate-200 truncate max-w-[180px]" title={selectedDevice.os}>
                               {selectedDevice.os || '—'}
                             </span>
@@ -4749,58 +4754,97 @@ function SwitchPortMapModal({
                   ) : (
                     <div className="space-y-4">
                       {isAdmin ? (
-                        <>
-                          <div>
-                            <label className="text-xs font-bold text-zinc-405 dark:text-slate-555 block mb-1">ASOCIAR EQUIPO A ESTE PUERTO</label>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="Buscar por hostname, IP o usuario..."
-                                className="input text-xs w-full pl-9 pr-4 py-2"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                              />
-                              <Search className="absolute left-3 top-2.5 text-zinc-455 dark:text-slate-550" size={14} />
+                        selectedDeviceToAssign ? (
+                          <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/25 rounded-xl p-4 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block tracking-wider mb-1">Confirmar Asociación</span>
+                              <h5 className="font-extrabold text-sm text-zinc-950 dark:text-white truncate" title={selectedDeviceToAssign.hostname}>
+                                {selectedDeviceToAssign.hostname || 'Equipo sin nombre'}
+                              </h5>
+                              <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">{selectedDeviceToAssign.ip}</p>
+                              {selectedDeviceToAssign.responsible_user && (
+                                <p className="text-[11px] text-zinc-450 dark:text-slate-550 mt-1">
+                                  Responsable: <strong>{selectedDeviceToAssign.responsible_user}</strong>
+                                </p>
+                              )}
+                              {selectedDeviceToAssign.switch_id && (
+                                <p className="text-[10px] text-amber-500 font-semibold mt-1">
+                                  ⚠️ Se moverá desde el puerto #{selectedDeviceToAssign.switch_port} del switch actual.
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setSelectedDeviceToAssign(null)}
+                                className="button secondary py-2 px-3 text-xs flex-1 justify-center"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await assignDeviceToPort(selectedDeviceToAssign.id);
+                                  setSelectedDeviceToAssign(null);
+                                }}
+                                className="button bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-3 text-xs flex-1 justify-center rounded-lg shadow-sm"
+                              >
+                                Asociar a Boca #{selectedPort}
+                              </button>
                             </div>
                           </div>
+                        ) : (
+                          <>
+                            <div>
+                              <label className="text-xs font-bold text-zinc-405 dark:text-slate-555 block mb-1">ASOCIAR EQUIPO A ESTE PUERTO</label>
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  placeholder="Buscar por hostname, IP o usuario..."
+                                  className="input text-xs w-full pl-9 pr-4 py-2"
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                                <Search className="absolute left-3 top-2.5 text-zinc-455 dark:text-slate-550" size={14} />
+                              </div>
+                            </div>
 
-                          <div className="max-h-[35vh] overflow-y-auto border border-zinc-200 dark:border-slate-800 rounded-xl divide-y divide-zinc-150 dark:divide-slate-800/60 bg-zinc-50/20">
-                            {eligibleDevices.length > 0 ? (
-                              eligibleDevices.map(dev => (
-                                <div
-                                  key={dev.id}
-                                  onClick={() => assignDeviceToPort(dev.id)}
-                                  className="p-3 text-left hover:bg-zinc-50 dark:hover:bg-slate-855/30 cursor-pointer transition-colors duration-155"
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <span className="font-bold text-xs truncate max-w-[170px] text-zinc-950 dark:text-white" title={dev.hostname}>
-                                      {dev.hostname || 'Sin Hostname'}
-                                    </span>
-                                    <span className="font-mono text-[10px] text-zinc-500 dark:text-slate-400">{dev.ip}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-[10px] text-zinc-450 dark:text-slate-550 mt-1">
-                                    <span>{dev.responsible_user || 'Sin responsable'}</span>
-                                    {dev.switch_id && (
-                                      <span className="text-[9px] bg-amber-500/10 text-amber-500 rounded px-1 font-semibold">
-                                        Reubicar (Boca #{dev.switch_port})
+                            <div className="max-h-[35vh] overflow-y-auto border border-zinc-200 dark:border-slate-800 rounded-xl divide-y divide-zinc-150 dark:divide-slate-800/60 bg-zinc-50/20">
+                              {eligibleDevices.length > 0 ? (
+                                eligibleDevices.map(dev => (
+                                  <div
+                                    key={dev.id}
+                                    onClick={() => setSelectedDeviceToAssign(dev)}
+                                    className="p-3 text-left hover:bg-zinc-50 dark:hover:bg-slate-855/30 cursor-pointer transition-colors duration-155"
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <span className="font-bold text-xs truncate max-w-[170px] text-zinc-950 dark:text-white" title={dev.hostname}>
+                                        {dev.hostname || 'Sin Hostname'}
                                       </span>
-                                    )}
+                                      <span className="font-mono text-[10px] text-zinc-500 dark:text-slate-400">{dev.ip}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[10px] text-zinc-450 dark:text-slate-550 mt-1">
+                                      <span>{dev.responsible_user || 'Sin responsable'}</span>
+                                      {dev.switch_id && (
+                                        <span className="text-[9px] bg-amber-500/10 text-amber-500 rounded px-1 font-semibold">
+                                          Reubicar (Boca #{dev.switch_port})
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
+                                ))
+                              ) : searchQuery.trim() ? (
+                                <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-400">
+                                  No se encontraron equipos coincidentes.
                                 </div>
-                              ))
-                            ) : searchQuery.trim() ? (
-                              <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-400">
-                                No se encontraron equipos coincidentes.
-                              </div>
-                            ) : (
-                              <div className="p-4 text-center text-xs text-zinc-555 dark:text-slate-400">
-                                Ingresa un término de búsqueda para ver equipos disponibles en la red.
-                              </div>
-                            )}
-                          </div>
-                        </>
+                              ) : (
+                                <div className="p-4 text-center text-xs text-zinc-555 dark:text-slate-400">
+                                  Ingresa un término de búsqueda para ver equipos disponibles en la red.
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )
                       ) : (
-                        <div className="p-4 text-center text-xs text-zinc-550 dark:text-slate-400 font-medium">
+                        <div className="p-4 text-center text-xs text-zinc-555 dark:text-slate-400 font-medium">
                           Modo de solo lectura. No tienes permisos para asociar equipos a este puerto.
                         </div>
                       )}

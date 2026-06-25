@@ -44,12 +44,12 @@ export async function scanSubnet(subnet) {
   console.log(`Scanning subnet ${subnet}`);
   const hosts = expandCidr(subnet);
   const concurrency = config.scanConcurrency;
-  let index = 0;
+  let hostIndex = 0;
   const workers = Array.from({ length: concurrency }, async () => {
-    while (index < hosts.length) {
-      const ip = hosts[index];
-      index += 1;
-      await scanHost(ip, subnet);
+    while (hostIndex < hosts.length) {
+      const currentIndex = hostIndex++;
+      if (currentIndex >= hosts.length) break;
+      await scanHost(hosts[currentIndex], subnet);
     }
   });
   await Promise.all(workers);
@@ -97,43 +97,8 @@ export async function scanHost(ip, subnet) {
 
 
 
-  if (ip === '172.30.110.194') {
-    console.log('======== IMPRESORA ARICA ========');
-    console.log('online:', online);
-    console.log('reachable:', probe.reachable);
-    console.log('latencia:', probe.latencyMs);
-    console.log('perdida:', probe.packetLossPct);
-    console.log('recibidos:', probe.ping.received);
-    console.log('enviados:', probe.ping.sent);
-    console.log('confidence:', probe.confidence);
-    console.log('puertos:', probe.openPorts);
-    console.log('rdp:', rdpAvailable);
-    console.log('status:', status);
-    console.log('=================================');
-  }
-
 
   if (!previous && probe.confidence < config.newDeviceMinConfidence) {
-
-    console.log(
-      ip,
-      'ping=', probe.ping.received,
-      'lat=', probe.latencyMs,
-      'ports=', probe.openPorts,
-      'online=', probe.online
-    );
-
-    console.log(
-      'DESCARTADO:',
-      ip,
-      'confidence=',
-      probe.confidence,
-      'ping=',
-      probe.ping.received,
-      'ports=',
-      probe.openPorts
-    );
-
     return;
   }
 
@@ -170,33 +135,7 @@ export async function scanHost(ip, subnet) {
       [hostname, mac, status, rdpAvailable, probe.latencyMs, subnet, detectedOs, online, previous.id]
     )).rows[0];
 
-    console.log(
-  'ESTADO:',
-  ip,
-  'anterior=',
-  previous?.status,
-  'nuevo=',
-  status
-);
-
-if (ip === '172.30.110.194') {
-
-  console.log(
-    'ESTADO:',
-    ip,
-    'anterior=',
-    previous?.status,
-    'nuevo=',
-    status
-  );
-
-}
-
     if (previous.status !== status) {
-
-       console.log(
-    `CAMBIO DETECTADO: ${ip} ${previous.status} -> ${status}`
-  );
 
       await client.query(
         `INSERT INTO events(device_id, type, severity, message, metadata)
@@ -219,12 +158,6 @@ if (ip === '172.30.110.194') {
   }
 
   if (result.event) {
-    console.log(
-      'ENVIANDO WS:',
-      result.event,
-      result.device.ip
-    );
-
     broadcast('device-event', result);
     await sendAlert(result.event, result.device);
 

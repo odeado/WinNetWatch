@@ -704,15 +704,11 @@ router.delete('/employees/:id', requirePermission('users:write'), async (req, re
     const before = (await query('SELECT * FROM employees WHERE id = $1', [req.params.id])).rows[0];
     if (!before) return res.status(404).json({ error: 'Empleado no encontrado' });
 
-    // Clear references in devices
+    // CORRECCIÓN: Solo limpiar la referencia FK, preservar datos históricos
     const { rows: unlinkedDevices } = await query(
       `UPDATE devices SET
         employee_id = NULL,
-        responsible_user = NULL,
-        email = NULL,
-        department = NULL,
-        city = NULL,
-        phone = NULL
+        updated_at = now()
        WHERE employee_id = $1
        RETURNING *`,
       [req.params.id]

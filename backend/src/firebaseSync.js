@@ -1,6 +1,7 @@
 import { db } from './firebase.js';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { query } from './db.js';
+import bcrypt from 'bcryptjs';
 import { scanAll } from './monitor.js';
 import dgram from 'node:dgram';
 import crypto from 'node:crypto';
@@ -47,14 +48,15 @@ function sendWOLPacket(macAddress) {
 
 async function syncEmployeeFromFirestore(fsData) {
   try {
-    const { rows } = await query('SELECT * FROM employees WHERE id = $1', [fsData.id]);
+    const uuid = stringToUUID(fsData.id);
+    const { rows } = await query('SELECT * FROM employees WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
       await query(
         `INSERT INTO employees (id, full_name, email, department, city, status, phone, workplace, vpn_active, vpn_type, image_url, active, job_title, authorized_systems)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
-          fsData.id,
+          uuid,
           fsData.full_name || '',
           fsData.email || null,
           fsData.department || null,
@@ -93,7 +95,7 @@ async function syncEmployeeFromFirestore(fsData) {
            SET full_name = $2, email = $3, department = $4, city = $5, status = $6, phone = $7, workplace = $8, vpn_active = $9, vpn_type = $10, image_url = $11, active = $12, job_title = $13, authorized_systems = $14, updated_at = now()
            WHERE id = $1`,
           [
-            fsData.id,
+            uuid,
             fsData.full_name || '',
             fsData.email || null,
             fsData.department || null,
@@ -117,9 +119,100 @@ async function syncEmployeeFromFirestore(fsData) {
   }
 }
 
+async function syncUserFromFirestore(fsData) {
+  try {
+    const uuid = stringToUUID(fsData.id);
+    
+    // Resolve role_id in Postgres by role_name from Firestore
+    let pgRoleId = null;
+    const roleName = fsData.role_name || 'Solo Lectura';
+    const { rows: roleRows } = await query('SELECT id FROM roles WHERE name = $1', [roleName]);
+    if (roleRows.length > 0) {
+      pgRoleId = roleRows[0].id;
+    } else {
+      const { rows: fallbackRows } = await query("SELECT id FROM roles WHERE name = 'Solo Lectura'");
+      if (fallbackRows.length > 0) {
+        pgRoleId = fallbackRows[0].id;
+      }
+    }
+
+    // Hash password if password_plain is provided
+    let passwordHash = null;
+    if (fsData.password_plain) {
+      passwordHash = await bcrypt.hash(fsData.password_plain, 10);
+    }
+
+    const { rows } = await query('SELECT * FROM app_users WHERE id = $1', [uuid]);
+    const local = rows[0];
+
+    if (!local) {
+      // If we don't have password_plain, default to a random hash so login requires a password
+      const finalHash = passwordHash || await bcrypt.hash(Math.random().toString(36), 10);
+      await query(
+        `INSERT INTO app_users (id, email, password_hash, full_name, role_id, active, created_at, job_title, authorized_systems)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          uuid,
+          fsData.email.trim().toLowerCase(),
+          finalHash,
+          fsData.full_name || '',
+          pgRoleId,
+          fsData.active !== undefined ? fsData.active : true,
+          fsData.created_at || new Date().toISOString(),
+          fsData.job_title || null,
+          fsData.authorized_systems || null
+        ]
+      );
+      console.log(`[FirebaseSync] Sincronizado usuario nuevo: ${fsData.email}`);
+    } else {
+      let finalHash = local.password_hash;
+      if (passwordHash) {
+        // Only update hash if it doesn't match the new password_plain
+        const matches = await bcrypt.compare(fsData.password_plain, local.password_hash);
+        if (!matches) {
+          finalHash = passwordHash;
+        }
+      }
+
+      const diff =
+        local.email !== fsData.email.trim().toLowerCase() ||
+        local.password_hash !== finalHash ||
+        local.full_name !== (fsData.full_name || '') ||
+        local.role_id !== pgRoleId ||
+        local.active !== (fsData.active !== undefined ? fsData.active : true) ||
+        local.job_title !== (fsData.job_title || null) ||
+        local.authorized_systems !== (fsData.authorized_systems || null);
+
+      if (diff) {
+        await query(
+          `UPDATE app_users
+           SET email = $2, password_hash = $3, full_name = $4, role_id = $5, active = $6, job_title = $7, authorized_systems = $8
+           WHERE id = $1`,
+          [
+            uuid,
+            fsData.email.trim().toLowerCase(),
+            finalHash,
+            fsData.full_name || '',
+            pgRoleId,
+            fsData.active !== undefined ? fsData.active : true,
+            fsData.job_title || null,
+            fsData.authorized_systems || null
+          ]
+        );
+        console.log(`[FirebaseSync] Usuario actualizado: ${fsData.email}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error syncing user from Firestore:', error);
+  }
+}
+
 async function syncDeviceFromFirestore(fsData) {
   try {
-    const { rows } = await query('SELECT * FROM devices WHERE id = $1', [fsData.id]);
+    const uuid = stringToUUID(fsData.id);
+    const employeeUuid = stringToUUID(fsData.employee_id);
+    const switchUuid = stringToUUID(fsData.switch_id);
+    const { rows } = await query('SELECT * FROM devices WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
       await query(
@@ -133,7 +226,7 @@ async function syncDeviceFromFirestore(fsData) {
           $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
         )`,
         [
-          fsData.id,
+          uuid,
           fsData.hostname || null,
           fsData.ip,
           fsData.mac || null,
@@ -154,7 +247,7 @@ async function syncDeviceFromFirestore(fsData) {
           fsData.serial_number || null,
           fsData.critical || false,
           fsData.managed || false,
-          fsData.employee_id || null,
+          employeeUuid,
           fsData.cpu || null,
           fsData.ram || null,
           fsData.storage || null,
@@ -165,7 +258,7 @@ async function syncDeviceFromFirestore(fsData) {
           fsData.location || 'Matta',
           fsData.office || null,
           fsData.antivirus || null,
-          fsData.switch_id || null,
+          switchUuid,
           fsData.switch_port || null
         ]
       );
@@ -192,7 +285,7 @@ async function syncDeviceFromFirestore(fsData) {
         local.serial_number !== (fsData.serial_number || null) ||
         local.critical !== (fsData.critical || false) ||
         local.managed !== (fsData.managed || false) ||
-        local.employee_id !== (fsData.employee_id || null) ||
+        local.employee_id !== employeeUuid ||
         local.cpu !== (fsData.cpu || null) ||
         local.ram !== (fsData.ram || null) ||
         local.storage !== (fsData.storage || null) ||
@@ -203,7 +296,7 @@ async function syncDeviceFromFirestore(fsData) {
         local.location !== (fsData.location || 'Matta') ||
         local.office !== (fsData.office || null) ||
         local.antivirus !== (fsData.antivirus || null) ||
-        local.switch_id !== (fsData.switch_id || null) ||
+        local.switch_id !== switchUuid ||
         local.switch_port !== (fsData.switch_port || null);
 
       if (diff) {
@@ -217,7 +310,7 @@ async function syncDeviceFromFirestore(fsData) {
                switch_id = $33, switch_port = $34, updated_at = now()
            WHERE id = $1`,
           [
-            fsData.id,
+            uuid,
             fsData.hostname || null,
             fsData.ip,
             fsData.mac || null,
@@ -238,7 +331,7 @@ async function syncDeviceFromFirestore(fsData) {
             fsData.serial_number || null,
             fsData.critical || false,
             fsData.managed || false,
-            fsData.employee_id || null,
+            employeeUuid,
             fsData.cpu || null,
             fsData.ram || null,
             fsData.storage || null,
@@ -249,7 +342,7 @@ async function syncDeviceFromFirestore(fsData) {
             fsData.location || 'Matta',
             fsData.office || null,
             fsData.antivirus || null,
-            fsData.switch_id || null,
+            switchUuid,
             fsData.switch_port || null
           ]
         );
@@ -665,8 +758,9 @@ export async function initFirebaseSync() {
       if (change.type === 'added' || change.type === 'modified') {
         await syncEmployeeFromFirestore(data);
       } else if (change.type === 'removed') {
-        await query('DELETE FROM employees WHERE id = $1', [change.doc.id]);
-        console.log(`[FirebaseSync] Empleado eliminado localmente por baja remota: ${data.full_name}`);
+        const uuid = stringToUUID(change.doc.id);
+        await query('DELETE FROM employees WHERE id = $1', [uuid]);
+        console.log(`[FirebaseSync] Empleado eliminado localmente por baja remota: ${data.full_name || uuid}`);
       }
     });
   });
@@ -677,8 +771,9 @@ export async function initFirebaseSync() {
       if (change.type === 'added' || change.type === 'modified') {
         await syncDeviceFromFirestore(data);
       } else if (change.type === 'removed') {
-        await query('DELETE FROM devices WHERE id = $1', [change.doc.id]);
-        console.log(`[FirebaseSync] Equipo eliminado localmente por baja remota: ${data.hostname || data.ip}`);
+        const uuid = stringToUUID(change.doc.id);
+        await query('DELETE FROM devices WHERE id = $1', [uuid]);
+        console.log(`[FirebaseSync] Equipo eliminado localmente por baja remota: ${data.hostname || data.ip || uuid}`);
       }
     });
   });
@@ -700,7 +795,8 @@ export async function initFirebaseSync() {
       if (change.type === 'added' || change.type === 'modified') {
         await syncDepartmentFromFirestore(data);
       } else if (change.type === 'removed') {
-        await query('DELETE FROM departments WHERE id = $1', [change.doc.id]);
+        const uuid = stringToUUID(change.doc.id);
+        await query('DELETE FROM departments WHERE id = $1', [uuid]);
       }
     });
   });
@@ -711,7 +807,8 @@ export async function initFirebaseSync() {
       if (change.type === 'added' || change.type === 'modified') {
         await syncCityFromFirestore(data);
       } else if (change.type === 'removed') {
-        await query('DELETE FROM cities WHERE id = $1', [change.doc.id]);
+        const uuid = stringToUUID(change.doc.id);
+        await query('DELETE FROM cities WHERE id = $1', [uuid]);
       }
     });
   });
@@ -722,7 +819,21 @@ export async function initFirebaseSync() {
       if (change.type === 'added' || change.type === 'modified') {
         await syncInfrastructureFromFirestore(data);
       } else if (change.type === 'removed') {
-        await query('DELETE FROM network_infrastructure WHERE id = $1', [change.doc.id]);
+        const uuid = stringToUUID(change.doc.id);
+        await query('DELETE FROM network_infrastructure WHERE id = $1', [uuid]);
+      }
+    });
+  });
+
+  onSnapshot(collection(db, 'app_users'), (snapshot) => {
+    snapshot.docChanges().forEach(async (change) => {
+      const data = { id: change.doc.id, ...change.doc.data() };
+      if (change.type === 'added' || change.type === 'modified') {
+        await syncUserFromFirestore(data);
+      } else if (change.type === 'removed') {
+        const uuid = stringToUUID(change.doc.id);
+        await query('DELETE FROM app_users WHERE id = $1', [uuid]);
+        console.log(`[FirebaseSync] Usuario eliminado localmente: ${data.email || uuid}`);
       }
     });
   });

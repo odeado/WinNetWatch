@@ -287,10 +287,10 @@ function buildEvidence({ ping, openPorts, hostname, mac }) {
 }
 
 function parsePingStats(output) {
-  const latencies = [...output.matchAll(/time[=<]\s*(\d+(?:\.\d+)?)\s*ms/gi)].map((match) => Number(match[1]));
-  const winPackets = output.match(/Packets:\s*Sent\s*=\s*(\d+),\s*Received\s*=\s*(\d+),\s*Lost\s*=\s*(\d+)/i);
+  const latencies = [...output.matchAll(/(?:time|tiempo)[=<]\s*(\d+(?:\.\d+)?)\s*ms/gi)].map((match) => Number(match[1]));
+  const winPackets = output.match(/(?:Packets|Paquetes):\s*(?:Sent|enviados)\s*=\s*(\d+),\s*(?:Received|recibidos)\s*=\s*(\d+),\s*(?:Lost|perdidos)\s*=\s*(\d+)/i);
   const unixPackets = output.match(/(\d+)\s+packets transmitted,\s+(\d+)\s+(?:packets )?received/i);
-  const winAvg = output.match(/Average\s*=\s*(\d+)\s*ms/i);
+  const winAvg = output.match(/(?:Average|Media)\s*=\s*(\d+)\s*ms/i);
   const unixAvg = output.match(/(?:round-trip|rtt).*?=\s*([\d.]+)\/([\d.]+)\/([\d.]+)/i);
   const sent = winPackets ? Number(winPackets[1]) : unixPackets ? Number(unixPackets[1]) : config.pingAttempts;
   const received = winPackets ? Number(winPackets[2]) : unixPackets ? Number(unixPackets[2]) : latencies.length;
@@ -315,9 +315,9 @@ function delay(ms) {
 }
 
 export function parseLatency(output) {
-  const win = output.match(/time[=<]\s*(\d+)ms/i);
+  const win = output.match(/(?:time|tiempo)[=<]\s*(\d+)ms/i);
   if (win) return Number(win[1]);
-  const unix = output.match(/time=(\d+(?:\.\d+)?)\s*ms/i);
+  const unix = output.match(/(?:time|tiempo)=(\d+(?:\.\d+)?)\s*ms/i);
   if (unix) return Math.round(Number(unix[1]));
   return null;
 }
