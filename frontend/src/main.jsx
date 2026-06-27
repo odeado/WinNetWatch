@@ -299,7 +299,12 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [infraFilter, setInfraFilter] = useState('');
   const [activeSwitchForPorts, setActiveSwitchForPorts] = useState(null);
 
+  // Bulk action states
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
+  const [importResultModal, setImportResultModal] = useState(null);
+
   const prevDevicesRef = useRef({});
+
 
   // Dynamic Subnet Name Mappings
   const getSubnetLabel = useCallback((subnet) => {
@@ -1005,17 +1010,49 @@ function Dashboard({ token, user, theme, setTheme }) {
         
         setDeviceModal(null);
         setSelected(null);
+        setSelectedDeviceIds(prev => prev.filter(x => x !== id));
         triggerToast('Equipo eliminado con éxito', 'success');
         return;
       }
       await deleteDoc(doc(db, 'devices', id));
       setDeviceModal(null);
       setSelected(null);
+      setSelectedDeviceIds(prev => prev.filter(x => x !== id));
       triggerToast('Equipo eliminado con éxito', 'success');
     } catch (err) {
       console.error('Error deleting device:', err);
       alert('Error al eliminar equipo: ' + err.message);
     }
+  }
+
+  async function deleteSelectedDevices() {
+    if (selectedDeviceIds.length === 0) return;
+    if (!confirm(`¿Estás seguro de eliminar los ${selectedDeviceIds.length} equipos seleccionados del inventario?`)) return;
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedDeviceIds) {
+      try {
+        if (useLocalApi) {
+          const response = await fetch(`${API_URL}/api/devices/${id}`, {
+            method: 'DELETE',
+            headers: { authorization: `Bearer ${token}` }
+          });
+          if (!response.ok) throw new Error('Error al borrar');
+        } else {
+          await deleteDoc(doc(db, 'devices', id));
+        }
+        successCount++;
+      } catch (err) {
+        console.error('Error deleting device bulk:', id, err);
+        failCount++;
+      }
+    }
+
+    triggerToast(`Eliminación masiva: ${successCount} eliminados, ${failCount} fallidos`, successCount > 0 ? 'success' : 'error');
+    setSelectedDeviceIds([]);
+    loadData();
   }
 
   async function unlinkDevice(deviceId) {
@@ -1725,8 +1762,8 @@ function Dashboard({ token, user, theme, setTheme }) {
       return;
     }
 
-    let successCount = 0;
-    let failCount = 0;
+    const importedList = [];
+    const failedList = [];
 
     for (const file of files) {
       try {
@@ -1747,7 +1784,7 @@ function Dashboard({ token, user, theme, setTheme }) {
 
         const data = JSON.parse(cleanText);
         if (!data.ip) {
-          throw new Error('Ficha sin IP válida');
+          throw new Error('El archivo no contiene una IP válida (campo "ip" ausente).');
         }
 
         // Buscar si ya existe por IP
@@ -1807,14 +1844,22 @@ function Dashboard({ token, user, theme, setTheme }) {
           });
         }
 
-        successCount++;
+        importedList.push({
+          hostname: data.hostname || 'Sin nombre',
+          ip: data.ip,
+          isUpdate: !!existing,
+          fileName: file.name
+        });
       } catch (err) {
         console.error('Error importando ficha JSON:', file.name, err);
-        failCount++;
+        failedList.push({
+          fileName: file.name,
+          error: err.message || String(err)
+        });
       }
     }
 
-    triggerToast(`Importación JSON completa: ${successCount} importados, ${failCount} fallidos`, successCount > 0 ? 'success' : 'error');
+    setImportResultModal({ success: importedList, failed: failedList });
     loadData();
     e.target.value = '';
   };
@@ -2208,6 +2253,18 @@ function Dashboard({ token, user, theme, setTheme }) {
                         <option value="name">Nombre / Hostname</option>
                       </select>
                     </div>
+                    
+                    {/* Botón de Eliminación Masiva */}
+                    {selectedDeviceIds.length > 0 && (
+                      <button
+                        onClick={deleteSelectedDevices}
+                        className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow border border-red-600 animate-in fade-in slide-in-from-left-2 duration-200"
+                        title="Eliminar en lote todos los equipos seleccionados"
+                      >
+                        <Trash2 size={14} />
+                        Eliminar Seleccionados ({selectedDeviceIds.length})
+                      </button>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <input
@@ -2255,6 +2312,20 @@ function Dashboard({ token, user, theme, setTheme }) {
                     <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
                       <thead>
                         <tr className="border-b border-zinc-200 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-semibold">
+                          <th className="py-3.5 px-4 w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 h-4 w-4"
+                              checked={filteredAdminDevicesByTab.length > 0 && selectedDeviceIds.length === filteredAdminDevicesByTab.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedDeviceIds(filteredAdminDevicesByTab.map(d => d.id));
+                                } else {
+                                  setSelectedDeviceIds([]);
+                                }
+                              }}
+                            />
+                          </th>
                           <th className="py-3.5 px-4">Equipo (Hostname)</th>
                           <th className="py-3.5 px-4">Dirección IP</th>
                           <th className="py-3.5 px-4">MAC</th>
@@ -2286,8 +2357,22 @@ function Dashboard({ token, user, theme, setTheme }) {
                               <tr
                                 key={dev.id}
                                 onClick={() => setDeviceModal({ mode: 'edit', form: dev })}
-                                className={rowClass}
+                                className={rowClass + (selectedDeviceIds.includes(dev.id) ? " bg-emerald-500/5 dark:bg-emerald-500/5" : "")}
                               >
+                                <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 h-4 w-4"
+                                    checked={selectedDeviceIds.includes(dev.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedDeviceIds(prev => [...prev, dev.id]);
+                                      } else {
+                                        setSelectedDeviceIds(prev => prev.filter(id => id !== dev.id));
+                                      }
+                                    }}
+                                  />
+                                </td>
                                 <td className="py-3 px-4 font-semibold">
                                   <div className="flex items-center gap-2.5">
                                     {dev.image_url ? (
@@ -3104,6 +3189,117 @@ function Dashboard({ token, user, theme, setTheme }) {
             setSelected(device);
           }}
         />
+      )}
+
+      {/* Modal de Resultados de Importación JSON */}
+      {importResultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden transition-all duration-300">
+            <div className="flex items-center justify-between border-b border-zinc-150 dark:border-slate-800/80 px-6 py-4">
+              <h3 className="text-base font-bold flex items-center gap-2">
+                <CheckCircle2 size={18} className="text-emerald-500" />
+                Resultado de la Importación JSON
+              </h3>
+              <button 
+                onClick={() => setImportResultModal(null)}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[500px] overflow-y-auto space-y-5 feed-scroll">
+              {/* Resumen */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-250/20 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{importResultModal.success.length}</div>
+                  <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300/80 uppercase tracking-wider mt-1">Exitosos</div>
+                </div>
+                <div className={`rounded-xl p-4 text-center border ${
+                  importResultModal.failed.length > 0
+                    ? 'bg-red-50/50 dark:bg-red-950/10 border-red-250/20'
+                    : 'bg-zinc-50 dark:bg-slate-800/30 border-zinc-200 dark:border-slate-800'
+                }`}>
+                  <div className={`text-2xl font-black ${importResultModal.failed.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-zinc-500 dark:text-slate-400'}`}>
+                    {importResultModal.failed.length}
+                  </div>
+                  <div className="text-xs font-bold text-zinc-550 dark:text-slate-400 uppercase tracking-wider mt-1">Fallidos</div>
+                </div>
+              </div>
+
+              {/* Lista exitosos */}
+              {importResultModal.success.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Equipos Importados/Actualizados</h4>
+                  <div className="border border-zinc-100 dark:border-slate-800/50 rounded-xl overflow-hidden text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-zinc-50 dark:bg-slate-900/30 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-100 dark:border-slate-800/50">
+                          <th className="p-2.5">Hostname</th>
+                          <th className="p-2.5">Dirección IP</th>
+                          <th className="p-2.5">Archivo Origen</th>
+                          <th className="p-2.5 text-right">Detalle</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importResultModal.success.map((item, idx) => (
+                          <tr key={idx} className="border-b border-zinc-50 dark:border-slate-850 hover:bg-zinc-50/40 dark:hover:bg-slate-800/10 transition">
+                            <td className="p-2.5 text-zinc-800 dark:text-slate-200 font-bold">{item.hostname}</td>
+                            <td className="p-2.5 font-mono text-zinc-600 dark:text-slate-400">{item.ip}</td>
+                            <td className="p-2.5 text-zinc-500 dark:text-slate-500 italic max-w-[150px] truncate" title={item.fileName}>{item.fileName}</td>
+                            <td className="p-2.5 text-right font-medium">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                item.isUpdate 
+                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400' 
+                                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400'
+                              }`}>
+                                {item.isUpdate ? 'Actualizado' : 'Nuevo'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Lista fallidos */}
+              {importResultModal.failed.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider block">Fichas con Errores</h4>
+                  <div className="border border-red-100/50 dark:border-red-950/20 rounded-xl overflow-hidden text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-red-50/20 dark:bg-red-950/5 text-red-500 dark:text-red-400 font-bold border-b border-red-100/30 dark:border-red-950/20">
+                          <th className="p-2.5">Archivo</th>
+                          <th className="p-2.5">Razón del Error</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importResultModal.failed.map((item, idx) => (
+                          <tr key={idx} className="border-b border-red-50/10 dark:border-red-950/5 hover:bg-red-500/5 transition">
+                            <td className="p-2.5 text-zinc-800 dark:text-slate-200 font-semibold">{item.fileName}</td>
+                            <td className="p-2.5 text-red-500 dark:text-red-400">{item.error}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-zinc-50 dark:bg-slate-900/50 border-t border-zinc-150 dark:border-slate-800 px-6 py-4 flex justify-end">
+              <button 
+                onClick={() => setImportResultModal(null)}
+                className="button primary px-5 font-bold text-xs py-2"
+              >
+                Cerrar Ventana
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Employee Modal (Ficha de Empleado) */}
