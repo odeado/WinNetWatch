@@ -1790,6 +1790,18 @@ function Dashboard({ token, user, theme, setTheme }) {
         // Buscar si ya existe por IP
         const existing = devices.find(d => d.ip === data.ip);
 
+        // Si ya existe y ya tiene datos de hardware completos (ej: CPU), omitir para evitar sobreescribir/duplicar innecesariamente
+        if (existing && existing.cpu && existing.cpu.trim() !== '') {
+          importedList.push({
+            hostname: data.hostname || 'Sin nombre',
+            ip: data.ip,
+            statusText: 'Ya registrado (Omitido)',
+            isSkip: true,
+            fileName: file.name
+          });
+          continue;
+        }
+
         let empId = null;
         if (data.responsible_user) {
           const foundEmp = employees.find(e => e.full_name.trim().toLowerCase() === data.responsible_user.trim().toLowerCase());
@@ -1801,7 +1813,7 @@ function Dashboard({ token, user, theme, setTheme }) {
         const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'unknown';
 
         const devicePayload = {
-          id: existing ? existing.id : undefined,
+          id: existing ? existing.id : undefined, // Si existe, actualiza ese mismo ID (evita duplicados)
           hostname: data.hostname || (existing ? existing.hostname : ''),
           ip: data.ip,
           mac: data.mac || (existing ? existing.mac : ''),
@@ -1837,7 +1849,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           await setDoc(doc(db, 'events', eventId), {
             id: eventId,
             device_id: existing ? existing.id : doc(collection(db, 'devices')).id,
-            type: 'device.new',
+            type: existing ? 'device.online' : 'device.new',
             severity: 'info',
             message: `Ficha importada manualmente desde JSON para equipo ${data.hostname || data.ip}`,
             created_at: new Date().toISOString()
@@ -1848,6 +1860,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           hostname: data.hostname || 'Sin nombre',
           ip: data.ip,
           isUpdate: !!existing,
+          statusText: existing ? 'Actualizado' : 'Nuevo',
           fileName: file.name
         });
       } catch (err) {
@@ -3249,11 +3262,13 @@ function Dashboard({ token, user, theme, setTheme }) {
                             <td className="p-2.5 text-zinc-500 dark:text-slate-500 italic max-w-[150px] truncate" title={item.fileName}>{item.fileName}</td>
                             <td className="p-2.5 text-right font-medium">
                               <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                item.isUpdate 
-                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400' 
-                                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400'
+                                item.isSkip 
+                                  ? 'bg-zinc-100 text-zinc-800 dark:bg-slate-800 dark:text-slate-350'
+                                  : item.isUpdate 
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400' 
+                                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400'
                               }`}>
-                                {item.isUpdate ? 'Actualizado' : 'Nuevo'}
+                                {item.statusText}
                               </span>
                             </td>
                           </tr>
