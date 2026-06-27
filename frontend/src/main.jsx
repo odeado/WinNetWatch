@@ -1716,6 +1716,109 @@ function Dashboard({ token, user, theme, setTheme }) {
     e.target.value = '';
   };
 
+  const handleImportJSONs = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    if (!confirm(`Se encontraron ${files.length} fichas JSON de equipos. ¿Deseas importarlas / actualizarlas en la base de datos?\n\nLos datos de hardware se asociarán a cada equipo correspondiente.`)) {
+      e.target.value = '';
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const file of files) {
+      try {
+        const text = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (evt) => resolve(evt.target.result);
+          reader.onerror = (err) => reject(err);
+          reader.readAsText(file);
+        });
+
+        // Limpiar JSON de caracteres BOM u otros caracteres no válidos de PowerShell
+        let cleanText = text.replace(/^\ufeff/, '').trim();
+        const startIdx = cleanText.indexOf('{');
+        const endIdx = cleanText.lastIndexOf('}');
+        if (startIdx !== -1 && endIdx !== -1) {
+          cleanText = cleanText.slice(startIdx, endIdx + 1);
+        }
+
+        const data = JSON.parse(cleanText);
+        if (!data.ip) {
+          throw new Error('Ficha sin IP válida');
+        }
+
+        // Buscar si ya existe por IP
+        const existing = devices.find(d => d.ip === data.ip);
+
+        let empId = null;
+        if (data.responsible_user) {
+          const foundEmp = employees.find(e => e.full_name.trim().toLowerCase() === data.responsible_user.trim().toLowerCase());
+          if (foundEmp) empId = foundEmp.id;
+        }
+
+        // Calcular subred
+        const ipParts = data.ip.split('.');
+        const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'unknown';
+
+        const devicePayload = {
+          id: existing ? existing.id : undefined,
+          hostname: data.hostname || (existing ? existing.hostname : ''),
+          ip: data.ip,
+          mac: data.mac || (existing ? existing.mac : ''),
+          os: data.os || (existing ? existing.os : ''),
+          office: data.office || (existing ? existing.office : ''),
+          antivirus: data.antivirus || (existing ? existing.antivirus : ''),
+          status: 'online',
+          last_seen: new Date().toISOString(),
+          responsible_user: data.responsible_user || (existing ? existing.responsible_user : ''),
+          job_title: data.job_title || (existing ? existing.job_title : ''),
+          authorized_systems: data.authorized_systems || (existing ? existing.authorized_systems : ''),
+          city: data.city || (existing ? existing.city : ''),
+          branch: data.branch || (existing ? existing.branch : ''),
+          department: data.department || (existing ? existing.department : ''),
+          brand: data.brand || (existing ? existing.brand : ''),
+          model: data.model || (existing ? existing.model : ''),
+          serial_number: data.serial_number || (existing ? existing.serial_number : ''),
+          location: data.location || (existing ? existing.location : 'Matta'),
+          device_type: data.device_type || (existing ? existing.device_type : 'PC'),
+          employee_id: empId || (existing ? existing.employee_id : null),
+          cpu: data.cpu || (existing ? existing.cpu : ''),
+          ram: data.ram || (existing ? existing.ram : ''),
+          storage: data.storage || (existing ? existing.storage : ''),
+          gpu: data.gpu || (existing ? existing.gpu : ''),
+          motherboard: data.motherboard || (existing ? existing.motherboard : '')
+        };
+
+        await saveDevice(devicePayload);
+
+        // Si estamos en Cloud, agregar evento también
+        if (!useLocalApi) {
+          const eventId = doc(collection(db, 'events')).id;
+          await setDoc(doc(db, 'events', eventId), {
+            id: eventId,
+            device_id: existing ? existing.id : doc(collection(db, 'devices')).id,
+            type: 'device.new',
+            severity: 'info',
+            message: `Ficha importada manualmente desde JSON para equipo ${data.hostname || data.ip}`,
+            created_at: new Date().toISOString()
+          });
+        }
+
+        successCount++;
+      } catch (err) {
+        console.error('Error importando ficha JSON:', file.name, err);
+        failCount++;
+      }
+    }
+
+    triggerToast(`Importación JSON completa: ${successCount} importados, ${failCount} fallidos`, successCount > 0 ? 'success' : 'error');
+    loadData();
+    e.target.value = '';
+  };
+
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-slate-950 dark:text-slate-100 font-sans transition-colors duration-300">
       <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
@@ -2114,6 +2217,14 @@ function Dashboard({ token, user, theme, setTheme }) {
                       onChange={handleImportExcel}
                       className="hidden"
                     />
+                    <input
+                      type="file"
+                      id="importJsonInput"
+                      accept=".json"
+                      multiple
+                      onChange={handleImportJSONs}
+                      className="hidden"
+                    />
                     <button
                       onClick={() => document.getElementById('importExcelInput').click()}
                       className="button secondary text-xs flex items-center gap-1.5 font-bold"
@@ -2121,6 +2232,14 @@ function Dashboard({ token, user, theme, setTheme }) {
                     >
                       <Upload size={16} className="text-emerald-500" />
                       Importar XLS / CSV
+                    </button>
+                    <button
+                      onClick={() => document.getElementById('importJsonInput').click()}
+                      className="button secondary text-xs flex items-center gap-1.5 font-bold"
+                      title="Importar fichas JSON de hardware de equipos"
+                    >
+                      <Download size={16} className="text-emerald-500" />
+                      Importar Fichas JSON
                     </button>
                     <button
                       onClick={() => setDeviceModal({ mode: 'create', form: { ip: '', hostname: '', mac: '', os: '', city: '', branch: '', department: '', responsible_user: '', job_title: '', phone: '', email: '', notes: '', brand: '', model: '', serial_number: '', asset_status: 'active', critical: false, managed: false, tags: [], cpu: '', ram: '', storage: '', gpu: '', motherboard: '', image_url: '', device_type: 'PC', location: 'Matta', employee_id: null } })}
