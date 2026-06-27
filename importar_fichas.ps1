@@ -63,7 +63,9 @@ Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host "    RESUMEN DE IMPORTACION" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host "[+] Exitosos: $successCount" -ForegroundColor Green
-Write-Host "[-] Fallidos: $failCount" -ForegroundColor ($failCount -gt 0 ? "Red" : "Gray")
+$failColor = "Gray"
+if ($failCount -gt 0) { $failColor = "Red" }
+Write-Host "[-] Fallidos: $failCount" -ForegroundColor $failColor
 Write-Host ""
 
 pause
