@@ -930,6 +930,8 @@ function Dashboard({ token, user, theme, setTheme }) {
         ip: finalForm.ip,
         mac: finalForm.mac || '',
         os: finalForm.os || '',
+        office: finalForm.office || '',
+        antivirus: finalForm.antivirus || '',
         status: finalForm.status || 'unknown',
         rdp_available: finalForm.rdp_available || false,
         latency_ms: finalForm.latency_ms || null,
@@ -1790,8 +1792,8 @@ function Dashboard({ token, user, theme, setTheme }) {
         // Buscar si ya existe por IP
         const existing = devices.find(d => d.ip === data.ip);
 
-        // Si ya existe y ya tiene datos de hardware completos (ej: CPU), omitir para evitar sobreescribir/duplicar innecesariamente
-        if (existing && existing.cpu && existing.cpu.trim() !== '') {
+        // Si ya existe y ya tiene datos de hardware completos E info de Office/Antivirus (no omitir si estos ultimos faltaban)
+        if (existing && existing.cpu && existing.cpu.trim() !== '' && existing.office && existing.office.trim() !== '' && existing.office !== 'No detectado') {
           importedList.push({
             hostname: data.hostname || 'Sin nombre',
             ip: data.ip,
