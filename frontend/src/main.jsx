@@ -303,6 +303,14 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
   const [importResultModal, setImportResultModal] = useState(null);
   const [anomalies, setAnomalies] = useState([]);
+  const [trendHistory, setTrendHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('netwatch_trend_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const prevDevicesRef = useRef({});
 
@@ -1503,7 +1511,44 @@ function Dashboard({ token, user, theme, setTheme }) {
     }
   }, [adminSubTab]);
 
-  const chartData = useMemo(() => buildChart(events), [events]);
+  useEffect(() => {
+    if (!devices || devices.length === 0) return;
+
+    const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const rawTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const onlineCount = devices.filter(d => d.status === 'online' || d.status === 'slow').length;
+    const offlineCount = devices.filter(d => d.status === 'offline').length;
+
+    // Calcular la latencia promedio de equipos online que tengan latency_ms
+    const onlineWithLatency = devices.filter(d => (d.status === 'online' || d.status === 'slow') && typeof d.latency_ms === 'number' && d.latency_ms > 0);
+    const avgLatency = onlineWithLatency.length
+      ? Math.round(onlineWithLatency.reduce((sum, d) => sum + d.latency_ms, 0) / onlineWithLatency.length)
+      : 0;
+
+    setTrendHistory(prev => {
+      // Evitar duplicados del mismo segundo exacto
+      if (prev.length > 0 && prev[prev.length - 1].rawTime === rawTime) {
+        return prev;
+      }
+      
+      const newPoint = {
+        time: timeLabel,
+        rawTime,
+        'Equipos Online': onlineCount,
+        'Equipos Offline': offlineCount,
+        'Latencia Promedio (ms)': avgLatency
+      };
+
+      const nextList = [...prev, newPoint].slice(-15);
+      try {
+        localStorage.setItem('netwatch_trend_history', JSON.stringify(nextList));
+      } catch (e) {}
+      return nextList;
+    });
+  }, [devices]);
+
+  const chartData = trendHistory;
 
   const downloadDevicesCSV = () => {
     const headers = [
@@ -1978,20 +2023,25 @@ function Dashboard({ token, user, theme, setTheme }) {
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="colorOnline" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
                           <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorOffline" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.15}/>
                           <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorLatency" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
                       <XAxis dataKey="time" stroke="currentColor" opacity={0.5} fontSize={10} />
                       <YAxis allowDecimals={false} stroke="currentColor" opacity={0.5} fontSize={10} />
                       <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                      <Area type="monotone" dataKey="Conexiones" stroke="#10b981" fill="url(#colorOnline)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="Desconexiones" stroke="#ef4444" fill="url(#colorOffline)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="Equipos Online" stroke="#10b981" fill="url(#colorOnline)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="Equipos Offline" stroke="#ef4444" fill="url(#colorOffline)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="Latencia Promedio (ms)" stroke="#f59e0b" fill="url(#colorLatency)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
