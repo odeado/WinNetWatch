@@ -405,8 +405,8 @@ async function syncInfrastructureFromFirestore(fsData) {
     const local = rows[0];
     if (!local) {
       await query(
-        `INSERT INTO network_infrastructure (id, type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        `INSERT INTO network_infrastructure (id, type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor, ip)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           uuid,
           fsData.type,
@@ -419,7 +419,8 @@ async function syncInfrastructureFromFirestore(fsData) {
           fsData.acquired_at || null,
           fsData.notes || '',
           fsData.mac || '',
-          fsData.floor || ''
+          fsData.floor || '',
+          fsData.ip || ''
         ]
       );
     } else {
@@ -434,13 +435,14 @@ async function syncInfrastructureFromFirestore(fsData) {
         local.acquired_at !== (fsData.acquired_at || null) ||
         local.notes !== (fsData.notes || '') ||
         local.mac !== (fsData.mac || '') ||
-        local.floor !== (fsData.floor || '');
+        local.floor !== (fsData.floor || '') ||
+        local.ip !== (fsData.ip || '');
 
       if (diff) {
         await query(
           `UPDATE network_infrastructure
            SET type = $2, brand = $3, model = $4, serial_number = $5, ports_count = $6,
-               location = $7, status = $8, acquired_at = $9, notes = $10, mac = $11, floor = $12, updated_at = now()
+               location = $7, status = $8, acquired_at = $9, notes = $10, mac = $11, floor = $12, ip = $13, updated_at = now()
            WHERE id = $1`,
           [
             uuid,
@@ -454,7 +456,8 @@ async function syncInfrastructureFromFirestore(fsData) {
             fsData.acquired_at || null,
             fsData.notes || '',
             fsData.mac || '',
-            fsData.floor || ''
+            fsData.floor || '',
+            fsData.ip || ''
           ]
         );
       }
@@ -659,7 +662,8 @@ export async function pushInfrastructureToFirebase(item) {
       acquired_at: item.acquired_at ? new Date(item.acquired_at).toISOString().split('T')[0] : null,
       notes: item.notes || '',
       mac: item.mac || '',
-      floor: item.floor || ''
+      floor: item.floor || '',
+      ip: item.ip || ''
     });
   } catch (err) {
     console.error('[FirebaseSync] Error al subir infraestructura a Firebase:', err);

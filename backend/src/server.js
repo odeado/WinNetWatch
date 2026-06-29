@@ -138,16 +138,18 @@ async function runMigrations() {
         notes TEXT,
         mac TEXT,
         floor TEXT,
+        ip TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
 
-    // Ensure columns mac and floor exist on existing database
+    // Ensure columns mac, floor, and ip exist on existing database
     await query(`
       ALTER TABLE network_infrastructure
       ADD COLUMN IF NOT EXISTS mac TEXT,
-      ADD COLUMN IF NOT EXISTS floor TEXT
+      ADD COLUMN IF NOT EXISTS floor TEXT,
+      ADD COLUMN IF NOT EXISTS ip TEXT
     `);
 
     // 8. Add switch_id and switch_port columns to devices table
