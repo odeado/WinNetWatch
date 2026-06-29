@@ -136,9 +136,18 @@ async function runMigrations() {
         status TEXT DEFAULT 'nuevo',
         acquired_at DATE DEFAULT CURRENT_DATE,
         notes TEXT,
+        mac TEXT,
+        floor TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
+    `);
+
+    // Ensure columns mac and floor exist on existing database
+    await query(`
+      ALTER TABLE network_infrastructure
+      ADD COLUMN IF NOT EXISTS mac TEXT,
+      ADD COLUMN IF NOT EXISTS floor TEXT
     `);
 
     // 8. Add switch_id and switch_port columns to devices table

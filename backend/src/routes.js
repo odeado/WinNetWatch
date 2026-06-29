@@ -1045,10 +1045,10 @@ router.get('/infrastructure', requirePermission('devices:read'), async (_req, re
 
 router.post('/infrastructure', requirePermission('devices:write'), async (req, res, next) => {
   try {
-    const { type, brand, model, serial_number, ports_count, location, status, acquired_at, notes } = req.body;
+    const { type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor } = req.body;
     const { rows } = await query(
-      `INSERT INTO network_infrastructure (type, brand, model, serial_number, ports_count, location, status, acquired_at, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO network_infrastructure (type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
         type || 'Switch',
@@ -1059,7 +1059,9 @@ router.post('/infrastructure', requirePermission('devices:write'), async (req, r
         location || 'Matta',
         status || 'nuevo',
         acquired_at || new Date().toISOString().split('T')[0],
-        notes || ''
+        notes || '',
+        mac || '',
+        floor || ''
       ]
     );
     const item = rows[0];
@@ -1076,7 +1078,7 @@ router.patch('/infrastructure/:id', requirePermission('devices:write'), async (r
     const before = (await query('SELECT * FROM network_infrastructure WHERE id = $1', [req.params.id])).rows[0];
     if (!before) return res.status(404).json({ error: 'Elemento de infraestructura no encontrado' });
 
-    const allowed = ['type', 'brand', 'model', 'serial_number', 'ports_count', 'location', 'status', 'acquired_at', 'notes'];
+    const allowed = ['type', 'brand', 'model', 'serial_number', 'ports_count', 'location', 'status', 'acquired_at', 'notes', 'mac', 'floor'];
     const fields = [];
     const values = [req.params.id];
     let idx = 2;

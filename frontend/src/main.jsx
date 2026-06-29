@@ -1445,7 +1445,9 @@ function Dashboard({ token, user, theme, setTheme }) {
         location: form.location || 'Matta',
         status: form.status || 'nuevo',
         acquired_at: form.acquired_at || new Date().toISOString().split('T')[0],
-        notes: form.notes || ''
+        notes: form.notes || '',
+        mac: form.mac || '',
+        floor: form.floor || ''
       };
 
       if (useLocalApi) {
@@ -2976,7 +2978,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </div>
                   <button
                     className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
-                    onClick={() => setInfraModal({ mode: 'create', form: { type: 'Switch', brand: '', model: '', serial_number: '', ports_count: 24, location: 'Matta', status: 'nuevo', acquired_at: new Date().toISOString().split('T')[0], notes: '' } })}
+                    onClick={() => setInfraModal({ mode: 'create', form: { type: 'Switch', brand: '', model: '', serial_number: '', ports_count: 24, location: 'Matta', status: 'nuevo', acquired_at: new Date().toISOString().split('T')[0], notes: '', mac: '', floor: '1' } })}
                   >
                     <Plus size={16} /> Agregar Infraestructura
                   </button>
@@ -2990,8 +2992,10 @@ function Dashboard({ token, user, theme, setTheme }) {
                           <th className="py-3.5 px-4">Tipo</th>
                           <th className="py-3.5 px-4">Marca / Modelo</th>
                           <th className="py-3.5 px-4">N° Serie</th>
+                          <th className="py-3.5 px-4">Dirección MAC</th>
                           <th className="py-3.5 px-4">Bocas / Puertos</th>
                           <th className="py-3.5 px-4">Ubicación</th>
+                          <th className="py-3.5 px-4">Piso</th>
                           <th className="py-3.5 px-4">Estado</th>
                           <th className="py-3.5 px-4">Fecha Ingreso</th>
                           <th className="py-3.5 px-4 text-right">Acciones</th>
@@ -3000,17 +3004,17 @@ function Dashboard({ token, user, theme, setTheme }) {
                       <tbody>
                         {infrastructure.filter(i => {
                           const query = infraFilter.toLowerCase();
-                          return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query);
+                          return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query);
                         }).length === 0 ? (
                           <tr>
-                            <td colSpan="8" className="py-8 text-center text-zinc-500 dark:text-slate-400 font-semibold">
+                            <td colSpan="10" className="py-8 text-center text-zinc-500 dark:text-slate-400 font-semibold">
                               No se encontraron elementos de infraestructura.
                             </td>
                           </tr>
                         ) : (
                           infrastructure.filter(i => {
                             const query = infraFilter.toLowerCase();
-                            return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query);
+                            return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query) || (i.floor || '').toLowerCase().includes(query);
                           }).map((item) => (
                             <tr
                               key={item.id}
@@ -3026,11 +3030,17 @@ function Dashboard({ token, user, theme, setTheme }) {
                               <td className="py-3 px-4 font-mono text-xs">
                                 {item.serial_number || '—'}
                               </td>
+                              <td className="py-3 px-4 font-mono text-xs">
+                                {item.mac || '—'}
+                              </td>
                               <td className="py-3 px-4">
                                 {item.type === 'Switch' ? `${item.ports_count || 0} Bocas` : '—'}
                               </td>
                               <td className="py-3 px-4">
                                 {item.location}
+                              </td>
+                              <td className="py-3 px-4 font-medium">
+                                {item.floor ? `Piso ${item.floor}` : '—'}
                               </td>
                               <td className="py-3 px-4">
                                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -3177,6 +3187,31 @@ function Dashboard({ token, user, theme, setTheme }) {
                               value={infraModal.form.acquired_at ? infraModal.form.acquired_at.split('T')[0] : ''}
                               onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, acquired_at: e.target.value } })}
                             />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Dirección MAC</label>
+                            <input
+                              className="input w-full"
+                              placeholder="ej. AA:BB:CC:DD:EE:FF"
+                              value={infraModal.form.mac || ''}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, mac: e.target.value } })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Piso</label>
+                            <select
+                              className="input w-full"
+                              value={infraModal.form.floor || '1'}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, floor: e.target.value } })}
+                            >
+                              <option value="1">Piso 1</option>
+                              <option value="2">Piso 2</option>
+                              <option value="3">Piso 3</option>
+                              <option value="Ninguno">Ninguno / Otro</option>
+                            </select>
                           </div>
                         </div>
 
