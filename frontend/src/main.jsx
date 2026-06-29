@@ -298,6 +298,20 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [infraModal, setInfraModal] = useState(null);
   const [infraFilter, setInfraFilter] = useState('');
   const [activeSwitchForPorts, setActiveSwitchForPorts] = useState(null);
+  const [deviceLinkSearch, setDeviceLinkSearch] = useState('');
+  const [showDeviceLinkSelector, setShowDeviceLinkSelector] = useState(false);
+  const [employeeSearchText, setEmployeeSearchText] = useState('');
+  const [showEmployeeSearchList, setShowEmployeeSearchList] = useState(false);
+
+  useEffect(() => {
+    setShowDeviceLinkSelector(false);
+    setDeviceLinkSearch('');
+  }, [employeeModal]);
+
+  useEffect(() => {
+    setShowEmployeeSearchList(false);
+    setEmployeeSearchText('');
+  }, [deviceModal]);
 
   // Bulk action states
   const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
@@ -3605,23 +3619,93 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </div>
                   
                   {/* Assign existing device selector */}
-                  <div className="mt-3 flex items-center gap-2">
-                    <select
-                      className="input py-1 text-xs max-w-xs flex-1"
-                      defaultValue=""
-                      onChange={(e) => {
-                        const devId = e.target.value;
-                        if (devId) {
-                          linkDevice(devId, employeeModal.form.id);
-                          e.target.value = '';
-                        }
-                      }}
-                    >
-                      <option value="">+ Vincular/Asignar Equipo disponible...</option>
-                      {devices.filter(d => !d.employee_id).map(dev => (
-                        <option key={dev.id} value={dev.id}>{dev.hostname || dev.ip} ({dev.ip})</option>
-                      ))}
-                    </select>
+                  <div className="mt-3 relative">
+                    {!showDeviceLinkSelector ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="button secondary py-1 px-3 text-xs flex-1 justify-start font-bold"
+                          onClick={() => {
+                            setShowDeviceLinkSelector(true);
+                            setDeviceLinkSearch('');
+                          }}
+                        >
+                          + Vincular/Asignar Equipo disponible...
+                        </button>
+                        <button
+                          type="button"
+                          className="button primary py-1 px-3 text-xs font-bold"
+                          onClick={() => {
+                            // Close employee modal and open device modal in create mode
+                            setDeviceModal({
+                              mode: 'create',
+                              form: {
+                                ip: '', hostname: '', mac: '', os: '', city: employeeModal.form.city || '',
+                                branch: '', department: employeeModal.form.department || '',
+                                responsible_user: employeeModal.form.full_name,
+                                job_title: employeeModal.form.job_title || '',
+                                phone: employeeModal.form.phone || '',
+                                email: employeeModal.form.email || '',
+                                notes: '', brand: '', model: '', serial_number: '',
+                                asset_status: 'active', critical: false, managed: false,
+                                tags: [], cpu: '', ram: '', storage: '', gpu: '',
+                                motherboard: '', image_url: '', device_type: 'PC',
+                                location: 'Matta', employee_id: employeeModal.form.id
+                              }
+                            });
+                          }}
+                        >
+                          + Registrar nuevo equipo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="border border-zinc-200 dark:border-slate-800 rounded-xl p-2.5 bg-zinc-50 dark:bg-slate-950/40 space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Buscar por IP, hostname, marca..."
+                            className="input py-1 px-2 text-xs flex-1"
+                            value={deviceLinkSearch}
+                            onChange={(e) => setDeviceLinkSearch(e.target.value)}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className="button secondary py-1 px-2 text-xs font-bold"
+                            onClick={() => setShowDeviceLinkSelector(false)}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                        <div className="max-h-32 overflow-y-auto divide-y divide-zinc-200/50 dark:divide-slate-800/50 text-[11px] border border-zinc-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
+                          {devices
+                            .filter(d => !d.employee_id)
+                            .filter(d => {
+                              const q = deviceLinkSearch.toLowerCase();
+                              return (
+                                (d.hostname || '').toLowerCase().includes(q) ||
+                                (d.ip || '').toLowerCase().includes(q) ||
+                                (d.brand || '').toLowerCase().includes(q) ||
+                                (d.model || '').toLowerCase().includes(q)
+                              );
+                            })
+                            .map(dev => (
+                              <button
+                                key={dev.id}
+                                type="button"
+                                className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-semibold block"
+                                onClick={() => {
+                                  linkDevice(dev.id, employeeModal.form.id);
+                                  setShowDeviceLinkSelector(false);
+                                  setDeviceLinkSearch('');
+                                }}
+                              >
+                                <span className="font-bold text-zinc-900 dark:text-white">{dev.hostname || 'Sin nombre'}</span> ({dev.ip}) - {dev.brand} {dev.model}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -4131,45 +4215,133 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             />
           </label>
           
-          <label className="block">
+          <div className="block">
             <span className="label">Responsable Asignado</span>
-            <select
-              className="input"
-              value={form.employee_id || ''}
-              onChange={(e) => {
-                const selectedId = e.target.value;
-                const employee = employees.find(emp => String(emp.id) === String(selectedId));
-                if (!employee) {
-                  setForm({
-                    ...form,
-                    employee_id: null,
-                    responsible_user: '',
-                    email: '',
-                    department: '',
-                    city: '',
-                    phone: '',
-                    job_title: ''
-                  });
-                } else {
-                  setForm({
-                    ...form,
-                    employee_id: employee.id,
-                    responsible_user: employee.full_name,
-                    email: employee.email || '',
-                    department: employee.department || '',
-                    city: employee.city || '',
-                    phone: employee.phone || '',
-                    job_title: employee.job_title || ''
-                  });
-                }
-              }}
-            >
-              <option value="">Sin responsable</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
-              ))}
-            </select>
-          </label>
+            <div className="relative mt-1">
+              {!showEmployeeSearchList ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="input text-left py-2 px-3 text-xs w-full font-bold flex justify-between items-center bg-white dark:bg-slate-900 border border-zinc-300 dark:border-slate-800 rounded-lg"
+                    onClick={() => {
+                      setShowEmployeeSearchList(true);
+                      setEmployeeSearchText('');
+                    }}
+                  >
+                    <span>{form.responsible_user || 'Sin responsable (Haz clic para asignar)'}</span>
+                    <span className="text-zinc-400">▾</span>
+                  </button>
+                  {form.employee_id && (
+                    <button
+                      type="button"
+                      className="button secondary py-1 px-2.5 text-xs text-red-500 font-bold"
+                      onClick={() => {
+                        setForm({
+                          ...form,
+                          employee_id: null,
+                          responsible_user: '',
+                          email: '',
+                          department: '',
+                          city: '',
+                          phone: '',
+                          job_title: ''
+                        });
+                      }}
+                    >
+                      Quitar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button primary py-1 px-3 text-xs font-bold whitespace-nowrap"
+                    onClick={() => {
+                      // Open employee modal in create mode
+                      setEmployeeModal({
+                        mode: 'create',
+                        form: {
+                          full_name: '', email: '', phone: '', job_title: '', department: form.department || '', city: form.city || '', authorized_systems: '', active: true, vpn_active: false, workplace: 'Presencial'
+                        }
+                      });
+                    }}
+                  >
+                    + Agregar nuevo empleado
+                  </button>
+                </div>
+              ) : (
+                <div className="border border-zinc-200 dark:border-slate-800 rounded-xl p-2.5 bg-zinc-50 dark:bg-slate-950/40 space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Buscar empleado por nombre, departamento..."
+                      className="input py-1 px-2 text-xs flex-1"
+                      value={employeeSearchText}
+                      onChange={(e) => setEmployeeSearchText(e.target.value)}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="button secondary py-1 px-2 text-xs font-bold"
+                      onClick={() => setShowEmployeeSearchList(false)}
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto divide-y divide-zinc-200/50 dark:divide-slate-800/50 text-[11px] border border-zinc-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
+                    <button
+                      type="button"
+                      className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-bold text-red-500 block"
+                      onClick={() => {
+                        setForm({
+                          ...form,
+                          employee_id: null,
+                          responsible_user: '',
+                          email: '',
+                          department: '',
+                          city: '',
+                          phone: '',
+                          job_title: ''
+                        });
+                        setShowEmployeeSearchList(false);
+                      }}
+                    >
+                      Sin responsable (Desasignar)
+                    </button>
+                    {employees
+                      .filter(emp => {
+                        const q = employeeSearchText.toLowerCase();
+                        return (
+                          (emp.full_name || '').toLowerCase().includes(q) ||
+                          (emp.department || '').toLowerCase().includes(q) ||
+                          (emp.email || '').toLowerCase().includes(q)
+                        );
+                      })
+                      .map(emp => (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-semibold block"
+                          onClick={() => {
+                            setForm({
+                              ...form,
+                              employee_id: emp.id,
+                              responsible_user: emp.full_name,
+                              email: emp.email || '',
+                              department: emp.department || '',
+                              city: emp.city || '',
+                              phone: emp.phone || '',
+                              job_title: emp.job_title || ''
+                            });
+                            setShowEmployeeSearchList(false);
+                          }}
+                        >
+                          <span className="font-bold text-zinc-900 dark:text-white">{emp.full_name}</span> - {emp.department} {emp.email ? `(${emp.email})` : ''}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           <label className="block">
             <span className="label">Correo Electrónico</span>
