@@ -3557,10 +3557,36 @@ function Dashboard({ token, user, theme, setTheme }) {
 
                 {/* Assigned Devices */}
                 <div className="px-6 pb-6">
-                  <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-2 flex items-center gap-1.5">
-                    <Laptop size={14} className="text-emerald-500" />
-                    Equipos Asignados ({devices.filter(d => d.employee_id === employeeModal.form.id).length})
-                  </h3>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
+                      <Laptop size={14} className="text-emerald-500" />
+                      Equipos Asignados ({devices.filter(d => d.employee_id === employeeModal.form.id).length})
+                    </h3>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                      onClick={() => {
+                        setDeviceModal({
+                          mode: 'create',
+                          form: {
+                            ip: '', hostname: '', mac: '', os: '', city: employeeModal.form.city || '',
+                            branch: '', department: employeeModal.form.department || '',
+                            responsible_user: employeeModal.form.full_name,
+                            job_title: employeeModal.form.job_title || '',
+                            phone: employeeModal.form.phone || '',
+                            email: employeeModal.form.email || '',
+                            notes: '', brand: '', model: '', serial_number: '',
+                            asset_status: 'active', critical: false, managed: false,
+                            tags: [], cpu: '', ram: '', storage: '', gpu: '',
+                            motherboard: '', image_url: '', device_type: 'PC',
+                            location: 'Matta', employee_id: employeeModal.form.id
+                          }
+                        });
+                      }}
+                    >
+                      + Registrar nuevo equipo
+                    </button>
+                  </div>
                   
                   <div className="border border-zinc-200 dark:border-slate-800 rounded-xl overflow-hidden bg-zinc-50/50 dark:bg-slate-950/20">
                     {devices.filter(d => d.employee_id === employeeModal.form.id).length === 0 ? (
@@ -3614,43 +3640,17 @@ function Dashboard({ token, user, theme, setTheme }) {
                   {/* Assign existing device selector */}
                   <div className="mt-3 relative">
                     {!showDeviceLinkSelector ? (
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="button secondary py-1 px-3 text-xs flex-1 justify-start font-bold"
-                          onClick={() => {
-                            setShowDeviceLinkSelector(true);
-                            setDeviceLinkSearch('');
-                          }}
-                        >
-                          + Vincular/Asignar Equipo disponible...
-                        </button>
-                        <button
-                          type="button"
-                          className="button primary py-1 px-3 text-xs font-bold"
-                          onClick={() => {
-                            // Close employee modal and open device modal in create mode
-                            setDeviceModal({
-                              mode: 'create',
-                              form: {
-                                ip: '', hostname: '', mac: '', os: '', city: employeeModal.form.city || '',
-                                branch: '', department: employeeModal.form.department || '',
-                                responsible_user: employeeModal.form.full_name,
-                                job_title: employeeModal.form.job_title || '',
-                                phone: employeeModal.form.phone || '',
-                                email: employeeModal.form.email || '',
-                                notes: '', brand: '', model: '', serial_number: '',
-                                asset_status: 'active', critical: false, managed: false,
-                                tags: [], cpu: '', ram: '', storage: '', gpu: '',
-                                motherboard: '', image_url: '', device_type: 'PC',
-                                location: 'Matta', employee_id: employeeModal.form.id
-                              }
-                            });
-                          }}
-                        >
-                          + Registrar nuevo equipo
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className="input text-left py-2 px-3 text-xs w-full flex justify-between items-center bg-white dark:bg-slate-900 border border-zinc-300 dark:border-slate-800 rounded-lg text-zinc-700 dark:text-slate-350 font-semibold"
+                        onClick={() => {
+                          setShowDeviceLinkSelector(true);
+                          setDeviceLinkSearch('');
+                        }}
+                      >
+                        <span>+ Vincular/Asignar Equipo disponible...</span>
+                        <span className="text-zinc-400 text-[10px]">▼</span>
+                      </button>
                     ) : (
                       <div className="border border-zinc-200 dark:border-slate-800 rounded-xl p-2.5 bg-zinc-50 dark:bg-slate-950/40 space-y-2">
                         <div className="flex gap-2">
@@ -4211,64 +4211,44 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             />
           </label>
           
-          <div className="block">
-            <span className="label">Responsable Asignado</span>
-            <div className="relative mt-1">
+          <div className="block relative">
+            <div className="flex justify-between items-center mb-1">
+              <span className="label mb-0">Responsable Asignado</span>
+              <button
+                type="button"
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                onClick={() => {
+                  setEmployeeModal({
+                    mode: 'create',
+                    form: {
+                      full_name: '', email: '', phone: '', job_title: '', department: form.department || '', city: form.city || '', authorized_systems: '', active: true, vpn_active: false, workplace: 'Presencial'
+                    }
+                  });
+                }}
+              >
+                + Agregar nuevo empleado
+              </button>
+            </div>
+            
+            <div className="relative">
               {!showEmployeeSearchList ? (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="input text-left py-2 px-3 text-xs w-full font-bold flex justify-between items-center bg-white dark:bg-slate-900 border border-zinc-300 dark:border-slate-800 rounded-lg"
-                    onClick={() => {
-                      setShowEmployeeSearchList(true);
-                      setEmployeeSearchText('');
-                    }}
-                  >
-                    <span>{form.responsible_user || 'Sin responsable (Haz clic para asignar)'}</span>
-                    <span className="text-zinc-400">▾</span>
-                  </button>
-                  {form.employee_id && (
-                    <button
-                      type="button"
-                      className="button secondary py-1 px-2.5 text-xs text-red-500 font-bold"
-                      onClick={() => {
-                        setForm({
-                          ...form,
-                          employee_id: null,
-                          responsible_user: '',
-                          email: '',
-                          department: '',
-                          city: '',
-                          phone: '',
-                          job_title: ''
-                        });
-                      }}
-                    >
-                      Quitar
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="button primary py-1 px-3 text-xs font-bold whitespace-nowrap"
-                    onClick={() => {
-                      // Open employee modal in create mode
-                      setEmployeeModal({
-                        mode: 'create',
-                        form: {
-                          full_name: '', email: '', phone: '', job_title: '', department: form.department || '', city: form.city || '', authorized_systems: '', active: true, vpn_active: false, workplace: 'Presencial'
-                        }
-                      });
-                    }}
-                  >
-                    + Agregar nuevo empleado
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="input text-left py-2 px-3 text-xs w-full flex justify-between items-center bg-white dark:bg-slate-900 border border-zinc-300 dark:border-slate-800 rounded-lg text-zinc-700 dark:text-slate-350"
+                  onClick={() => {
+                    setShowEmployeeSearchList(true);
+                    setEmployeeSearchText('');
+                  }}
+                >
+                  <span>{form.responsible_user || 'Sin responsable (Haz clic para asignar)'}</span>
+                  <span className="text-zinc-400 text-[10px]">▼</span>
+                </button>
               ) : (
-                <div className="border border-zinc-200 dark:border-slate-800 rounded-xl p-2.5 bg-zinc-50 dark:bg-slate-950/40 space-y-2">
+                <div className="absolute top-0 left-0 right-0 z-[60] border border-zinc-200 dark:border-slate-800 rounded-xl p-2.5 bg-white dark:bg-slate-900 shadow-xl space-y-2">
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Buscar empleado por nombre, departamento..."
+                      placeholder="Buscar empleado..."
                       className="input py-1 px-2 text-xs flex-1"
                       value={employeeSearchText}
                       onChange={(e) => setEmployeeSearchText(e.target.value)}
@@ -4282,7 +4262,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                       Cerrar
                     </button>
                   </div>
-                  <div className="max-h-32 overflow-y-auto divide-y divide-zinc-200/50 dark:divide-slate-800/50 text-[11px] border border-zinc-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
+                  <div className="max-h-36 overflow-y-auto divide-y divide-zinc-200/50 dark:divide-slate-800/50 text-[11px] border border-zinc-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
                     <button
                       type="button"
                       className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-bold text-red-500 block"
@@ -4315,7 +4295,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                         <button
                           key={emp.id}
                           type="button"
-                          className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-semibold block"
+                          className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-semibold block text-zinc-800 dark:text-slate-200"
                           onClick={() => {
                             setForm({
                               ...form,
@@ -4330,7 +4310,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                             setShowEmployeeSearchList(false);
                           }}
                         >
-                          <span className="font-bold text-zinc-900 dark:text-white">{emp.full_name}</span> - {emp.department} {emp.email ? `(${emp.email})` : ''}
+                          <span className="font-bold text-zinc-950 dark:text-white">{emp.full_name}</span> - {emp.department}
                         </button>
                       ))}
                   </div>
