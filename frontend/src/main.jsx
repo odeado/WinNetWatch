@@ -2037,11 +2037,14 @@ function Dashboard({ token, user, theme, setTheme }) {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
                       <XAxis dataKey="time" stroke="currentColor" opacity={0.5} fontSize={10} />
-                      <YAxis allowDecimals={false} stroke="currentColor" opacity={0.5} fontSize={10} />
+                      {/* Eje izquierdo: Equipos Online y Offline (Auto-zoom basado en el minimo y maximo de datos) */}
+                      <YAxis yAxisId="left" domain={['auto', 'auto']} allowDecimals={false} stroke="#10b981" opacity={0.6} fontSize={10} />
+                      {/* Eje derecho: Latencia Promedio (Auto-zoom para ver fluctuaciones milimetricas) */}
+                      <YAxis yAxisId="right" orientation="right" domain={['auto', 'auto']} allowDecimals={false} stroke="#f59e0b" opacity={0.6} fontSize={10} />
                       <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                      <Area type="monotone" dataKey="Equipos Online" stroke="#10b981" fill="url(#colorOnline)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="Equipos Offline" stroke="#ef4444" fill="url(#colorOffline)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="Latencia Promedio (ms)" stroke="#f59e0b" fill="url(#colorLatency)" strokeWidth={2} />
+                      <Area yAxisId="left" type="monotone" dataKey="Equipos Online" stroke="#10b981" fill="url(#colorOnline)" strokeWidth={2} />
+                      <Area yAxisId="left" type="monotone" dataKey="Equipos Offline" stroke="#ef4444" fill="url(#colorOffline)" strokeWidth={2} />
+                      <Area yAxisId="right" type="monotone" dataKey="Latencia Promedio (ms)" stroke="#f59e0b" fill="url(#colorLatency)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
