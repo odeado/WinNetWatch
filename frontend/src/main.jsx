@@ -300,18 +300,11 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [activeSwitchForPorts, setActiveSwitchForPorts] = useState(null);
   const [deviceLinkSearch, setDeviceLinkSearch] = useState('');
   const [showDeviceLinkSelector, setShowDeviceLinkSelector] = useState(false);
-  const [employeeSearchText, setEmployeeSearchText] = useState('');
-  const [showEmployeeSearchList, setShowEmployeeSearchList] = useState(false);
 
   useEffect(() => {
     setShowDeviceLinkSelector(false);
     setDeviceLinkSearch('');
   }, [employeeModal]);
-
-  useEffect(() => {
-    setShowEmployeeSearchList(false);
-    setEmployeeSearchText('');
-  }, [deviceModal]);
 
   // Bulk action states
   const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
@@ -3998,6 +3991,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           saveDevice={saveDevice}
           existingCities={existingCities}
           existingDepartments={existingDepartments}
+          setEmployeeModal={setEmployeeModal}
         />
       )}
 
@@ -4013,8 +4007,10 @@ function Dashboard({ token, user, theme, setTheme }) {
 }
 
 // Sub-component for DeviceModalDialog (creation/editing manually) to keep code structured
-function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice, existingCities, existingDepartments }) {
+function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice, existingCities, existingDepartments, setEmployeeModal }) {
   const [form, setForm] = useState(deviceModal.form);
+  const [employeeSearchText, setEmployeeSearchText] = useState('');
+  const [showEmployeeSearchList, setShowEmployeeSearchList] = useState(false);
   
   // Locations management
   const predefinedLocations = ['Matta', 'Diario', 'Casa'];
