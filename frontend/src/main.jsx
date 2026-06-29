@@ -2482,38 +2482,45 @@ function Dashboard({ token, user, theme, setTheme }) {
                                         <Laptop size={16} />
                                       </div>
                                     )}
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span>{dev.hostname || 'Equipo sin nombre'}</span>
-                                        {dev.critical && <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-extrabold text-slate-950 tracking-wider">CRÍTICO</span>}
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-bold text-zinc-950 dark:text-white truncate block max-w-[130px]" title={dev.hostname || 'Equipo sin nombre'}>
+                                          {dev.hostname || 'Equipo sin nombre'}
+                                        </span>
+                                        {dev.critical && <span className="rounded bg-amber-400 px-1 py-0.5 text-[8px] font-extrabold text-slate-950 tracking-wider flex-shrink-0">CRÍTICO</span>}
                                       </div>
-                                      <span className="text-xs text-zinc-400 dark:text-slate-400 block font-normal">{dev.brand} {dev.model}</span>
+                                      <span className="text-[10px] text-zinc-400 dark:text-slate-400 block font-normal truncate max-w-[130px]" title={`${dev.brand} ${dev.model}`}>{dev.brand} {dev.model}</span>
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 text-zinc-550 dark:text-slate-350 font-mono">{dev.ip}</td>
-                                <td className="py-3 px-4 text-zinc-500 dark:text-slate-400 font-mono text-xs">{dev.mac || '—'}</td>
-                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[150px] truncate" title={dev.os || '—'}>{dev.os || '—'}</td>
-                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[180px] truncate" title={dev.office || '—'}>{dev.office || '—'}</td>
-                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[150px] truncate" title={dev.antivirus || '—'}>{dev.antivirus || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-550 dark:text-slate-350 font-mono text-xs">{dev.ip}</td>
+                                <td className="py-3 px-4 text-zinc-500 dark:text-slate-400 font-mono text-[11px]">{dev.mac || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[130px] truncate" title={dev.os || '—'}>{dev.os || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[130px] truncate" title={dev.office || '—'}>{dev.office || '—'}</td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-slate-300 text-xs font-medium max-w-[130px] truncate" title={dev.antivirus || '—'}>{dev.antivirus || '—'}</td>
                                 <td className="py-3 px-4">
                                   <span className="rounded bg-slate-100 dark:bg-slate-800 text-zinc-700 dark:text-slate-300 px-2 py-0.5 text-xs font-semibold">
                                     {dev.device_type || 'PC'}
                                   </span>
                                 </td>
-                                <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                                  {emp ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => setEmployeeModal({ mode: 'view', form: emp })}
-                                      className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left"
-                                    >
-                                      {dev.responsible_user || 'Sin asignar'}
-                                    </button>
-                                  ) : (
-                                    <div className="font-semibold text-zinc-800 dark:text-slate-200">{dev.responsible_user || 'Sin asignar'}</div>
-                                  )}
-                                  {dev.email && <span className="text-xs text-zinc-400 dark:text-slate-500 block font-normal">{dev.email}</span>}
+                                <td className="py-3 px-4 text-xs" onClick={(e) => e.stopPropagation()}>
+                                  <div className="max-w-[130px] min-w-0">
+                                    {emp ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setEmployeeModal({ mode: 'view', form: emp })}
+                                        className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left truncate block w-full"
+                                        title={dev.responsible_user || 'Sin asignar'}
+                                      >
+                                        {dev.responsible_user || 'Sin asignar'}
+                                      </button>
+                                    ) : (
+                                      <div className="font-semibold text-zinc-800 dark:text-slate-200 truncate block w-full" title={dev.responsible_user || 'Sin asignar'}>
+                                        {dev.responsible_user || 'Sin asignar'}
+                                      </div>
+                                    )}
+                                    {dev.email && <span className="text-[10px] text-zinc-400 dark:text-slate-500 block font-normal truncate w-full" title={dev.email}>{dev.email}</span>}
+                                  </div>
                                 </td>
                                 <td className="py-3 px-4 font-bold text-xs text-emerald-600 dark:text-emerald-400">
                                   <div className="flex flex-col gap-1">
@@ -3008,23 +3015,24 @@ function Dashboard({ token, user, theme, setTheme }) {
                           <th className="py-3.5 px-4">Piso</th>
                           <th className="py-3.5 px-4">Estado</th>
                           <th className="py-3.5 px-4">Fecha Ingreso</th>
+                          <th className="py-3.5 px-4">Observaciones</th>
                           <th className="py-3.5 px-4 text-right">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
                         {infrastructure.filter(i => {
                           const query = infraFilter.toLowerCase();
-                          return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query) || (i.ip || '').toLowerCase().includes(query);
+                          return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query) || (i.ip || '').toLowerCase().includes(query) || (i.notes || '').toLowerCase().includes(query);
                         }).length === 0 ? (
                           <tr>
-                            <td colSpan="11" className="py-8 text-center text-zinc-500 dark:text-slate-400 font-semibold">
+                            <td colSpan="12" className="py-8 text-center text-zinc-500 dark:text-slate-400 font-semibold">
                               No se encontraron elementos de infraestructura.
                             </td>
                           </tr>
                         ) : (
                           infrastructure.filter(i => {
                             const query = infraFilter.toLowerCase();
-                            return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query) || (i.floor || '').toLowerCase().includes(query) || (i.ip || '').toLowerCase().includes(query);
+                            return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query) || (i.floor || '').toLowerCase().includes(query) || (i.ip || '').toLowerCase().includes(query) || (i.notes || '').toLowerCase().includes(query);
                           }).map((item) => (
                             <tr
                               key={item.id}
@@ -3066,6 +3074,9 @@ function Dashboard({ token, user, theme, setTheme }) {
                               </td>
                               <td className="py-3 px-4 text-xs font-mono">
                                 {item.acquired_at ? new Date(item.acquired_at).toLocaleDateString() : '—'}
+                              </td>
+                              <td className="py-3 px-4 text-xs max-w-[150px] truncate text-zinc-500 dark:text-slate-400 font-normal" title={item.notes}>
+                                {item.notes || '—'}
                               </td>
                               <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-end gap-2">
