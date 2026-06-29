@@ -2434,7 +2434,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                           <th className="py-3.5 px-4">Antivirus</th>
                           <th className="py-3.5 px-4">Categoría</th>
                           <th className="py-3.5 px-4">Responsable</th>
-                          <th className="py-3.5 px-4">Ubicación / Sala</th>
+                          <th className="py-3.5 px-4">Ubicación</th>
                           <th className="py-3.5 px-4">Estado Red</th>
                           <th className="py-3.5 px-4 text-right">Acciones</th>
                         </tr>
@@ -2522,12 +2522,12 @@ function Dashboard({ token, user, theme, setTheme }) {
                                     {dev.email && <span className="text-[10px] text-zinc-400 dark:text-slate-500 block font-normal truncate w-full" title={dev.email}>{dev.email}</span>}
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                                  <div className="flex flex-col gap-1">
-                                    <span>{dev.location || 'Matta'}</span>
+                                <td className="py-3 px-4 font-bold text-xs text-emerald-600 dark:text-emerald-400 max-w-[100px]">
+                                  <div className="flex flex-col gap-1 min-w-0">
+                                    <span className="truncate block" title={dev.location || 'Matta'}>{dev.location || 'Matta'}</span>
                                     {isRemote && (
-                                      <span className="inline-block self-start rounded bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-350 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide border border-sky-200 dark:border-sky-800/50 shadow-sm">
-                                        VPN / Teletrabajo
+                                      <span className="inline-block self-start rounded bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-350 px-1 py-0.5 text-[8px] font-extrabold uppercase tracking-wide border border-sky-200 dark:border-sky-800/50 shadow-sm truncate max-w-full" title="VPN / Teletrabajo">
+                                        VPN
                                       </span>
                                     )}
                                   </div>
