@@ -1020,7 +1020,11 @@ function Dashboard({ token, user, theme, setTheme }) {
       triggerToast('Equipo guardado con éxito', 'success');
     } catch (err) {
       console.error('Error saving device:', err);
-      alert('Error al guardar equipo: ' + err.message);
+      if (err.message?.toLowerCase().includes('quota') || err.message?.toLowerCase().includes('exhausted') || err.code === 'resource-exhausted') {
+        alert('⚠️ Límite de cuota de Firebase excedido: Se ha agotado el límite gratuito diario de escrituras en la nube de Google. Los cambios no se pueden guardar en la nube hasta que la cuota se restablezca automáticamente (a medianoche). Si estás en la oficina, asegúrate de activar el Servidor Local para guardar sin límites.');
+      } else {
+        alert('Error al guardar equipo: ' + err.message);
+      }
     }
   }
 
@@ -1479,7 +1483,11 @@ function Dashboard({ token, user, theme, setTheme }) {
       setInfraModal(null);
     } catch (err) {
       console.error('Error saving infrastructure:', err);
-      alert('Error al guardar elemento de infraestructura');
+      if (err.message?.toLowerCase().includes('quota') || err.message?.toLowerCase().includes('exhausted') || err.code === 'resource-exhausted') {
+        alert('⚠️ Límite de cuota de Firebase excedido: Se ha agotado el límite gratuito diario de escrituras en la nube de Google. Los cambios no se pueden guardar en la nube hasta que la cuota se restablezca automáticamente (a medianoche). Si estás en la oficina, asegúrate de activar el Servidor Local para guardar sin límites.');
+      } else {
+        alert('Error al guardar elemento de infraestructura: ' + err.message);
+      }
     }
   }
 

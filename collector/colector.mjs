@@ -733,6 +733,10 @@ async function scanHost(ip, subnet) {
       await pushEventToFirestore(eventId, eventData);
     } else {
       // 2. ACTUALIZAR EQUIPO EXISTENTE EN FIRESTORE
+      const now = Date.now();
+      const lastSeenTime = previous.last_seen ? new Date(previous.last_seen).getTime() : 0;
+      const needsHeartbeat = (now - lastSeenTime) > 5 * 60 * 1000; // Solo escribir latido si han pasado más de 5 minutos
+
       const diff = 
         previous.status !== status ||
         previous.hostname !== (hostname || '') ||
@@ -741,7 +745,7 @@ async function scanHost(ip, subnet) {
         previous.ping_ttl !== probe.ttl ||
         wasRebooted;
 
-      if (diff || online) {
+      if (diff || needsHeartbeat) {
         const updatePayload = {
           status: status,
           latency_ms: probe.latencyMs || null,
