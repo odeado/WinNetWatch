@@ -62,6 +62,9 @@ const config = {
     .map(s => s.trim())
     .filter(Boolean),
   scanIntervalSeconds: Number(process.env.SCAN_INTERVAL_SECONDS || 120),
+  criticalScanIntervalSeconds: Number(process.env.CRITICAL_SCAN_INTERVAL_SECONDS || 10),
+  uptimeAnomalyThresholdSeconds: Number(process.env.UPTIME_ANOMALY_THRESHOLD_SECONDS || 30),
+  detectRebootsViaTTL: (process.env.DETECT_REBOOTS_VIA_TTL || 'true') === 'true',
   scanConcurrency: Number(process.env.SCAN_CONCURRENCY || 50),
   pingTimeoutMs: Number(process.env.PING_TIMEOUT_MS || 3000),
   pingAttempts: Number(process.env.PING_ATTEMPTS || 2),
@@ -80,6 +83,7 @@ console.log(`  - Proyecto Firebase: ${config.projectId}`);
 console.log(`  - Subredes: ${config.subnets.join(', ')}`);
 console.log(`  - Concurrencia: ${config.scanConcurrency}`);
 console.log(`  - Intervalo de escaneo: ${config.scanIntervalSeconds} segundos`);
+console.log(`  - Intervalo de escaneo crítico: ${config.criticalScanIntervalSeconds} segundos`);
 
 // -----------------------------------------------------------------
 // 2. CONEXIÓN API REST FIREBASE (AUTENTICACIÓN Y CRUD)
@@ -206,7 +210,12 @@ async function fetchCloudDevices() {
           mac: fields.mac?.stringValue || '',
           status: fields.status?.stringValue || 'offline',
           os: fields.os?.stringValue || '',
-          subnet: fields.subnet?.stringValue || 'unknown'
+          subnet: fields.subnet?.stringValue || 'unknown',
+          critical: fields.critical?.booleanValue || false,
+          managed: fields.managed?.booleanValue || false,
+          ping_ttl: fields.ping_ttl ? Number(fields.ping_ttl.integerValue || fields.ping_ttl.doubleValue || 0) : null,
+          boot_count: fields.boot_count ? Number(fields.boot_count.integerValue || fields.boot_count.doubleValue || 0) : 0,
+          last_reboot: fields.last_reboot?.stringValue || null
         };
       }
     }
@@ -237,6 +246,19 @@ async function pushEventToFirestore(eventId, eventData) {
   const token = await getAuthToken();
   const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/events/${eventId}`;
   const payload = toFirestoreFields(eventData);
+  await requestJson(url, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  }, payload);
+}
+
+async function pushAnomalyToFirestore(anomalyId, anomalyData) {
+  const token = await getAuthToken();
+  const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/device_anomalies/${anomalyId}`;
+  const payload = toFirestoreFields(anomalyData);
   await requestJson(url, {
     method: 'PATCH',
     headers: {
@@ -294,6 +316,7 @@ function parsePingStats(output) {
 async function pingHost(ip) {
   const latencies = [];
   let received = 0;
+  let capturedTtl = null;
   for (let attempt = 1; attempt <= config.pingAttempts; attempt += 1) {
     const args = process.platform === 'win32'
       ? ['-n', '1', '-w', String(config.pingTimeoutMs), ip]
@@ -305,6 +328,10 @@ async function pingHost(ip) {
       if (stats.received > 0) {
         received += 1;
         latencies.push(stats.avgLatencyMs || stats.minLatencyMs || Date.now() - started);
+        if (capturedTtl === null && stdout) {
+          const match = stdout.match(/[Tt][Tt][Ll]=([0-9]+)/);
+          if (match) capturedTtl = parseInt(match[1], 10);
+        }
       }
     } catch (err) {}
     if (attempt < config.pingAttempts) {
@@ -317,7 +344,8 @@ async function pingHost(ip) {
     latencyMs: average(latencies),
     sent: config.pingAttempts,
     received,
-    packetLossPct
+    packetLossPct,
+    ttl: capturedTtl
   };
 }
 
@@ -528,6 +556,7 @@ async function probeWindowsHost(ip) {
     ping,
     latencyMs: ping.latencyMs,
     packetLossPct: ping.packetLossPct,
+    ttl: ping.ttl,
     openPorts,
     ports,
     rdpAvailable,
@@ -558,6 +587,67 @@ async function scanHost(ip, subnet) {
     // Descartar si el equipo es nuevo y no tiene suficiente confianza
     if (!previous && probe.confidence < config.newDeviceMinConfidence) {
       return;
+    }
+
+    // ============================================================
+    // Detección de anomalías (solo si hay registro previo)
+    // ============================================================
+    let rapidCycle = null;
+    let rebootSignals = [];
+    let wasRebooted = false;
+
+    if (previous) {
+      // 1. Ciclos rápidos (online/offline en poco tiempo)
+      if (previous.last_seen && previous.status) {
+        const secondsSinceLastSeen = (Date.now() - new Date(previous.last_seen).getTime()) / 1000;
+        if (previous.status === 'online' && !probe.reachable && secondsSinceLastSeen < 30) {
+          rapidCycle = {
+            type: 'rapid_offline',
+            durationSeconds: Math.round(secondsSinceLastSeen),
+            severity: secondsSinceLastSeen < 5 ? 'critical' : 'warning',
+            message: `Se apagó después de ${Math.round(secondsSinceLastSeen)}s`
+          };
+        } else if (previous.status === 'offline' && probe.reachable && secondsSinceLastSeen < 60) {
+          rapidCycle = {
+            type: 'rapid_reboot',
+            durationSeconds: Math.round(secondsSinceLastSeen),
+            severity: 'info',
+            message: `Se encendió después de ${Math.round(secondsSinceLastSeen)}s`
+          };
+          wasRebooted = true;
+        }
+      }
+
+      // 2. Señales de reinicio por cambio de TTL o Hostname
+      if (config.detectRebootsViaTTL) {
+        if (previous.ping_ttl && probe.ttl && previous.ping_ttl !== probe.ttl) {
+          rebootSignals.push({
+            type: 'ttl_change',
+            previous: previous.ping_ttl,
+            current: probe.ttl,
+            severity: 'warning',
+            message: `Cambio en TTL de ping: ${previous.ping_ttl} -> ${probe.ttl}`
+          });
+          wasRebooted = true;
+        }
+        if (previous.hostname && probe.hostname && previous.hostname !== probe.hostname) {
+          rebootSignals.push({
+            type: 'hostname_change',
+            previous: previous.hostname,
+            current: probe.hostname,
+            severity: 'warning',
+            message: `Cambio en hostname: ${previous.hostname} -> ${probe.hostname}`
+          });
+          wasRebooted = true;
+        }
+      }
+    }
+
+    // Calcular uptime estimado
+    let estimatedUptimeSeconds = null;
+    if (previous?.last_reboot) {
+      estimatedUptimeSeconds = Math.floor((Date.now() - new Date(previous.last_reboot).getTime()) / 1000);
+      if (wasRebooted) estimatedUptimeSeconds = 0;
     }
 
     if (!previous) {
@@ -599,11 +689,29 @@ async function scanHost(ip, subnet) {
         office: '',
         antivirus: '',
         switch_id: null,
-        switch_port: null
+        switch_port: null,
+        // Nuevos campos
+        ping_ttl: probe.ttl || null,
+        boot_count: 0,
+        last_reboot: new Date().toISOString(),
+        estimated_uptime_seconds: 0
       };
 
       await pushDeviceToFirestore(newId, newDevice);
-      cloudDevicesMap[ip] = { id: newId, hostname, mac, status, os: detectedOs, subnet };
+      cloudDevicesMap[ip] = {
+        id: newId,
+        hostname,
+        mac,
+        status,
+        os: detectedOs,
+        subnet,
+        ping_ttl: probe.ttl || null,
+        boot_count: 0,
+        last_reboot: newDevice.last_reboot,
+        critical: false,
+        managed: false,
+        last_seen: newDevice.last_seen
+      };
       
       // Registrar evento de equipo nuevo
       const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -625,25 +733,30 @@ async function scanHost(ip, subnet) {
       await pushEventToFirestore(eventId, eventData);
     } else {
       // 2. ACTUALIZAR EQUIPO EXISTENTE EN FIRESTORE
-      // Evitar sobreescribir campos modificados por el usuario, solo mandamos los campos del escaneo
       const diff = 
         previous.status !== status ||
         previous.hostname !== (hostname || '') ||
         previous.mac !== (mac || '') ||
-        previous.os !== detectedOs;
+        previous.os !== detectedOs ||
+        previous.ping_ttl !== probe.ttl ||
+        wasRebooted;
 
       if (diff || online) {
         const updatePayload = {
           status: status,
           latency_ms: probe.latencyMs || null,
-          rdp_available: rdpAvailable
+          rdp_available: rdpAvailable,
+          ping_ttl: probe.ttl || previous.ping_ttl || null,
+          estimated_uptime_seconds: estimatedUptimeSeconds
         };
 
-        const fieldsToUpdate = ['status', 'latency_ms', 'rdp_available'];
+        const fieldsToUpdate = ['status', 'latency_ms', 'rdp_available', 'ping_ttl', 'estimated_uptime_seconds'];
 
         if (online) {
-          updatePayload.last_seen = new Date().toISOString();
+          const nowStr = new Date().toISOString();
+          updatePayload.last_seen = nowStr;
           fieldsToUpdate.push('last_seen');
+          previous.last_seen = nowStr;
         }
         if (hostname && hostname !== previous.hostname) {
           updatePayload.hostname = hostname;
@@ -657,6 +770,16 @@ async function scanHost(ip, subnet) {
           updatePayload.os = detectedOs;
           fieldsToUpdate.push('os');
         }
+        if (wasRebooted) {
+          const nowStr = new Date().toISOString();
+          updatePayload.last_reboot = nowStr;
+          updatePayload.boot_count = (previous.boot_count || 0) + 1;
+          fieldsToUpdate.push('last_reboot', 'boot_count');
+
+          // Actualizar caché local
+          previous.last_reboot = nowStr;
+          previous.boot_count = updatePayload.boot_count;
+        }
 
         await pushDeviceToFirestore(previous.id, updatePayload, fieldsToUpdate);
         
@@ -665,8 +788,43 @@ async function scanHost(ip, subnet) {
         previous.hostname = hostname || previous.hostname;
         previous.mac = mac || previous.mac;
         previous.os = detectedOs;
+        previous.ping_ttl = probe.ttl || previous.ping_ttl;
 
         console.log(`[Collector] [*] IP ${ip}: Estado=${status} Latencia=${probe.latencyMs || 0}ms Hostname=${hostname || '—'}`);
+      }
+
+      // ============================================================
+      // Subir Anomalías detectadas a Firestore
+      // ============================================================
+      if (rapidCycle) {
+        const anomalyId = `anom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await pushAnomalyToFirestore(anomalyId, {
+          device_id: previous.id,
+          hostname: hostname || previous.hostname || ip,
+          ip,
+          type: rapidCycle.type,
+          severity: rapidCycle.severity,
+          duration_seconds: rapidCycle.durationSeconds,
+          message: rapidCycle.message,
+          detected_at: new Date().toISOString(),
+          resolved_at: null
+        });
+        console.log(`[Collector] [⚡ ANOMALÍA] ${rapidCycle.type.toUpperCase()}: ${ip} (${hostname || '—'})`);
+      }
+
+      for (const signal of rebootSignals) {
+        const anomalyId = `anom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await pushAnomalyToFirestore(anomalyId, {
+          device_id: previous.id,
+          hostname: hostname || previous.hostname || ip,
+          ip,
+          type: 'reboot_signal',
+          severity: signal.severity,
+          message: signal.message,
+          detected_at: new Date().toISOString(),
+          resolved_at: null
+        });
+        console.log(`[Collector] [⚡ REINICIO] ${signal.message} detectado en ${ip}`);
       }
     }
   } catch (err) {
@@ -714,8 +872,23 @@ async function runScanCycle() {
   } catch (err) {
     console.error('[Collector] [x] Fallo en el ciclo de escaneo:', err.message);
   }
-  
-  console.log(`\nEsperando ${config.scanIntervalSeconds} segundos hasta el próximo ciclo...`);
+}
+
+let generalScanRunning = false;
+let criticalScanRunning = false;
+
+async function runCriticalScanCycle() {
+  const criticalDevices = Object.values(cloudDevicesMap).filter(d => (d.critical || d.managed) && d.status === 'online');
+  if (criticalDevices.length === 0) return;
+
+  console.log(`\n⚡ [Collector] [CRITICAL SCAN] Escaneando ${criticalDevices.length} dispositivos críticos...`);
+  for (const device of criticalDevices) {
+    const ip = Object.keys(cloudDevicesMap).find(k => cloudDevicesMap[k].id === device.id);
+    if (ip) {
+      await scanHost(ip, device.subnet);
+    }
+  }
+  console.log(`[Collector] [CRITICAL SCAN] Completado.`);
 }
 
 // -----------------------------------------------------------------
@@ -727,11 +900,42 @@ async function start() {
     // Verificar autenticación inicial
     await getAuthToken();
     
-    // Bucle continuo controlado (evita solapamiento)
-    while (true) {
+    // Ejecutar escaneo inicial completo
+    generalScanRunning = true;
+    try {
       await runScanCycle();
-      await delay(config.scanIntervalSeconds * 1000);
+    } finally {
+      generalScanRunning = false;
     }
+
+    // Programar escaneo adaptativo de equipos críticos cada 10s (por defecto)
+    setInterval(async () => {
+      if (!criticalScanRunning && !generalScanRunning) {
+        criticalScanRunning = true;
+        try {
+          await runCriticalScanCycle();
+        } catch (err) {
+          console.error('[Collector] Error en ciclo crítico:', err.message);
+        } finally {
+          criticalScanRunning = false;
+        }
+      }
+    }, config.criticalScanIntervalSeconds * 1000);
+
+    // Programar escaneo general periódico
+    setInterval(async () => {
+      if (!generalScanRunning) {
+        generalScanRunning = true;
+        try {
+          await runScanCycle();
+        } catch (err) {
+          console.error('[Collector] Error en ciclo general:', err.message);
+        } finally {
+          generalScanRunning = false;
+        }
+      }
+    }, config.scanIntervalSeconds * 1000);
+
   } catch (err) {
     console.error('[Collector] [x] Error crítico al iniciar. Deteniendo ejecución:', err.message);
     process.exit(1);
