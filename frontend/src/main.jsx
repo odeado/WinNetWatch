@@ -302,6 +302,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   // Bulk action states
   const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
   const [importResultModal, setImportResultModal] = useState(null);
+  const [anomalies, setAnomalies] = useState([]);
 
   const prevDevicesRef = useRef({});
 
@@ -512,7 +513,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   useEffect(() => {
     if (!token || useLocalApi) return;
 
-    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubEvents, unsubAlerts, unsubInfra;
+    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubEvents, unsubAlerts, unsubInfra, unsubAnomalies;
 
     const handleFirebaseError = (err) => {
       console.warn('Firestore subscription failed, switching to local API polling:', err);
@@ -525,6 +526,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
       if (unsubInfra) unsubInfra();
+      if (unsubAnomalies) unsubAnomalies();
     };
 
     try {
@@ -638,6 +640,15 @@ function Dashboard({ token, user, theme, setTheme }) {
         setInfrastructure(list);
       }, handleFirebaseError);
 
+      const qAnomalies = query(collection(db, 'device_anomalies'), orderBy('detected_at', 'desc'), limit(30));
+      unsubAnomalies = onSnapshot(qAnomalies, (snapshot) => {
+        const list = [];
+        snapshot.forEach(d => {
+          list.push({ id: d.id, ...d.data() });
+        });
+        setAnomalies(list);
+      }, handleFirebaseError);
+
       // Listen to users and roles for Cloud fallback
       onSnapshot(collection(db, 'app_users'), (snapshot) => {
         const list = [];
@@ -667,6 +678,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
       if (unsubInfra) unsubInfra();
+      if (unsubAnomalies) unsubAnomalies();
     };
   }, [token, useLocalApi]);
 
@@ -759,6 +771,10 @@ function Dashboard({ token, user, theme, setTheme }) {
       // 7. Fetch infrastructure
       const infraRes = await fetch(`${API_URL}/api/infrastructure`, { headers });
       if (infraRes.ok) setInfrastructure(await infraRes.json());
+
+      // 8. Fetch anomalies
+      const anomalyRes = await fetch(`${API_URL}/api/anomalies`, { headers });
+      if (anomalyRes.ok) setAnomalies(await anomalyRes.json());
     } catch (err) {
       console.error('Error polling local API:', err);
     }
@@ -2024,7 +2040,12 @@ function Dashboard({ token, user, theme, setTheme }) {
                 <Feed rows={events} kind="event" devices={devices} />
               </div>
             </Panel>
-            <Panel title="Vista jerarquica" icon={<Building2 size={18} />}>
+            <Panel title="Anomalías y Reinicios" icon={<Shield size={18} />}>
+              <div className="feed-scroll">
+                <Feed rows={anomalies} kind="anomaly" devices={devices} />
+              </div>
+            </Panel>
+            <Panel title="Vista jerárquica" icon={<Building2 size={18} />}>
                <NetworkGroups rows={networkMap} getSubnetLabel={getSubnetLabel} />
             </Panel>
           </aside>
@@ -4592,6 +4613,42 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
         {/* Hardware specifications */}
         <div className="mt-6">
           <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-200 dark:border-slate-800 flex items-center gap-1.5">
+            <Activity size={14} className="text-emerald-500" />
+            Monitoreo y Diagnóstico (Uptime / Reinicios)
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="block">
+              <span className="label">TTL de Ping (OS/Network)</span>
+              <p className="text-sm font-bold text-zinc-800 dark:text-slate-350 bg-zinc-50 dark:bg-slate-950 px-3 py-2 rounded border border-zinc-200 dark:border-slate-800 font-mono">
+                {form.ping_ttl || 'No capturado'} {form.ping_ttl ? `(${form.ping_ttl === 128 ? 'Typical Windows' : form.ping_ttl === 64 ? 'Typical Linux/Printer' : 'Other'})` : ''}
+              </p>
+            </div>
+            <div className="block">
+              <span className="label">Contador de Reinicios</span>
+              <p className="text-sm font-bold text-zinc-800 dark:text-slate-350 bg-zinc-50 dark:bg-slate-950 px-3 py-2 rounded border border-zinc-200 dark:border-slate-800 font-mono">
+                🔥 {form.boot_count || 0} reinicios registrados
+              </p>
+            </div>
+            <div className="block">
+              <span className="label">Uptime Estimado</span>
+              <p className="text-sm font-bold text-zinc-800 dark:text-slate-350 bg-zinc-50 dark:bg-slate-950 px-3 py-2 rounded border border-zinc-200 dark:border-slate-800 font-mono">
+                {form.estimated_uptime_seconds
+                  ? `${Math.floor(form.estimated_uptime_seconds / 3600)}h ${Math.floor((form.estimated_uptime_seconds % 3600) / 60)}m ${form.estimated_uptime_seconds % 60}s`
+                  : 'Desconocido (Offline)'}
+              </p>
+            </div>
+            <div className="block">
+              <span className="label">Último Reinicio Detectado</span>
+              <p className="text-sm font-bold text-zinc-800 dark:text-slate-350 bg-zinc-50 dark:bg-slate-950 px-3 py-2 rounded border border-zinc-200 dark:border-slate-800 font-mono">
+                {form.last_reboot ? new Date(form.last_reboot).toLocaleString() : 'No registrado'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Hardware specifications */}
+        <div className="mt-6">
+          <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-200 dark:border-slate-800 flex items-center gap-1.5">
             <Cpu size={14} className="text-emerald-500" />
             Especificaciones de Hardware
           </h3>
@@ -4673,64 +4730,92 @@ function Feed({ rows, kind, devices }) {
     );
   }
 
+  const getAnomalyLabel = (type) => {
+    switch (type) {
+      case 'rapid_offline': return '⚠️ Apagado Rápido';
+      case 'rapid_reboot': return '⚡ Reinicio Rápido';
+      case 'frequent_reboots': return '🔥 Reinicios Frecuentes';
+      case 'uptime_anomaly': return '⏳ Uptime Anómalo';
+      case 'reboot_signal': return '🔄 Cambio TTL (Reinicio)';
+      default: return '⚠️ Anomalía Detectada';
+    }
+  };
+
   return (
     <div className="space-y-3">
       {rows.map((row) => {
-        const isOffline =
-          row.title?.toLowerCase().includes('fuera de linea') ||
-          row.message?.toLowerCase().includes('offline') ||
-          row.title?.toLowerCase().includes('se desconectó') ||
-          row.message?.toLowerCase().includes('desconectó');
+        let isOffline = false;
+        let isOnline = false;
+        let isAnomaly = kind === 'anomaly';
 
-        const isOnline =
-          row.title?.toLowerCase().includes('disponible nuevamente') ||
-          row.message?.toLowerCase().includes('online') ||
-          row.title?.toLowerCase().includes('volvió a estar disponible') ||
-          row.message?.toLowerCase().includes('disponible');
+        if (!isAnomaly) {
+          isOffline =
+            row.title?.toLowerCase().includes('fuera de linea') ||
+            row.message?.toLowerCase().includes('offline') ||
+            row.title?.toLowerCase().includes('se desconectó') ||
+            row.message?.toLowerCase().includes('desconectó');
+
+          isOnline =
+            row.title?.toLowerCase().includes('disponible nuevamente') ||
+            row.message?.toLowerCase().includes('online') ||
+            row.title?.toLowerCase().includes('volvió a estar disponible') ||
+            row.message?.toLowerCase().includes('disponible');
+        }
 
         const device = devices?.find(d => d.id === row.device_id);
         const ip = row.ip || device?.ip;
         const hostname = row.hostname || device?.hostname;
         const responsible = row.responsible_user || device?.responsible_user;
 
+        // Custom borders based on kind and severity
+        let borderClass = '';
+        if (isOffline) borderClass = 'border-l-4 border-l-red-500 pl-2.5';
+        else if (isOnline) borderClass = 'border-l-4 border-l-emerald-500 pl-2.5';
+        else if (isAnomaly) {
+          if (row.severity === 'critical') borderClass = 'border-l-4 border-l-red-500 pl-2.5';
+          else if (row.severity === 'warning') borderClass = 'border-l-4 border-l-amber-500 pl-2.5';
+          else borderClass = 'border-l-4 border-l-sky-500 pl-2.5';
+        }
+
+        // Title text and color
+        let titleText = '';
+        let titleColorClass = 'text-zinc-800 dark:text-slate-200';
+        
+        if (isAnomaly) {
+          titleText = getAnomalyLabel(row.type);
+          if (row.severity === 'critical') titleColorClass = 'text-red-400 font-bold';
+          else if (row.severity === 'warning') titleColorClass = 'text-amber-400 font-semibold';
+          else titleColorClass = 'text-sky-400 font-semibold';
+        } else {
+          titleText = kind === 'alert' ? row.title : row.message;
+          if (isOffline) titleColorClass = 'text-red-400';
+          else if (isOnline) titleColorClass = 'text-emerald-400';
+        }
+
+        const dateVal = row.created_at || row.detected_at || new Date().toISOString();
+
         return (
           <div
             key={row.id}
-            className={`
-              border-b pb-3 last:border-0
-              dark:border-slate-800
-              ${
-                isOffline
-                  ? 'border-l-4 border-l-red-500 pl-2.5'
-                  : isOnline
-                  ? 'border-l-4 border-l-emerald-500 pl-2.5'
-                  : ''
-              }
-            `}
+            className={`border-b pb-3 last:border-0 dark:border-slate-800 ${borderClass}`}
           >
-            <p
-              className={`
-                text-sm font-semibold
-                ${
-                  isOffline
-                    ? 'text-red-400'
-                    : isOnline
-                    ? 'text-emerald-400'
-                    : 'text-zinc-800 dark:text-slate-200'
-                }
-              `}
-            >
-              {kind === 'alert' ? row.title : row.message}
+            <p className={`text-sm ${titleColorClass}`}>
+              {titleText}
             </p>
+            {isAnomaly && row.message && (
+              <p className="text-xs text-zinc-650 dark:text-slate-300 mt-0.5 italic">
+                {row.message}
+              </p>
+            )}
             {(responsible || ip || hostname) && (
-              <p className="mt-1 text-xs text-sky-600 dark:text-sky-400 font-medium">
+              <p className="mt-1 text-xs text-sky-650 dark:text-sky-400 font-medium">
                 {responsible || 'Equipo sin asignar'}
                 {ip && ` · ${ip}`}
                 {hostname && ` · ${hostname}`}
               </p>
             )}
             <p className="text-[11px] text-zinc-400 dark:text-slate-500 mt-0.5">
-              {new Date(row.created_at).toLocaleString()}
+              {new Date(dateVal).toLocaleString()}
             </p>
           </div>
         );

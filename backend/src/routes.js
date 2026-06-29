@@ -1108,6 +1108,56 @@ router.patch('/infrastructure/:id', requirePermission('devices:write'), async (r
   }
 });
 
+// =============================================
+// Anomaly Detection Routes
+// =============================================
+
+// Ver anomalías activas
+router.get('/anomalies', requireAuth, async (req, res, next) => {
+  try {
+    const { rows } = await query(`
+      SELECT a.*, d.hostname, d.ip, d.status
+      FROM device_anomalies a
+      JOIN devices d ON d.id = a.device_id
+      WHERE a.resolved_at IS NULL
+      ORDER BY a.detected_at DESC
+      LIMIT 50
+    `);
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Ver reinicios de un dispositivo
+router.get('/devices/:id/reboots', requireAuth, async (req, res, next) => {
+  try {
+    const { rows } = await query(`
+      SELECT boot_count, last_reboot, estimated_uptime_seconds, status
+      FROM devices
+      WHERE id = $1
+    `, [req.params.id]);
+    res.json(rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Ver historial de anomalías
+router.get('/devices/:id/anomalies', requireAuth, async (req, res, next) => {
+  try {
+    const { rows } = await query(`
+      SELECT * FROM device_anomalies
+      WHERE device_id = $1
+      ORDER BY detected_at DESC
+      LIMIT 100
+    `, [req.params.id]);
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete('/infrastructure/:id', requirePermission('devices:write'), async (req, res, next) => {
   try {
     const before = (await query('SELECT * FROM network_infrastructure WHERE id = $1', [req.params.id])).rows[0];

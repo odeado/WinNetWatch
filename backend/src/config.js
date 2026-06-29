@@ -8,6 +8,9 @@ export const config = {
     .map((item) => item.trim())
     .filter(Boolean),
   scanIntervalSeconds: Number(process.env.SCAN_INTERVAL_SECONDS || 15),
+  criticalScanIntervalSeconds: Number(process.env.CRITICAL_SCAN_INTERVAL_SECONDS || 10),
+  uptimeAnomalyThresholdSeconds: Number(process.env.UPTIME_ANOMALY_THRESHOLD_SECONDS || 30),
+  detectRebootsViaTTL: (process.env.DETECT_REBOOTS_VIA_TTL || 'true') === 'true',
   pingTimeoutMs: Number(process.env.PING_TIMEOUT_MS || 3000),
   pingAttempts: Number(process.env.PING_ATTEMPTS || 6),
   rdpTimeoutMs: Number(process.env.RDP_TIMEOUT_MS || 700),

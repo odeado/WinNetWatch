@@ -700,6 +700,27 @@ export async function pushAlertToFirebase(alert) {
   }
 }
 
+export async function pushAnomalyToFirebase(anomaly) {
+  try {
+    const id = `anomaly_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const docRef = doc(db, 'device_anomalies', id);
+    await setDoc(docRef, {
+      device_id: anomaly.device_id,
+      hostname: anomaly.hostname || '',
+      ip: anomaly.ip || '',
+      type: anomaly.type,
+      severity: anomaly.severity || 'info',
+      duration_seconds: anomaly.durationSeconds || anomaly.duration_seconds || null,
+      message: anomaly.message || '',
+      metadata: anomaly.metadata || {},
+      detected_at: anomaly.detected_at || new Date().toISOString(),
+      resolved_at: anomaly.resolved_at || null
+    });
+  } catch (err) {
+    console.error('[FirebaseSync] Error al subir anomalía a Firebase:', err);
+  }
+}
+
 // ------------------------------------------------------------
 // Database initial seed to cloud if empty
 // ------------------------------------------------------------

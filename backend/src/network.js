@@ -23,6 +23,7 @@ export function expandCidr(cidr) {
 export async function pingHost(ip) {
   const latencies = [];
   let received = 0;
+  let capturedTtl = null;
   for (let attempt = 1; attempt <= config.pingAttempts; attempt += 1) {
     const args = process.platform === 'win32'
       ? ['-n', '1', '-w', String(config.pingTimeoutMs), ip]
@@ -34,6 +35,10 @@ export async function pingHost(ip) {
       if (stats.received > 0) {
         received += 1;
         latencies.push(stats.avgLatencyMs || stats.minLatencyMs || Date.now() - started);
+        // Capturar TTL si aun no tenemos uno
+        if (capturedTtl === null) {
+          capturedTtl = extractTTL(stdout);
+        }
       }
     } catch {
       // Keep retrying; many Windows networks drop an occasional ICMP probe.
@@ -48,8 +53,19 @@ export async function pingHost(ip) {
     latencyMs: average(latencies),
     sent: config.pingAttempts,
     received,
-    packetLossPct
+    packetLossPct,
+    ttl: capturedTtl
   };
+}
+
+/**
+ * Extrae el TTL del output de ping.
+ * Windows: "TTL=128" | Linux/Mac: "ttl=64"
+ */
+function extractTTL(stdout) {
+  if (!stdout) return null;
+  const match = stdout.match(/[Tt][Tt][Ll]=([0-9]+)/);
+  return match ? parseInt(match[1], 10) : null;
 }
 
 export function checkPort(ip, port = 3389, timeout = config.rdpTimeoutMs) {
@@ -250,6 +266,7 @@ if (ip === '172.30.100.35') {
     ping,
     latencyMs: ping.latencyMs,
     packetLossPct: ping.packetLossPct,
+    ttl: ping.ttl,
     openPorts,
     ports,
     rdpAvailable,
