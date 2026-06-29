@@ -4835,13 +4835,17 @@ function Feed({ rows, kind, devices }) {
     );
   }
 
-  const getAnomalyLabel = (type) => {
+  const getAnomalyLabel = (type, message) => {
     switch (type) {
       case 'rapid_offline': return '⚠️ Apagado Rápido';
       case 'rapid_reboot': return '⚡ Reinicio Rápido';
       case 'frequent_reboots': return '🔥 Reinicios Frecuentes';
       case 'uptime_anomaly': return '⏳ Uptime Anómalo';
-      case 'reboot_signal': return '🔄 Cambio TTL (Reinicio)';
+      case 'reboot_signal': 
+        if (message?.toLowerCase().includes('hostname')) {
+          return '📝 Cambio de Nombre (Hostname)';
+        }
+        return '🔄 Cambio TTL (Reinicio)';
       default: return '⚠️ Anomalía Detectada';
     }
   };
@@ -4887,7 +4891,7 @@ function Feed({ rows, kind, devices }) {
         let titleColorClass = 'text-zinc-800 dark:text-slate-200';
         
         if (isAnomaly) {
-          titleText = getAnomalyLabel(row.type);
+          titleText = getAnomalyLabel(row.type, row.message);
           if (row.severity === 'critical') titleColorClass = 'text-red-400 font-bold';
           else if (row.severity === 'warning') titleColorClass = 'text-amber-400 font-semibold';
           else titleColorClass = 'text-sky-400 font-semibold';
