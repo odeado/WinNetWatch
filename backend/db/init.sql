@@ -65,6 +65,18 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS device_anomalies (
+  id BIGSERIAL PRIMARY KEY,
+  device_id UUID REFERENCES devices(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  severity TEXT NOT NULL DEFAULT 'info',
+  duration_seconds INTEGER,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS alerts (
   id BIGSERIAL PRIMARY KEY,
   device_id UUID REFERENCES devices(id) ON DELETE SET NULL,

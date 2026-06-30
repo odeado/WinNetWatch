@@ -168,6 +168,21 @@ async function runMigrations() {
       ADD COLUMN IF NOT EXISTS estimated_uptime_seconds INTEGER
     `);
 
+    // 10. Create device_anomalies table if not exists
+    await query(`
+      CREATE TABLE IF NOT EXISTS device_anomalies (
+        id BIGSERIAL PRIMARY KEY,
+        device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        severity TEXT NOT NULL DEFAULT 'info',
+        duration_seconds INTEGER,
+        metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+        detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        resolved_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
     // Seed default mappings if empty
     const { rows: mappingCount } = await query('SELECT count(*)::int FROM subnet_mappings');
     if (mappingCount[0].count === 0) {
