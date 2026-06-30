@@ -91,6 +91,21 @@ console.log(`  - Intervalo de escaneo crítico: ${config.criticalScanIntervalSec
 let cachedToken = null;
 let tokenExpiryTime = 0;
 
+let isCloudQuotaExceeded = false;
+let cloudQuotaExceededTime = 0;
+const CLOUD_COOLDOWN_PERIOD = 30 * 60 * 1000; // 30 minutos
+
+function shouldSkipCloudWrites() {
+  if (isCloudQuotaExceeded) {
+    if (Date.now() - cloudQuotaExceededTime < CLOUD_COOLDOWN_PERIOD) {
+      return true;
+    } else {
+      isCloudQuotaExceeded = false;
+    }
+  }
+  return false;
+}
+
 const keepAliveAgent = new https.Agent({
   keepAlive: true,
   maxSockets: 32,
@@ -114,7 +129,15 @@ function requestJson(url, options = {}, body = null) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(json);
         } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${data || res.statusMessage}`));
+          const errMsg = data || res.statusMessage || '';
+          if (res.statusCode === 429 || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota exceeded') || errMsg.includes('quota')) {
+            if (!isCloudQuotaExceeded) {
+              isCloudQuotaExceeded = true;
+              cloudQuotaExceededTime = Date.now();
+              console.warn(`\n[Collector] [⚠️] LÍMITE DE CUOTA FIRESTORE EXCEDIDO. Pausando escrituras a la nube por 30 minutos para evitar spam de errores.\n`);
+            }
+          }
+          reject(new Error(`HTTP ${res.statusCode}: ${errMsg}`));
         }
       });
     });
@@ -224,6 +247,7 @@ async function fetchCloudDevices() {
 }
 
 async function pushDeviceToFirestore(deviceId, deviceData, fieldsToUpdate = null) {
+  if (shouldSkipCloudWrites()) return;
   const token = await getAuthToken();
   let url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/devices/${deviceId}`;
   
@@ -243,6 +267,7 @@ async function pushDeviceToFirestore(deviceId, deviceData, fieldsToUpdate = null
 }
 
 async function pushEventToFirestore(eventId, eventData) {
+  if (shouldSkipCloudWrites()) return;
   const token = await getAuthToken();
   const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/events/${eventId}`;
   const payload = toFirestoreFields(eventData);
@@ -256,6 +281,7 @@ async function pushEventToFirestore(eventId, eventData) {
 }
 
 async function pushAnomalyToFirestore(anomalyId, anomalyData) {
+  if (shouldSkipCloudWrites()) return;
   const token = await getAuthToken();
   const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/device_anomalies/${anomalyId}`;
   const payload = toFirestoreFields(anomalyData);
@@ -863,8 +889,17 @@ async function runScanCycle() {
   try {
     // 1. Refrescar el caché de dispositivos en Firestore antes de escanear
     console.log('[Collector] Descargando inventario actual de Firestore...');
-    cloudDevicesMap = await fetchCloudDevices();
-    console.log(`[Collector] Cargados ${Object.keys(cloudDevicesMap).length} equipos desde la nube.`);
+    try {
+      cloudDevicesMap = await fetchCloudDevices();
+      console.log(`[Collector] Cargados ${Object.keys(cloudDevicesMap).length} equipos desde la nube.`);
+    } catch (fetchErr) {
+      console.warn(`[Collector] [⚠️] No se pudo descargar el inventario de Firestore (${fetchErr.message}).`);
+      if (Object.keys(cloudDevicesMap).length === 0) {
+        console.warn('[Collector] [⚠️] El caché local de equipos está vacío. Abortando ciclo para evitar registrar duplicados.');
+        return;
+      }
+      console.log(`[Collector] Usando el caché local actual (${Object.keys(cloudDevicesMap).length} equipos).`);
+    }
 
     // 2. Ejecutar escaneo para cada subred configurada
     for (const subnet of config.subnets) {
