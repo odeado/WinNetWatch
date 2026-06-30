@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS devices (
   switch_port INTEGER,
   last_reboot TIMESTAMPTZ,
   boot_count INTEGER DEFAULT 0,
+  ping_ttl INTEGER,
+  estimated_uptime_seconds INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

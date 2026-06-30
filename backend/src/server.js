@@ -159,11 +159,13 @@ async function runMigrations() {
       ADD COLUMN IF NOT EXISTS switch_port INTEGER
     `);
 
-    // 9. Add last_reboot and boot_count columns to devices table
+    // 9. Add last_reboot, boot_count, ping_ttl, and estimated_uptime_seconds columns to devices table
     await query(`
       ALTER TABLE devices
       ADD COLUMN IF NOT EXISTS last_reboot TIMESTAMPTZ,
-      ADD COLUMN IF NOT EXISTS boot_count INTEGER DEFAULT 0
+      ADD COLUMN IF NOT EXISTS boot_count INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS ping_ttl INTEGER,
+      ADD COLUMN IF NOT EXISTS estimated_uptime_seconds INTEGER
     `);
 
     // Seed default mappings if empty
