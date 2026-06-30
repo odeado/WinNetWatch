@@ -9,8 +9,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-    expose:
-      - "5432"
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-netwatch} -d ${POSTGRES_DB:-win_netwatch}"]
       interval: 10s
