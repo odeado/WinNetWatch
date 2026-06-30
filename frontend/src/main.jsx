@@ -86,6 +86,7 @@ function Login({ onLogin }) {
           setError('Credenciales incorrectas');
           return;
         }
+        localStorage.setItem('use_local_api', 'true');
         onLogin(await response.json());
       } catch (localErr) {
         setError('No se pudo conectar al servidor. Verifique la dirección del servidor.');
@@ -113,6 +114,7 @@ function Login({ onLogin }) {
         console.warn('Error buscando rol en Firestore:', err);
       }
 
+      localStorage.setItem('use_local_api', 'false');
       onLogin({
         token: await fbUser.getIdToken(),
         user: { email: fbUser.email, role: userRole, full_name: fullName }
@@ -129,6 +131,7 @@ function Login({ onLogin }) {
           setError('Credenciales incorrectas');
           return;
         }
+        localStorage.setItem('use_local_api', 'true');
         onLogin(await response.json());
       } catch (localErr) {
         setError('Error de conexión con el servidor de autenticación');
@@ -284,7 +287,9 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [newSubnetLabel, setNewSubnetLabel] = useState('');
   const [newDeptName, setNewDeptName] = useState('');
   const [newCityName, setNewCityName] = useState('');
-  const [useLocalApi, setUseLocalApi] = useState(false);
+  const [useLocalApi, setUseLocalApi] = useState(() => {
+    return localStorage.getItem('use_local_api') === 'true';
+  });
   const [deviceFilter, setDeviceFilter] = useState('');
   const [deviceModal, setDeviceModal] = useState(null);
   const [inventoryTab, setInventoryTab] = useState('Todos');
@@ -532,6 +537,7 @@ function Dashboard({ token, user, theme, setTheme }) {
 
     const handleFirebaseError = (err) => {
       console.warn('Firestore subscription failed, switching to local API polling:', err);
+      localStorage.setItem('use_local_api', 'true');
       setUseLocalApi(true);
       if (unsubDevices) unsubDevices();
       if (unsubEmployees) unsubEmployees();
