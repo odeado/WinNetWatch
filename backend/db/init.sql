@@ -45,6 +45,10 @@ CREATE TABLE IF NOT EXISTS devices (
   tags TEXT[] NOT NULL DEFAULT '{}',
   last_seen TIMESTAMPTZ,
   uptime_seconds BIGINT,
+  switch_id UUID REFERENCES network_infrastructure(id) ON DELETE SET NULL,
+  switch_port INTEGER,
+  last_reboot TIMESTAMPTZ,
+  boot_count INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

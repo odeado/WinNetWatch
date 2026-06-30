@@ -159,6 +159,13 @@ async function runMigrations() {
       ADD COLUMN IF NOT EXISTS switch_port INTEGER
     `);
 
+    // 9. Add last_reboot and boot_count columns to devices table
+    await query(`
+      ALTER TABLE devices
+      ADD COLUMN IF NOT EXISTS last_reboot TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS boot_count INTEGER DEFAULT 0
+    `);
+
     // Seed default mappings if empty
     const { rows: mappingCount } = await query('SELECT count(*)::int FROM subnet_mappings');
     if (mappingCount[0].count === 0) {
