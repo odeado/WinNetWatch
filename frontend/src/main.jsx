@@ -202,6 +202,11 @@ function getInitials(name) {
 function playNotificationSound(type) {
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') {
+      // Silently close context if blocked by browser autoplay policy to avoid console warnings
+      audioCtx.close();
+      return;
+    }
     const now = audioCtx.currentTime;
     
     if (type === 'online') {
