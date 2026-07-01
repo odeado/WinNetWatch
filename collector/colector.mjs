@@ -761,7 +761,7 @@ async function scanHost(ip, subnet) {
       // 2. ACTUALIZAR EQUIPO EXISTENTE EN FIRESTORE
       const now = Date.now();
       const lastSeenTime = previous.last_seen ? new Date(previous.last_seen).getTime() : 0;
-      const needsHeartbeat = (now - lastSeenTime) > 5 * 60 * 1000; // Solo escribir latido si han pasado más de 5 minutos
+      const needsHeartbeat = (now - lastSeenTime) > 4 * 60 * 60 * 1000; // Solo escribir latido/last_seen a la nube cada 4 horas
 
       const diff = 
         previous.status !== status ||

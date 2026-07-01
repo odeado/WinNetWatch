@@ -365,10 +365,29 @@ export async function scanHost(ip, subnet) {
   });
 
   // ============================================================
-  // Sincronizar con Firebase
+  // Sincronizar con Firebase (Optimizado: solo en cambios o cada 4 horas)
   // ============================================================
   if (result.device) {
-    await pushDeviceToFirebase(result.device);
+    const lastSeenTime = previous?.last_seen ? new Date(previous.last_seen).getTime() : 0;
+    const now = Date.now();
+    const needsHeartbeat = (now - lastSeenTime) > 4 * 60 * 60 * 1000; // 4 horas
+
+    const hasChanged = !previous ||
+      previous.status !== result.device.status ||
+      previous.hostname !== result.device.hostname ||
+      previous.mac !== result.device.mac ||
+      previous.os !== result.device.os ||
+      previous.rdp_available !== result.device.rdp_available ||
+      previous.switch_id !== result.device.switch_id ||
+      previous.switch_port !== result.device.switch_port ||
+      previous.boot_count !== result.device.boot_count;
+
+    if (hasChanged || needsHeartbeat) {
+      // Sincronizar en segundo plano para no demorar la respuesta local ni el socket
+      pushDeviceToFirebase(result.device).catch(err => 
+        console.error('[FirebaseSync] Falló sincronización con Firebase:', err)
+      );
+    }
   }
 
   // Log de anomalías detectadas
