@@ -717,6 +717,13 @@ function Dashboard({ token, user, theme, setTheme }) {
       
       // 1. Fetch devices
       const devRes = await fetch(`${API_URL}/api/devices`, { headers });
+      if (devRes.status === 401) {
+        // Token inválido o vencido localmente, forzar logout automático
+        setToken('');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        return;
+      }
       if (devRes.ok) {
         const list = await devRes.json();
         setDevices(list);
