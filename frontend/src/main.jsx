@@ -4990,8 +4990,24 @@ function SubnetMap({ rows, getSubnetLabel }) {
     return acc;
   }, {});
 
+  const barColor = (status) => {
+    return {
+      online: 'text-emerald-500 dark:text-emerald-400',
+      offline: 'text-rose-500 dark:text-rose-400',
+      slow: 'text-amber-500 dark:text-amber-400'
+    }[status] || 'text-zinc-500';
+  };
+
+  const statusLabel = (status) => {
+    return {
+      online: 'Online',
+      offline: 'Offline',
+      slow: 'Lento'
+    }[status] || status;
+  };
+
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2">
       {Object.entries(grouped).map(([subnet, stats]) => {
         // Calcular totales de la subred
         const total = stats.reduce((sum, r) => sum + r.total, 0);
@@ -5004,74 +5020,84 @@ function SubnetMap({ rows, getSubnetLabel }) {
         const pct = total > 0 ? Math.round((activeCount / total) * 100) : 0;
 
         // Colores de la ola y texto según el porcentaje
-        let color1 = 'rgba(16, 185, 129, 0.65)'; // Verde
-        let color2 = 'rgba(52, 211, 153, 0.35)';
+        let color1 = 'rgb(16, 185, 129)'; // Verde (#10b981)
+        let color1Alpha = 'rgba(16, 185, 129, 0.65)';
+        let color2Alpha = 'rgba(52, 211, 153, 0.35)';
         let glow = 'rgba(16, 185, 129, 0.4)';
         let textColor = 'text-emerald-500 dark:text-emerald-400';
 
         if (pct < 50) {
-          color1 = 'rgba(239, 68, 68, 0.65)'; // Rojo
-          color2 = 'rgba(248, 113, 113, 0.35)';
+          color1 = 'rgb(239, 68, 68)'; // Rojo (#ef4444)
+          color1Alpha = 'rgba(239, 68, 68, 0.65)';
+          color2Alpha = 'rgba(248, 113, 113, 0.35)';
           glow = 'rgba(239, 68, 68, 0.4)';
           textColor = 'text-rose-500 dark:text-rose-400';
         } else if (pct < 80) {
-          color1 = 'rgba(245, 158, 11, 0.65)'; // Amarillo
-          color2 = 'rgba(253, 186, 116, 0.35)';
+          color1 = 'rgb(245, 158, 11)'; // Amarillo (#f59e0b)
+          color1Alpha = 'rgba(245, 158, 11, 0.65)';
+          color2Alpha = 'rgba(253, 186, 116, 0.35)';
           glow = 'rgba(245, 158, 11, 0.4)';
           textColor = 'text-amber-500 dark:text-amber-400';
         }
 
+        // Ordenar stats para consistencia
+        const orderedStats = ['online', 'slow', 'offline'].map(status => {
+          const found = stats.find(r => r.status === status);
+          return { status, total: found ? found.total : 0 };
+        });
+
         return (
           <div 
-            className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40 shadow-sm transition-all duration-300 hover:shadow-md" 
+            className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60 shadow-sm transition-all duration-300 hover:shadow-md hover:border-zinc-300 dark:hover:border-slate-700" 
             key={subnet}
           >
-            <div className="flex-1 min-w-0 pr-2">
-              <div className="mb-1 font-bold text-xs uppercase tracking-wide text-zinc-700 dark:text-slate-300 truncate">
+            <div className="flex-1 min-w-0 pr-4">
+              <div className="mb-0.5 font-extrabold text-sm uppercase tracking-wide text-zinc-800 dark:text-slate-200 truncate">
                 {getSubnetLabel(subnet)}
               </div>
-              <div className="text-[10px] text-zinc-400 dark:text-slate-500 font-semibold font-mono">
+              <div className="text-[10px] text-zinc-400 dark:text-slate-500 font-bold font-mono mb-4">
                 {subnet}
               </div>
-              
-              {/* Barra de progreso clásica debajo de los contadores como referencia visual fina */}
-              <div className="my-2 flex h-1.5 overflow-hidden rounded bg-zinc-100 dark:bg-slate-800">
-                {stats.map((row) => (
-                  <div 
-                    key={row.status} 
-                    className={barColor(row.status)} 
-                    style={{ width: `${(row.total / total) * 100}%` }} 
-                  />
-                ))}
-              </div>
 
-              <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-zinc-500 dark:text-slate-400 font-medium">
-                {stats.map((row) => (
-                  <span key={row.status} className="inline-flex items-center gap-1">
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${barColor(row.status)}`} />
-                    {row.status}: <strong className="text-zinc-700 dark:text-slate-200">{row.total}</strong>
-                  </span>
+              <div className="grid grid-cols-3 gap-2">
+                {orderedStats.map((row) => (
+                  <div key={row.status} className="flex flex-col">
+                    <span className="text-[9px] font-bold text-zinc-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
+                      {statusLabel(row.status)}
+                    </span>
+                    <span className={`text-base font-extrabold ${barColor(row.status)}`}>
+                      {row.total}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* Liquid Wave Circular Gauge (Bola de agua) */}
-            <div className="liquid-container border border-zinc-200 dark:border-slate-800 bg-zinc-50/50 dark:bg-slate-950/40 relative flex items-center justify-center rounded-full w-14 h-14 overflow-hidden shrink-0 shadow-inner">
-              <div 
-                className="liquid-bubble absolute bottom-0 left-0 w-full h-full transition-transform duration-1000 ease-out" 
-                style={{ 
-                  transform: `translateY(${100 - pct}%)`,
-                  '--wave-color-1': color1,
-                  '--wave-color-2': color2,
-                  '--wave-glow': glow
-                }}
-              >
-                <div className="liquid-wave-1" />
-                <div className="liquid-wave-2" />
-              </div>
-              <div className={`liquid-text text-xs font-black relative z-10 select-none ${textColor}`}>
-                {pct}
-                <span className="text-[7px] font-bold ml-0.5">%</span>
+            {/* Glowing Ring + Liquid Wave Circular Gauge (Bola de agua mediana estilo Hardware Sensor) */}
+            <div 
+              className="circular-progress-ring relative flex items-center justify-center rounded-full w-20 h-20 shrink-0 shadow-md"
+              style={{
+                background: `conic-gradient(${color1} 0%, ${color1} ${pct}%, rgba(128, 128, 128, 0.15) ${pct}%, rgba(128, 128, 128, 0.15) 100%)`,
+                boxShadow: `0 0 12px ${glow}`
+              }}
+            >
+              <div className="liquid-container border-0 bg-white dark:bg-slate-950 relative flex items-center justify-center rounded-full w-[70px] h-[70px] overflow-hidden">
+                <div 
+                  className="liquid-bubble absolute bottom-0 left-0 w-full h-full transition-transform duration-1000 ease-out" 
+                  style={{ 
+                    transform: `translateY(${100 - pct}%)`,
+                    '--wave-color-1': color1Alpha,
+                    '--wave-color-2': color2Alpha,
+                    '--wave-glow': glow
+                  }}
+                >
+                  <div className="liquid-wave-1" />
+                  <div className="liquid-wave-2" />
+                </div>
+                <div className={`liquid-text text-sm font-black relative z-10 select-none ${textColor}`}>
+                  {pct}
+                  <span className="text-[9px] font-bold ml-0.5">%</span>
+                </div>
               </div>
             </div>
           </div>
