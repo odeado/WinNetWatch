@@ -412,6 +412,20 @@ function checkPort(ip, port, timeout = config.rdpTimeoutMs) {
 function getRdpHostname(targetIp) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
+    let isDone = false;
+    
+    const done = (val) => {
+      if (isDone) return;
+      isDone = true;
+      socket.destroy();
+      resolve(val);
+    };
+
+    // Timeout duro de 3 segundos para prevenir bloqueos de TLS handshake
+    const hardTimeout = setTimeout(() => {
+      done(null);
+    }, 3000);
+
     socket.setTimeout(2000);
 
     socket.once('connect', () => {
@@ -435,41 +449,45 @@ function getRdpHostname(targetIp) {
             ciphers: 'DEFAULT@SECLEVEL=0'
           }, () => {
             const cert = secureSocket.getPeerCertificate();
-            if (secureSocket.destroyed) return;
+            if (secureSocket.destroyed || isDone) return;
             if (cert && cert.subject && cert.subject.CN) {
               const cn = cert.subject.CN.split('.')[0].trim();
-              resolve(cn);
+              clearTimeout(hardTimeout);
+              done(cn);
             } else {
-              resolve(null);
+              clearTimeout(hardTimeout);
+              done(null);
             }
             secureSocket.destroy();
           });
 
           secureSocket.on('error', () => {
-            resolve(null);
-            socket.destroy();
+            clearTimeout(hardTimeout);
+            done(null);
           });
         } catch {
-          resolve(null);
-          socket.destroy();
+          clearTimeout(hardTimeout);
+          done(null);
         }
       } else {
-        resolve(null);
-        socket.destroy();
+        clearTimeout(hardTimeout);
+        done(null);
       }
     });
 
-    socket.on('timeout', () => { resolve(null); socket.destroy(); });
-    socket.on('error', () => { resolve(null); socket.destroy(); });
+    socket.on('timeout', () => { clearTimeout(hardTimeout); done(null); });
+    socket.on('error', () => { clearTimeout(hardTimeout); done(null); });
 
     socket.connect(3389, targetIp);
   });
 }
 
 async function resolveHostname(ip) {
-  // 1. DNS reverse
+  // 1. DNS reverse con timeout de 2 segundos para evitar bloqueos
   try {
-    const names = await dns.reverse(ip);
+    const dnsPromise = dns.reverse(ip);
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000));
+    const names = await Promise.race([dnsPromise, timeoutPromise]);
     if (names && names[0]) {
       return names[0].split('.')[0].trim();
     }
