@@ -264,14 +264,13 @@ async function syncDeviceFromFirestore(fsData) {
       );
       console.log(`[FirebaseSync] Equipo creado desde la nube: ${fsData.hostname || fsData.ip}`);
     } else {
+      // CORRECCIÓN PARA EVITAR SOBREESCRIBIR LA REALIDAD DE MONITOREO LOCAL
+      // No comparamos ni sobreescribimos campos que mide el escáner local (status, latency_ms, rdp_available, os, last_seen, ping_ttl, last_reboot, boot_count).
+      // Solo sincronizamos metadatos administrados por el usuario desde la nube.
       const diff =
         local.hostname !== (fsData.hostname || null) ||
         local.ip !== fsData.ip ||
         local.mac !== (fsData.mac || null) ||
-        local.os !== (fsData.os || null) ||
-        local.status !== (fsData.status || 'unknown') ||
-        local.rdp_available !== (fsData.rdp_available || false) ||
-        local.latency_ms !== (fsData.latency_ms || null) ||
         local.subnet !== (fsData.subnet || 'unknown') ||
         local.city !== (fsData.city || null) ||
         local.branch !== (fsData.branch || null) ||
@@ -302,22 +301,18 @@ async function syncDeviceFromFirestore(fsData) {
       if (diff) {
         await query(
           `UPDATE devices
-           SET hostname = $2, ip = $3, mac = $4, os = $5, status = $6, rdp_available = $7, latency_ms = $8,
-               subnet = $9, city = $10, branch = $11, department = $12, responsible_user = $13, phone = $14,
-               email = $15, notes = $16, brand = $17, model = $18, serial_number = $19, critical = $20,
-               managed = $21, employee_id = $22, cpu = $23, ram = $24, storage = $25, gpu = $26,
-               motherboard = $27, image_url = $28, device_type = $29, location = $30, office = $31, antivirus = $32,
-               switch_id = $33, switch_port = $34, updated_at = now()
+           SET hostname = $2, ip = $3, mac = $4,
+               subnet = $5, city = $6, branch = $7, department = $8, responsible_user = $9, phone = $10,
+               email = $11, notes = $12, brand = $13, model = $14, serial_number = $15, critical = $16,
+               managed = $17, employee_id = $18, cpu = $19, ram = $20, storage = $21, gpu = $22,
+               motherboard = $23, image_url = $24, device_type = $25, location = $26, office = $27, antivirus = $28,
+               switch_id = $29, switch_port = $30, updated_at = now()
            WHERE id = $1`,
           [
             uuid,
             fsData.hostname || null,
             fsData.ip,
             fsData.mac || null,
-            fsData.os || null,
-            fsData.status || 'unknown',
-            fsData.rdp_available || false,
-            fsData.latency_ms || null,
             fsData.subnet || 'unknown',
             fsData.city || null,
             fsData.branch || null,
@@ -346,7 +341,7 @@ async function syncDeviceFromFirestore(fsData) {
             fsData.switch_port || null
           ]
         );
-        console.log(`[FirebaseSync] Equipo actualizado desde la nube: ${fsData.hostname || fsData.ip}`);
+        console.log(`[FirebaseSync] Equipo actualizado desde la nube (metadatos): ${fsData.hostname || fsData.ip}`);
       }
     }
   } catch (error) {
