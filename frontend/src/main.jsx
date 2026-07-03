@@ -4521,19 +4521,105 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
 }
 
 function Stats({ summary }) {
-  const items = [
-    ['Total', summary.total || 0, <Laptop size={18} />, 'bg-zinc-900 text-white dark:bg-slate-100 dark:text-slate-950'],
-    ['Online', summary.online || 0, <CheckCircle2 size={18} />, 'bg-emerald-500 text-slate-950'],
-    ['Offline', summary.offline || 0, <WifiOff size={18} />, 'bg-red-500 text-white'],
-    ['RDP', summary.rdp || 0, <Cable size={18} />, 'bg-sky-500 text-white']
+  const total = summary.total || 0;
+  const online = summary.online || 0;
+  const offline = summary.offline || 0;
+  const rdp = summary.rdp || 0;
+
+  const cards = [
+    {
+      label: 'Total',
+      val: total,
+      pct: 100,
+      icon: <Laptop size={16} />,
+      colorClass: 'text-blue-500 dark:text-blue-400',
+      color1: 'rgba(59, 130, 246, 0.65)',
+      color2: 'rgba(96, 165, 250, 0.35)',
+      glow: 'rgba(59, 130, 246, 0.4)'
+    },
+    {
+      label: 'Online',
+      val: online,
+      pct: total > 0 ? Math.round((online / total) * 100) : 0,
+      icon: <CheckCircle2 size={16} />,
+      colorClass: 'text-emerald-500 dark:text-emerald-400',
+      color1: 'rgba(16, 185, 129, 0.65)',
+      color2: 'rgba(52, 211, 153, 0.35)',
+      glow: 'rgba(16, 185, 129, 0.4)'
+    },
+    {
+      label: 'Offline',
+      val: offline,
+      pct: total > 0 ? Math.round((offline / total) * 100) : 0,
+      icon: <WifiOff size={16} />,
+      colorClass: 'text-rose-500 dark:text-rose-400',
+      color1: 'rgba(239, 68, 68, 0.65)',
+      color2: 'rgba(248, 113, 113, 0.35)',
+      glow: 'rgba(239, 68, 68, 0.4)'
+    },
+    {
+      label: 'RDP',
+      val: rdp,
+      pct: online > 0 ? Math.round((rdp / online) * 100) : 0,
+      icon: <Cable size={16} />,
+      colorClass: 'text-sky-500 dark:text-sky-400',
+      color1: 'rgba(14, 165, 233, 0.65)',
+      color2: 'rgba(56, 189, 248, 0.35)',
+      glow: 'rgba(14, 165, 233, 0.4)'
+    }
   ];
-  return <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-4">{items.map(([label, value, icon, color]) => (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm transition-all duration-300 hover:shadow-md" key={label}>
-      <div className={`mb-3 grid h-9 w-9 place-items-center rounded-lg ${color} shadow-sm`}>{icon}</div>
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs text-zinc-500 dark:text-slate-400 font-semibold uppercase tracking-wider">{label}</p>
+
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-4">
+      {cards.map((card) => (
+        <div 
+          className="relative flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/90 shadow-sm transition-all duration-300 hover:shadow-md hover:border-zinc-300 dark:hover:border-slate-700 overflow-hidden" 
+          key={card.label}
+        >
+          {/* Background subtle glowing effect */}
+          <div className="absolute -left-10 -top-10 w-24 h-24 rounded-full filter blur-2xl opacity-10 bg-current pointer-events-none" />
+          
+          <div className="space-y-1.5 pr-2">
+            <div className="flex items-center gap-1.5 text-zinc-500 dark:text-slate-400">
+              <span className={card.colorClass}>{card.icon}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{card.label}</span>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-zinc-900 dark:text-white leading-none tracking-tight">
+                {card.val}
+              </p>
+              <p className="text-[9px] text-zinc-400 dark:text-slate-500 font-semibold mt-1">
+                {card.label === 'Total' && 'Dispositivos'}
+                {card.label === 'Online' && `${card.pct}% del total`}
+                {card.label === 'Offline' && `${card.pct}% del total`}
+                {card.label === 'RDP' && `${card.pct}% de los online`}
+              </p>
+            </div>
+          </div>
+
+          {/* Liquid Wave Circular Gauge (Bola de agua) */}
+          <div className="liquid-container border border-zinc-200/80 dark:border-slate-800 bg-zinc-50/50 dark:bg-slate-950/40 relative flex items-center justify-center rounded-full w-14 h-14 sm:w-16 sm:h-16 overflow-hidden shrink-0 shadow-inner">
+            <div 
+              className="liquid-bubble absolute bottom-0 left-0 w-full h-full transition-transform duration-1000 ease-out" 
+              style={{ 
+                transform: `translateY(${100 - card.pct}%)`,
+                '--wave-color-1': card.color1,
+                '--wave-color-2': card.color2,
+                '--wave-glow': card.glow
+              }}
+            >
+              <div className="liquid-wave-1" />
+              <div className="liquid-wave-2" />
+            </div>
+            <div className="liquid-text text-xs sm:text-sm font-black text-zinc-800 dark:text-white relative z-10 select-none">
+              {card.pct}
+              <span className="text-[8px] font-bold ml-0.5">%</span>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
-  ))}</div>;
+  );
 }
 
 function Panel({ title, icon, children }) {
