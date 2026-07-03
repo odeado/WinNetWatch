@@ -52,6 +52,9 @@ async function syncEmployeeFromFirestore(fsData) {
     const { rows } = await query('SELECT * FROM employees WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
+      if (fsData.email) {
+        await query('DELETE FROM employees WHERE email = $1 AND id <> $2', [fsData.email, uuid]);
+      }
       await query(
         `INSERT INTO employees (id, full_name, email, department, city, status, phone, workplace, vpn_active, vpn_type, image_url, active, job_title, authorized_systems)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
@@ -215,6 +218,7 @@ async function syncDeviceFromFirestore(fsData) {
     const { rows } = await query('SELECT * FROM devices WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
+      await query('DELETE FROM devices WHERE ip = $1 AND id <> $2', [fsData.ip, uuid]);
       await query(
         `INSERT INTO devices (
           id, hostname, ip, mac, os, status, rdp_available, latency_ms, subnet, city, branch, department,
@@ -369,6 +373,7 @@ async function syncDepartmentFromFirestore(fsData) {
     const { rows } = await query('SELECT * FROM departments WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
+      await query('DELETE FROM departments WHERE name = $1 AND id <> $2', [fsData.name, uuid]);
       await query('INSERT INTO departments (id, name) VALUES ($1, $2)', [uuid, fsData.name]);
     } else if (local.name !== fsData.name) {
       await query('UPDATE departments SET name = $2 WHERE id = $1', [uuid, fsData.name]);
@@ -384,6 +389,7 @@ async function syncCityFromFirestore(fsData) {
     const { rows } = await query('SELECT * FROM cities WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
+      await query('DELETE FROM cities WHERE name = $1 AND id <> $2', [fsData.name, uuid]);
       await query('INSERT INTO cities (id, name) VALUES ($1, $2)', [uuid, fsData.name]);
     } else if (local.name !== fsData.name) {
       await query('UPDATE cities SET name = $2 WHERE id = $1', [uuid, fsData.name]);
