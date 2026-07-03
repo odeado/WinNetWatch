@@ -87,76 +87,8 @@ export function checkPort(ip, port = 3389, timeout = config.rdpTimeoutMs) {
 }
 
 export function getRdpHostname(targetIp) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    let isDone = false;
-    
-    const done = (val) => {
-      if (isDone) return;
-      isDone = true;
-      socket.destroy();
-      resolve(val);
-    };
-
-    // Timeout duro de 3 segundos para prevenir bloqueos de TLS handshake
-    const hardTimeout = setTimeout(() => {
-      done(null);
-    }, 3000);
-
-    socket.setTimeout(2000);
-
-    socket.once('connect', () => {
-      const req = Buffer.from([
-        0x03, 0x00, 0x00, 0x13, // TPKT
-        0x0e, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00, // X.224 Connection Request
-        0x01, 0x00, 0x08, 0x00, // NegReq
-        0x01, 0x00, 0x00, 0x00  // PROTOCOL_SSL only (0x01)
-      ]);
-      socket.write(req);
-    });
-
-    socket.once('data', (data) => {
-      if (data.length >= 19 && data[15] === 0x01) {
-        try {
-          const secureSocket = tls.connect({
-            socket: socket,
-            rejectUnauthorized: false,
-            servername: targetIp,
-            minVersion: 'TLSv1',
-            ciphers: 'DEFAULT@SECLEVEL=0'
-          }, () => {
-            const cert = secureSocket.getPeerCertificate();
-            if (secureSocket.destroyed || isDone) return;
-            if (cert && cert.subject && cert.subject.CN) {
-              const cn = cert.subject.CN.split('.')[0].trim();
-              clearTimeout(hardTimeout);
-              done(cn);
-            } else {
-              clearTimeout(hardTimeout);
-              done(null);
-            }
-            secureSocket.destroy();
-          });
-
-          secureSocket.on('error', () => {
-            clearTimeout(hardTimeout);
-            done(null);
-          });
-        } catch {
-          clearTimeout(hardTimeout);
-          done(null);
-        }
-      } else {
-        clearTimeout(hardTimeout);
-        done(null);
-      }
-    });
-
-    socket.on('timeout', () => { clearTimeout(hardTimeout); done(null); });
-    socket.on('error', () => { clearTimeout(hardTimeout); done(null); });
-
-    socket.connect(3389, targetIp);
-  });
+  // Desactivado para prevenir caídas nativas de OpenSSL/TLS en Windows
+  return Promise.resolve(null);
 }
 
 export async function resolveHostname(ip) {
