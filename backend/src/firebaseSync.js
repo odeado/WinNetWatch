@@ -226,7 +226,7 @@ async function syncDeviceFromFirestore(fsData) {
 
     // Validar llave foránea de switch (infraestructura)
     if (switchUuid) {
-      const swExists = (await query('SELECT id FROM infrastructure WHERE id = $1', [switchUuid])).rows[0];
+      const swExists = (await query('SELECT id FROM network_infrastructure WHERE id = $1', [switchUuid])).rows[0];
       if (!swExists) {
         switchUuid = null;
       }
@@ -803,98 +803,130 @@ export async function initFirebaseSync() {
   
   await runInitialSync();
 
-  onSnapshot(collection(db, 'employees'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'employees'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { id: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' || change.type === 'modified') {
-        await syncEmployeeFromFirestore(data);
-      } else if (change.type === 'removed') {
-        const uuid = stringToUUID(change.doc.id);
-        await query('DELETE FROM employees WHERE id = $1', [uuid]);
-        console.log(`[FirebaseSync] Empleado eliminado localmente por baja remota: ${data.full_name || uuid}`);
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncEmployeeFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM employees WHERE id = $1', [uuid]);
+          console.log(`[FirebaseSync] Empleado eliminado localmente por baja remota: ${data.full_name || uuid}`);
+        }
+      } catch (err) {
+        console.error('Error handling employee change:', err);
       }
-    });
+    }
   });
 
-  onSnapshot(collection(db, 'devices'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'devices'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { id: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' || change.type === 'modified') {
-        await syncDeviceFromFirestore(data);
-      } else if (change.type === 'removed') {
-        const uuid = stringToUUID(change.doc.id);
-        await query('DELETE FROM devices WHERE id = $1', [uuid]);
-        console.log(`[FirebaseSync] Equipo eliminado localmente por baja remota: ${data.hostname || data.ip || uuid}`);
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncDeviceFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM devices WHERE id = $1', [uuid]);
+          console.log(`[FirebaseSync] Equipo eliminado localmente por baja remota: ${data.hostname || data.ip || uuid}`);
+        }
+      } catch (err) {
+        console.error('Error handling device change:', err);
       }
-    });
+    }
   });
 
-  onSnapshot(collection(db, 'subnet_mappings'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'subnet_mappings'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { subnet: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' || change.type === 'modified') {
-        await syncSubnetMappingFromFirestore(data);
-      } else if (change.type === 'removed') {
-        await query('DELETE FROM subnet_mappings WHERE subnet = $1', [change.doc.id]);
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncSubnetMappingFromFirestore(data);
+        } else if (change.type === 'removed') {
+          await query('DELETE FROM subnet_mappings WHERE subnet = $1', [change.doc.id]);
+        }
+      } catch (err) {
+        console.error('Error handling subnet_mapping change:', err);
       }
-    });
+    }
   });
 
-  onSnapshot(collection(db, 'departments'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'departments'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { id: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' || change.type === 'modified') {
-        await syncDepartmentFromFirestore(data);
-      } else if (change.type === 'removed') {
-        const uuid = stringToUUID(change.doc.id);
-        await query('DELETE FROM departments WHERE id = $1', [uuid]);
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncDepartmentFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM departments WHERE id = $1', [uuid]);
+        }
+      } catch (err) {
+        console.error('Error handling department change:', err);
       }
-    });
+    }
   });
 
-  onSnapshot(collection(db, 'cities'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'cities'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { id: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' || change.type === 'modified') {
-        await syncCityFromFirestore(data);
-      } else if (change.type === 'removed') {
-        const uuid = stringToUUID(change.doc.id);
-        await query('DELETE FROM cities WHERE id = $1', [uuid]);
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncCityFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM cities WHERE id = $1', [uuid]);
+        }
+      } catch (err) {
+        console.error('Error handling city change:', err);
       }
-    });
+    }
   });
 
-  onSnapshot(collection(db, 'infrastructure'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'infrastructure'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { id: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' || change.type === 'modified') {
-        await syncInfrastructureFromFirestore(data);
-      } else if (change.type === 'removed') {
-        const uuid = stringToUUID(change.doc.id);
-        await query('DELETE FROM network_infrastructure WHERE id = $1', [uuid]);
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncInfrastructureFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM network_infrastructure WHERE id = $1', [uuid]);
+        }
+      } catch (err) {
+        console.error('Error handling infrastructure change:', err);
       }
-    });
+    }
   });
 
-  onSnapshot(collection(db, 'app_users'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'app_users'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { id: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' || change.type === 'modified') {
-        await syncUserFromFirestore(data);
-      } else if (change.type === 'removed') {
-        const uuid = stringToUUID(change.doc.id);
-        await query('DELETE FROM app_users WHERE id = $1', [uuid]);
-        console.log(`[FirebaseSync] Usuario eliminado localmente: ${data.email || uuid}`);
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncUserFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM app_users WHERE id = $1', [uuid]);
+          console.log(`[FirebaseSync] Usuario eliminado localmente: ${data.email || uuid}`);
+        }
+      } catch (err) {
+        console.error('Error handling app_user change:', err);
       }
-    });
+    }
   });
 
-  onSnapshot(collection(db, 'actions'), (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+  onSnapshot(collection(db, 'actions'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
       const data = { id: change.doc.id, ...change.doc.data() };
-      if (change.type === 'added' && data.status === 'queued') {
-        await handleRemoteAction(data);
+      try {
+        if (change.type === 'added' && data.status === 'queued') {
+          await handleRemoteAction(data);
+        }
+      } catch (err) {
+        console.error('Error handling action change:', err);
       }
-    });
+    }
   });
 }

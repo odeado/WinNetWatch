@@ -2,6 +2,26 @@ import http from 'node:http';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
+import fs from 'node:fs';
+
+process.on('uncaughtException', (err) => {
+  const logMsg = `UNCAUGHT EXCEPTION:\n${err.stack || err}\n`;
+  console.error(logMsg);
+  try {
+    fs.writeFileSync('c:/Users/pirat/Documents/Codex/2026-06-04/desarrolla-un-sistema-web-local-de/outputs/win-netwatch/backend/crash.log', logMsg);
+  } catch {}
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  const logMsg = `UNHANDLED REJECTION:\n${reason?.stack || reason}\n`;
+  console.error(logMsg);
+  try {
+    fs.writeFileSync('c:/Users/pirat/Documents/Codex/2026-06-04/desarrolla-un-sistema-web-local-de/outputs/win-netwatch/backend/crash.log', logMsg);
+  } catch {}
+  process.exit(1);
+});
+
 import { config } from './config.js';
 import { router } from './routes.js';
 import { attachWebSocket } from './wsHub.js';
