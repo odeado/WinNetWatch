@@ -304,15 +304,33 @@ function buildEvidence({ ping, openPorts, hostname, mac }) {
 }
 
 function parsePingStats(output) {
+  const lowercaseOutput = output.toLowerCase();
   const latencies = [...output.matchAll(/(?:time|tiempo)[=<]\s*(\d+(?:\.\d+)?)\s*ms/gi)].map((match) => Number(match[1]));
+  
   const winPackets = output.match(/(?:Packets|Paquetes):\s*(?:Sent|enviados)\s*=\s*(\d+),\s*(?:Received|recibidos)\s*=\s*(\d+),\s*(?:Lost|perdidos)\s*=\s*(\d+)/i);
   const unixPackets = output.match(/(\d+)\s+packets transmitted,\s+(\d+)\s+(?:packets )?received/i);
   const winAvg = output.match(/(?:Average|Media)\s*=\s*(\d+)\s*ms/i);
   const unixAvg = output.match(/(?:round-trip|rtt).*?=\s*([\d.]+)\/([\d.]+)\/([\d.]+)/i);
+  
   const sent = winPackets ? Number(winPackets[1]) : unixPackets ? Number(unixPackets[1]) : config.pingAttempts;
-  const received = winPackets ? Number(winPackets[2]) : unixPackets ? Number(unixPackets[2]) : latencies.length;
+  let received = winPackets ? Number(winPackets[2]) : unixPackets ? Number(unixPackets[2]) : latencies.length;
+  
+  // CORRECCIÓN FALSO POSITIVO EN WINDOWS:
+  // Si no hay latencias reales medidas en el output (tiempo=Xms) o si contiene palabras de error,
+  // el host de destino está offline (ignorar respuesta ICMP del router/gateway intermedio).
+  const isUnreachable = lowercaseOutput.includes('inaccesible') || 
+                        lowercaseOutput.includes('unreachable') || 
+                        lowercaseOutput.includes('agotado') || 
+                        lowercaseOutput.includes('timed out') ||
+                        latencies.length === 0;
+
+  if (isUnreachable) {
+    received = 0;
+  }
+
   const packetLossPct = sent > 0 ? Math.round(((sent - received) / sent) * 100) : 100;
-  const avgLatencyMs = winAvg ? Number(winAvg[1]) : unixAvg ? Math.round(Number(unixAvg[2])) : average(latencies);
+  const avgLatencyMs = received > 0 ? (winAvg ? Number(winAvg[1]) : unixAvg ? Math.round(Number(unixAvg[2])) : average(latencies)) : null;
+  
   return {
     sent,
     received,
