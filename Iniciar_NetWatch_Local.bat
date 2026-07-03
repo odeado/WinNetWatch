@@ -9,9 +9,11 @@ echo.
 echo [+] Liberando puerto 8080 en Docker...
 docker-compose stop api >nul 2>&1
 
-:: 2. Levantar la base de datos (Postgres) y el Frontend en Docker
+:: 2. Levantar la base de datos (Postgres) y el Frontend (sin levantar la API de Docker)
 echo [+] Levantando Base de Datos y Frontend en Docker...
-docker-compose up -d postgres frontend
+docker-compose up -d postgres
+docker-compose up -d --no-deps frontend
+docker-compose stop api >nul 2>&1
 
 :: 3. Abrir y ejecutar el backend local en una nueva ventana
 echo [+] Iniciando Backend en red local (VPN)...
