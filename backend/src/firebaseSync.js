@@ -213,8 +213,25 @@ async function syncUserFromFirestore(fsData) {
 async function syncDeviceFromFirestore(fsData) {
   try {
     const uuid = stringToUUID(fsData.id);
-    const employeeUuid = stringToUUID(fsData.employee_id);
-    const switchUuid = stringToUUID(fsData.switch_id);
+    let employeeUuid = stringToUUID(fsData.employee_id);
+    let switchUuid = stringToUUID(fsData.switch_id);
+
+    // Validar llave foránea de empleado para evitar violación de FK
+    if (employeeUuid) {
+      const empExists = (await query('SELECT id FROM employees WHERE id = $1', [employeeUuid])).rows[0];
+      if (!empExists) {
+        employeeUuid = null;
+      }
+    }
+
+    // Validar llave foránea de switch (infraestructura)
+    if (switchUuid) {
+      const swExists = (await query('SELECT id FROM infrastructure WHERE id = $1', [switchUuid])).rows[0];
+      if (!swExists) {
+        switchUuid = null;
+      }
+    }
+
     const { rows } = await query('SELECT * FROM devices WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
