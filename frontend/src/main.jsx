@@ -1080,7 +1080,29 @@ function Dashboard({ token, user, theme, setTheme }) {
       triggerToast('Equipo guardado con éxito', 'success');
     } catch (err) {
       console.error('Error saving device:', err);
-      if (err.message?.toLowerCase().includes('quota') || err.message?.toLowerCase().includes('exhausted') || err.code === 'resource-exhausted') {
+      if (err.code === 'resource-exhausted' || (err.message && (err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('exhausted')))) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          try {
+            console.log('Firebase quota exceeded, attempting local API fallback save...');
+            const isEdit = !!finalForm.id;
+            const url = isEdit ? `${API_URL}/api/devices/${finalForm.id}` : `${API_URL}/api/devices`;
+            const method = isEdit ? 'PATCH' : 'POST';
+            const response = await fetch(url, {
+              method,
+              headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+              setDeviceModal(null);
+              setSelected(null);
+              triggerToast('Equipo guardado localmente con éxito (cuota nube excedida)', 'success');
+              loadData(); // ensure local UI data is reloaded
+              return;
+            }
+          } catch (localErr) {
+            console.error('Local API fallback save failed:', localErr);
+          }
+        }
         alert('⚠️ Límite de cuota de Firebase excedido: Se ha agotado el límite gratuito diario de escrituras en la nube de Google. Los cambios no se pueden guardar en la nube hasta que la cuota se restablezca automáticamente (a medianoche). Si estás en la oficina, asegúrate de activar el Servidor Local para guardar sin límites.');
       } else {
         alert('Error al guardar equipo: ' + err.message);
@@ -2019,7 +2041,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           <span>Límite de cuota en la Nube (Firebase) excedido. Los cambios se guardan localmente en tiempo real, pero se sincronizarán con la Nube una vez restablecida la cuota diaria (esta noche).</span>
         </div>
       )}
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
+      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
         <div className="mx-auto flex flex-col md:flex-row md:items-center justify-between px-4 py-3 gap-3 max-w-[1600px]">
           <div className="flex items-center justify-between w-full md:w-auto gap-4">
             <div className="flex items-center gap-3">
@@ -4676,10 +4698,27 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
       } else {
         await setDoc(doc(db, 'devices', device.id), form);
       }
-      await onSaved();
       onClose();
+      void onSaved();
     } catch (err) {
       console.error('Error saving device from drawer:', err);
+      if (err.code === 'resource-exhausted' || (err.message && (err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('exhausted')))) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          try {
+            console.log('Firebase quota exceeded in drawer save, attempting local API fallback...');
+            await fetch(`${API_URL}/api/devices/${device.id}`, {
+              method: 'PATCH',
+              headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+              body: JSON.stringify(form)
+            });
+            onClose();
+            void onSaved();
+            return;
+          } catch (localErr) {
+            console.error('Local API fallback save from drawer failed:', localErr);
+          }
+        }
+      }
       alert('Error al guardar: ' + err.message);
     }
   }
@@ -4741,7 +4780,7 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
   const [locationType, setLocationType] = useState(isCustomLocation ? 'Otro' : (form.location || 'Matta'));
 
   return (
-    <div className="fixed inset-0 z-20 bg-slate-950/65 backdrop-blur-sm flex justify-end">
+    <div className="fixed inset-0 z-40 bg-slate-950/65 backdrop-blur-sm flex justify-end">
       <aside className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-900 border-l border-zinc-200 dark:border-slate-800 transition-all duration-300">
         <div className="flex items-start justify-between border-b border-zinc-200 dark:border-slate-800 pb-4">
           <div>
