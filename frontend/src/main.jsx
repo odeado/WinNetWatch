@@ -3565,14 +3565,15 @@ function Dashboard({ token, user, theme, setTheme }) {
 
       {/* Employee Modal (Ficha de Empleado) */}
       {employeeModal && (
-        <div className={`fixed inset-0 ${employeeModal.mode === 'create' ? 'z-[60]' : 'z-50'} flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3 xs:p-4`}>
-          <div className="w-[94%] xs:w-full max-w-xl rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden transition-all duration-300">
+        <div className={`fixed inset-0 ${employeeModal.mode === 'create' ? 'z-[60]' : 'z-50'} flex items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-sm p-0 sm:p-4`}>
+          <div className="w-full h-[100dvh] sm:h-auto sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden flex flex-col transition-all duration-300">
             {employeeModal.mode === 'view' ? (
-              <div className="space-y-6">
-                {/* Banner Profile */}
-                <div className="relative">
-                  <div className="h-24 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-t-2xl"></div>
-                  <div className="absolute left-6 -bottom-8">
+              <div className="flex-1 flex flex-col justify-between overflow-hidden">
+                <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+                  {/* Banner Profile */}
+                  <div className="relative">
+                    <div className="h-16 xs:h-20 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+                    <div className="absolute left-4 xs:left-6 -bottom-6">
                     {employeeModal.form.image_url ? (
                       <img
                         src={employeeModal.form.image_url}
@@ -3794,6 +3795,8 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </div>
                 </div>
 
+                </div>
+
                 {/* Modal Actions */}
                 <div className="bg-zinc-50 dark:bg-slate-900/50 px-4 xs:px-6 py-3 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
                   <button
@@ -3811,7 +3814,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 </div>
               </div>
             ) : (
-              <div>
+              <div className="flex-1 flex flex-col justify-between overflow-hidden">
                 <div className="px-6 py-4 border-b border-zinc-100 dark:border-slate-800 flex items-center justify-between">
                   <h3 className="text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                     <User className="text-emerald-500" size={20} />
@@ -3820,7 +3823,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   <button className="text-2xl text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200" onClick={() => setEmployeeModal(null)}>×</button>
                 </div>
 
-                <div className="p-6 grid gap-4 sm:grid-cols-2 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="flex-1 overflow-y-auto p-6 grid gap-4 sm:grid-cols-2">
                   <label className="block">
                     <span className="label">Nombre Completo *</span>
                     <input
