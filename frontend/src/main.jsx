@@ -4795,9 +4795,10 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
   const [locationType, setLocationType] = useState(isCustomLocation ? 'Otro' : (form.location || 'Matta'));
 
   return (
-    <div className="fixed inset-0 z-40 bg-slate-950/65 backdrop-blur-sm flex justify-end">
-      <aside className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-900 border-l border-zinc-200 dark:border-slate-800 transition-all duration-300">
-        <div className="flex items-start justify-between border-b border-zinc-200 dark:border-slate-800 pb-4">
+    <div className="fixed inset-0 z-40 bg-slate-950/65 backdrop-blur-sm flex justify-end items-end sm:items-stretch">
+      <aside className="h-[100dvh] sm:h-full w-full max-w-xl bg-white shadow-2xl dark:bg-slate-900 border-0 sm:border-l border-zinc-200 dark:border-slate-800 transition-all duration-300 flex flex-col justify-between overflow-hidden">
+        {/* Fixed Header */}
+        <div className="flex items-start justify-between border-b border-zinc-200 dark:border-slate-800 p-4 xs:p-6 pb-4 flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-950 dark:text-white">
               <Laptop className="text-emerald-500" size={22} />
@@ -4805,10 +4806,12 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
             </h2>
             <p className="text-xs text-zinc-500 dark:text-slate-400 mt-1 font-mono">{form.ip} · {form.mac || 'MAC no detectada'} · {form.os || 'SO no identificado'}</p>
           </div>
-          <button className="text-2xl text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200 font-semibold" onClick={onClose}>×</button>
+          <button className="text-2xl text-zinc-400 hover:text-zinc-650 dark:hover:text-slate-200 font-semibold px-2" onClick={onClose}>×</button>
         </div>
 
-        {/* Device Image Section */}
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto p-4 xs:p-6 space-y-6">
+          {/* Device Image Section */}
         <div className="mt-4 bg-zinc-50 dark:bg-slate-900 p-4 rounded-xl border border-zinc-200 dark:border-slate-800">
           <h4 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-2">Foto del Equipo</h4>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -4893,9 +4896,10 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
             </div>
           );
         })()}
-
+        </div>
+ 
         {/* General details */}
-        <fieldset disabled={!isAdmin} className="contents">
+        <fieldset disabled={!isAdmin} className="flex-1 overflow-y-auto space-y-6 block min-w-0 p-4 xs:p-6 pb-6">
         <div className="mt-6">
           <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider mb-3 pb-1 border-b border-zinc-200 dark:border-slate-800">Detalles de Asignación y Ubicación</h3>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -5152,10 +5156,10 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
         </label>
         </fieldset>
 
-        {/* Footer Actions */}
-        <div className="mt-6 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 pt-4 pb-6">
-          <button className="button secondary" onClick={onClose}>Cancelar</button>
-          {isAdmin && <button className="button primary" onClick={save}>Guardar Cambios</button>}
+        {/* Fixed Footer Actions */}
+        <div className="bg-zinc-50 dark:bg-slate-900/50 px-4 xs:px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 flex-shrink-0">
+          <button className="button secondary py-1.5 px-3.5 text-xs font-bold" onClick={onClose}>Cancelar</button>
+          {isAdmin && <button className="button primary py-1.5 px-3.5 text-xs font-bold" onClick={save}>Guardar Cambios</button>}
         </div>
       </aside>
     </div>
