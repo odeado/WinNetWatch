@@ -17,7 +17,8 @@ import {
   pushEventToFirebase,
   pushAlertToFirebase,
   pushInfrastructureToFirebase,
-  deleteInfrastructureFromFirebase
+  deleteInfrastructureFromFirebase,
+  isFirebaseQuotaExceeded
 } from './firebaseSync.js';
 
 export const router = express.Router();
@@ -184,7 +185,7 @@ LIMIT 12
     ORDER BY subnet, status
   `)
 ]);
-    res.json({ summary, alerts: alerts.rows, events: events.rows, bySubnet: bySubnet.rows });
+    res.json({ summary, alerts: alerts.rows, events: events.rows, bySubnet: bySubnet.rows, firebase_quota_exceeded: isFirebaseQuotaExceeded() });
   } catch (error) {
     next(error);
   }

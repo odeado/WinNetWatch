@@ -6,6 +6,22 @@ import { scanAll } from './monitor.js';
 import dgram from 'node:dgram';
 import crypto from 'node:crypto';
 
+let firebaseQuotaExceeded = false;
+
+export function isFirebaseQuotaExceeded() {
+  return firebaseQuotaExceeded;
+}
+
+function handleFirebaseWriteSuccess() {
+  firebaseQuotaExceeded = false;
+}
+
+function handleFirebaseWriteError(err) {
+  if (err && (err.code === 'resource-exhausted' || (err.message && (err.message.toLowerCase().includes('resource-exhausted') || err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('limit'))))) {
+    firebaseQuotaExceeded = true;
+  }
+}
+
 function stringToUUID(str) {
   if (!str) return null;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -605,8 +621,10 @@ export async function pushDeviceToFirebase(device) {
       switch_id: device.switch_id || null,
       switch_port: device.switch_port || null
     });
+    handleFirebaseWriteSuccess();
   } catch (err) {
     console.error('[FirebaseSync] Error al subir equipo a Firebase:', err);
+    handleFirebaseWriteError(err);
   }
 }
 
@@ -628,8 +646,10 @@ export async function pushEmployeeToFirebase(employee) {
       job_title: employee.job_title || '',
       authorized_systems: employee.authorized_systems || ''
     });
+    handleFirebaseWriteSuccess();
   } catch (err) {
     console.error('[FirebaseSync] Error al subir empleado a Firebase:', err);
+    handleFirebaseWriteError(err);
   }
 }
 

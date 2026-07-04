@@ -4,7 +4,7 @@ import {
   Activity, Bell, Boxes, Building2, Cable, CheckCircle2, Clock3, Download,
   FileDown, Laptop, Moon, Network, Play, RefreshCw, Search, Shield, Sun,
   TerminalSquare, Users, WifiOff, User, Plus, Trash2, Cpu, Eye, LogOut, Upload, Info,
-  Briefcase, MapPin, Lock, UserPlus, Edit3, ToggleLeft, ToggleRight
+  Briefcase, MapPin, Lock, UserPlus, Edit3, ToggleLeft, ToggleRight, AlertTriangle
 } from 'lucide-react';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -295,6 +295,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [useLocalApi, setUseLocalApi] = useState(() => {
     return localStorage.getItem('use_local_api') === 'true';
   });
+  const [firebaseQuotaExceeded, setFirebaseQuotaExceeded] = useState(false);
   const [deviceFilter, setDeviceFilter] = useState('');
   const [deviceModal, setDeviceModal] = useState(null);
   const [inventoryTab, setInventoryTab] = useState('Todos');
@@ -572,6 +573,9 @@ function Dashboard({ token, user, theme, setTheme }) {
 
     const handleFirebaseError = (err) => {
       console.warn('Firestore subscription failed, switching to local API polling:', err);
+      if (err && (err.code === 'resource-exhausted' || (err.message && (err.message.toLowerCase().includes('resource-exhausted') || err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('limit'))))) {
+        setFirebaseQuotaExceeded(true);
+      }
       localStorage.setItem('use_local_api', 'true');
       setUseLocalApi(true);
       if (unsubDevices) unsubDevices();
@@ -829,6 +833,7 @@ function Dashboard({ token, user, theme, setTheme }) {
         const data = await summaryRes.json();
         setEvents(data.events || []);
         setAlerts(data.alerts || []);
+        setFirebaseQuotaExceeded(!!data.firebase_quota_exceeded);
       }
 
       // 7. Fetch infrastructure
@@ -2008,6 +2013,12 @@ function Dashboard({ token, user, theme, setTheme }) {
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-slate-950 dark:text-slate-100 font-sans transition-colors duration-300">
+      {firebaseQuotaExceeded && (
+        <div className="bg-amber-500 text-zinc-950 text-center py-2 px-4 text-xs font-bold flex items-center justify-center gap-2 border-b border-amber-600/20 shadow-md">
+          <AlertTriangle size={14} className="flex-shrink-0 animate-pulse text-amber-950" />
+          <span>Límite de cuota en la Nube (Firebase) excedido. Los cambios se guardan localmente en tiempo real, pero se sincronizarán con la Nube una vez restablecida la cuota diaria (esta noche).</span>
+        </div>
+      )}
       <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
         <div className="mx-auto flex flex-col md:flex-row md:items-center justify-between px-4 py-3 gap-3 max-w-[1600px]">
           <div className="flex items-center justify-between w-full md:w-auto gap-4">
