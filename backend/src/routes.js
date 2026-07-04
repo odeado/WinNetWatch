@@ -367,20 +367,22 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
       }
     }
 
-    if (finalDevice.department && finalDevice.department.trim() !== '') {
-      await query('INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [finalDevice.department.trim()]);
-      const { rows: deptRows } = await query('SELECT id FROM departments WHERE name = $1', [finalDevice.department.trim()]);
-      if (deptRows.length) await pushDepartmentToFirebase({ id: deptRows[0].id, name: finalDevice.department.trim() });
-    }
-    if (finalDevice.city && finalDevice.city.trim() !== '') {
-      await query('INSERT INTO cities (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [finalDevice.city.trim()]);
-      const { rows: cityRows } = await query('SELECT id FROM cities WHERE name = $1', [finalDevice.city.trim()]);
-      if (cityRows.length) await pushCityToFirebase({ id: cityRows[0].id, name: finalDevice.city.trim() });
-    }
-
-    await pushDeviceToFirebase(finalDevice);
+    // Respond immediately — Firebase syncs in the background (fire-and-forget)
     await audit(req.user.sub, 'device.update', 'device', req.params.id, before, finalDevice);
     res.json(finalDevice);
+
+    // Async background sync to Firebase — does NOT block the response
+    if (finalDevice.department && finalDevice.department.trim() !== '') {
+      query('SELECT id FROM departments WHERE name = $1', [finalDevice.department.trim()])
+        .then(({ rows }) => { if (rows.length) pushDepartmentToFirebase({ id: rows[0].id, name: finalDevice.department.trim() }).catch(e => console.warn('[Firebase bg] dept:', e.code || e.message)); })
+        .catch(() => {});
+    }
+    if (finalDevice.city && finalDevice.city.trim() !== '') {
+      query('SELECT id FROM cities WHERE name = $1', [finalDevice.city.trim()])
+        .then(({ rows }) => { if (rows.length) pushCityToFirebase({ id: rows[0].id, name: finalDevice.city.trim() }).catch(e => console.warn('[Firebase bg] city:', e.code || e.message)); })
+        .catch(() => {});
+    }
+    pushDeviceToFirebase(finalDevice).catch(e => console.warn('[Firebase bg] device PATCH:', e.code || e.message));
   } catch (error) {
     next(error);
   }
@@ -823,9 +825,10 @@ router.delete('/devices/:id', requirePermission('devices:write'), async (req, re
     if (!before) return res.status(404).json({ error: 'Equipo no encontrado' });
 
     await query('DELETE FROM devices WHERE id = $1', [dbId]);
-    await deleteDoc(doc(db, 'devices', rawId));
     await audit(req.user.sub, 'device.delete', 'device', dbId, before, null);
     res.json({ success: true, id: rawId });
+    // Async background sync to Firebase — does NOT block the response
+    deleteDoc(doc(db, 'devices', rawId)).catch(e => console.warn('[Firebase bg] device DELETE:', e.code || e.message));
   } catch (error) {
     next(error);
   }
