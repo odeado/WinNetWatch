@@ -3565,8 +3565,8 @@ function Dashboard({ token, user, theme, setTheme }) {
 
       {/* Employee Modal (Ficha de Empleado) */}
       {employeeModal && (
-        <div className={`fixed inset-0 ${employeeModal.mode === 'create' ? 'z-[60]' : 'z-50'} flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4`}>
-          <div className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden transition-all duration-300">
+        <div className={`fixed inset-0 ${employeeModal.mode === 'create' ? 'z-[60]' : 'z-50'} flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3 xs:p-4`}>
+          <div className="w-[94%] xs:w-full max-w-xl rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden transition-all duration-300">
             {employeeModal.mode === 'view' ? (
               <div className="space-y-6">
                 {/* Banner Profile */}
@@ -3598,7 +3598,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 </div>
 
                 {/* Employee Details Grid */}
-                <div className="pt-6 px-6">
+                <div className="pt-4 xs:pt-6 px-4 xs:px-6">
                   <div className="mb-4">
                     <h2 className="text-xl font-bold text-zinc-950 dark:text-white leading-tight">{employeeModal.form.full_name}</h2>
                     <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium">{employeeModal.form.email || 'Sin correo registrado'}</p>
@@ -3648,7 +3648,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 </div>
 
                 {/* Assigned Devices */}
-                <div className="px-6 pb-6">
+                <div className="px-4 xs:px-6 pb-4 xs:pb-6">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
                       <Laptop size={14} className="text-emerald-500" />
@@ -3795,7 +3795,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                 </div>
 
                 {/* Modal Actions */}
-                <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-3 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
+                <div className="bg-zinc-50 dark:bg-slate-900/50 px-4 xs:px-6 py-3 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
                   <button
                     className="button secondary py-1.5 px-3 text-xs"
                     onClick={() => setEmployeeModal(null)}
