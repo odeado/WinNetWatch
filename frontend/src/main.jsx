@@ -3604,29 +3604,29 @@ function Dashboard({ token, user, theme, setTheme }) {
                     <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium">{employeeModal.form.email || 'Sin correo registrado'}</p>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 bg-zinc-50 dark:bg-slate-950 p-3 rounded-xl border border-zinc-200 dark:border-slate-800">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-zinc-50 dark:bg-slate-950 p-2.5 xs:p-3 rounded-xl border border-zinc-200 dark:border-slate-800">
                     <div>
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Teléfono</span>
+                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Teléfono</span>
                       <span className="text-xs font-medium">{employeeModal.form.phone || '—'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Cargo</span>
+                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Cargo</span>
                       <span className="text-xs font-medium">{employeeModal.form.job_title || '—'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Lugar de Trabajo</span>
+                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Lugar de Trabajo</span>
                       <span className="text-xs font-medium">{employeeModal.form.workplace || employeeModal.form.status || 'Presencial'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Departamento</span>
+                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Departamento</span>
                       <span className="text-xs font-medium">{employeeModal.form.department || '—'}</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Ciudad</span>
+                    <div className="col-span-2 sm:col-span-1">
+                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Ciudad</span>
                       <span className="text-xs font-medium">{employeeModal.form.city || '—'}</span>
                     </div>
-                    <div className="sm:col-span-2">
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Sistemas Autorizados</span>
+                    <div className="col-span-2">
+                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Sistemas Autorizados</span>
                       <span className="text-xs font-medium">{employeeModal.form.authorized_systems || '—'}</span>
                     </div>
                     <div className="sm:col-span-2 flex items-center gap-3 mt-1 pt-2 border-t border-zinc-200/50 dark:border-slate-800/50">
