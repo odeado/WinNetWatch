@@ -2678,7 +2678,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </button>
                 </div>
 
-                <div className="border border-zinc-200 dark:border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+                <div className="border border-zinc-200 dark:border-slate-800/80 rounded-2xl overflow-hidden overflow-x-auto shadow-sm">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold text-xs uppercase border-b border-zinc-200 dark:border-slate-800">
@@ -4128,9 +4128,9 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
   const [locationType, setLocationType] = useState(isCustomLocation ? 'Otro' : (form.location || 'Matta'));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-900 dark:text-slate-100 overflow-hidden my-8 transition-all duration-300">
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-slate-800 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 overflow-hidden">
+      <div className="w-full h-[100dvh] sm:h-auto sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-900 dark:text-slate-100 overflow-hidden flex flex-col justify-between my-0 sm:my-8 transition-all duration-300">
+        <div className="px-6 py-4 border-b border-zinc-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
           <div>
             <h3 className="text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2 leading-tight">
               <Laptop className="text-emerald-500" size={20} />
@@ -4145,7 +4145,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
           <button className="text-2xl text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200" onClick={() => setDeviceModal(null)}>×</button>
         </div>
 
-        <div className="p-6 grid gap-4 sm:grid-cols-2 max-h-[60vh] overflow-y-auto pr-2">
+        <div className="flex-1 overflow-y-auto p-4 xs:p-6 grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="label">Dirección IP *</span>
             <input
@@ -4608,7 +4608,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             />
           </label>
         </div>
-        <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
+        <div className="bg-zinc-50 dark:bg-slate-900/50 px-4 xs:px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 flex-shrink-0">
           <button className="button secondary" onClick={() => setDeviceModal(null)}>Cancelar</button>
           <button className="button primary" onClick={() => saveDevice(form)}>Guardar Equipo</button>
         </div>
