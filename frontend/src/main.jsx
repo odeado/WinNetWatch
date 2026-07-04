@@ -466,6 +466,36 @@ function Dashboard({ token, user, theme, setTheme }) {
     return [...depts].sort();
   }, [employees, devices, dbDepartments]);
 
+  const existingCpus = useMemo(() => {
+    const cpus = new Set();
+    devices.forEach(d => d.cpu && cpus.add(d.cpu.trim()));
+    return [...cpus].sort();
+  }, [devices]);
+
+  const existingRams = useMemo(() => {
+    const rams = new Set();
+    devices.forEach(d => d.ram && rams.add(d.ram.trim()));
+    return [...rams].sort();
+  }, [devices]);
+
+  const existingStorages = useMemo(() => {
+    const storages = new Set();
+    devices.forEach(d => d.storage && storages.add(d.storage.trim()));
+    return [...storages].sort();
+  }, [devices]);
+
+  const existingGpus = useMemo(() => {
+    const gpus = new Set();
+    devices.forEach(d => d.gpu && gpus.add(d.gpu.trim()));
+    return [...gpus].sort();
+  }, [devices]);
+
+  const existingMotherboards = useMemo(() => {
+    const mbs = new Set();
+    devices.forEach(d => d.motherboard && mbs.add(d.motherboard.trim()));
+    return [...mbs].sort();
+  }, [devices]);
+
   const filteredDevices = useMemo(() => {
     const list = devices.filter(device => {
       const label = getSubnetLabel(device.subnet);
@@ -4020,6 +4050,21 @@ function Dashboard({ token, user, theme, setTheme }) {
       <datalist id="departments-list">
         {existingDepartments.map(d => <option key={d} value={d} />)}
       </datalist>
+      <datalist id="cpus-list">
+        {existingCpus.map(c => <option key={c} value={c} />)}
+      </datalist>
+      <datalist id="rams-list">
+        {existingRams.map(r => <option key={r} value={r} />)}
+      </datalist>
+      <datalist id="storages-list">
+        {existingStorages.map(s => <option key={s} value={s} />)}
+      </datalist>
+      <datalist id="gpus-list">
+        {existingGpus.map(g => <option key={g} value={g} />)}
+      </datalist>
+      <datalist id="motherboards-list">
+        {existingMotherboards.map(m => <option key={m} value={m} />)}
+      </datalist>
     </main>
   );
 }
@@ -4428,6 +4473,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 <span className="label">CPU (Procesador)</span>
                 <input
                   className="input"
+                  list="cpus-list"
                   value={form.cpu || ''}
                   onChange={(e) => setForm({ ...form, cpu: e.target.value })}
                   placeholder="ej. Intel Core i5-12400"
@@ -4437,6 +4483,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 <span className="label">Memoria RAM</span>
                 <input
                   className="input"
+                  list="rams-list"
                   value={form.ram || ''}
                   onChange={(e) => setForm({ ...form, ram: e.target.value })}
                   placeholder="ej. 16GB DDR4"
@@ -4446,6 +4493,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 <span className="label">Almacenamiento (Disco)</span>
                 <input
                   className="input"
+                  list="storages-list"
                   value={form.storage || ''}
                   onChange={(e) => setForm({ ...form, storage: e.target.value })}
                   placeholder="ej. 512GB SSD NVMe"
@@ -4455,6 +4503,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 <span className="label">Tarjeta de Video (GPU)</span>
                 <input
                   className="input"
+                  list="gpus-list"
                   value={form.gpu || ''}
                   onChange={(e) => setForm({ ...form, gpu: e.target.value })}
                   placeholder="ej. NVIDIA GTX 1650"
@@ -4464,6 +4513,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 <span className="label">Placa Madre (Motherboard)</span>
                 <input
                   className="input"
+                  list="motherboards-list"
                   value={form.motherboard || ''}
                   onChange={(e) => setForm({ ...form, motherboard: e.target.value })}
                   placeholder="ej. Gigabyte H610M"
@@ -4564,14 +4614,14 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
               {label}
             </span>
           )}
-          <h3 className="truncate text-base font-bold text-zinc-900 dark:text-white" title={device.hostname}>
-            {device.hostname || 'Equipo sin nombre'}
+          <h3 className="truncate text-base font-bold text-zinc-900 dark:text-white" title={device.responsible_user || 'Sin responsable'}>
+            {device.responsible_user || 'Sin responsable'}
           </h3>
           <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">
             {device.ip}
           </p>
           <p className="text-xs text-zinc-400 dark:text-slate-500 font-semibold truncate mt-1">
-            {device.responsible_user ? `Responsable: ${device.responsible_user}` : 'Sin responsable'}
+            Equipo: {device.hostname || 'Equipo sin nombre'}
           </p>
         </button>
         {device.managed && <span className="rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide border border-sky-500/20 shadow-sm">Admin</span>}
@@ -4787,21 +4837,49 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
             <div className="block">
               <div className="flex items-center justify-between mb-1">
                 <span className="label mb-0">Responsable</span>
-                {form.employee_id && (
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
-                      const emp = employees.find(e => String(e.id) === String(form.employee_id));
-                      if (emp) {
-                        setEmployeeModal({ mode: 'view', form: emp });
-                        onClose(); // Close the DeviceDrawer
-                      }
+                      setEmployeeModal({
+                        mode: 'create',
+                        form: {
+                          full_name: '',
+                          email: '',
+                          phone: '',
+                          job_title: '',
+                          department: form.department || '',
+                          city: form.city || '',
+                          authorized_systems: '',
+                          active: true,
+                          vpn_active: false,
+                          workplace: 'Presencial'
+                        }
+                      });
                     }}
                     className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 hover:underline"
                   >
-                    Ver Ficha Empleado
+                    + Agregar nuevo usuario
                   </button>
-                )}
+                  {form.employee_id && (
+                    <>
+                      <span className="text-zinc-300 dark:text-slate-700">|</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const emp = employees.find(e => String(e.id) === String(form.employee_id));
+                          if (emp) {
+                            setEmployeeModal({ mode: 'view', form: emp });
+                            onClose(); // Close the DeviceDrawer
+                          }
+                        }}
+                        className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 hover:underline"
+                      >
+                        Ver Ficha Empleado
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
               <select
                 className="input"
@@ -4897,6 +4975,42 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
                 <option value="maintenance">Mantenimiento</option>
               </select>
             </label>
+            <label className="block">
+              <span className="label">Sistema Operativo</span>
+              <input className="input" value={form.os || ''} onChange={(e) => setForm({ ...form, os: e.target.value })} placeholder="ej. Windows 11 Pro" />
+            </label>
+            <label className="block">
+              <span className="label">Marca</span>
+              <input className="input" value={form.brand || ''} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="ej. Lenovo / HP" />
+            </label>
+            <label className="block">
+              <span className="label">Modelo</span>
+              <input className="input" value={form.model || ''} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="ej. ThinkPad L14" />
+            </label>
+            <label className="block">
+              <span className="label">Número de Serie</span>
+              <input className="input" value={form.serial_number || ''} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} placeholder="ej. SN123456" />
+            </label>
+            <div className="flex gap-4 sm:col-span-2 pt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.critical || false}
+                  onChange={(e) => setForm({ ...form, critical: e.target.checked })}
+                  className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
+                />
+                <span className="text-sm font-semibold">Equipo Crítico</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.managed || false}
+                  onChange={(e) => setForm({ ...form, managed: e.target.checked })}
+                  className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
+                />
+                <span className="text-sm font-semibold">Administrado / Monitoreado</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -4945,23 +5059,23 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="label">Procesador (CPU)</span>
-              <input className="input" value={form.cpu || ''} onChange={(e) => setForm({ ...form, cpu: e.target.value })} placeholder="ej. Intel i7-13700 / Ryzen 7 7700" />
+              <input className="input" list="cpus-list" value={form.cpu || ''} onChange={(e) => setForm({ ...form, cpu: e.target.value })} placeholder="ej. Intel i7-13700 / Ryzen 7 7700" />
             </label>
             <label className="block">
               <span className="label">Memoria RAM</span>
-              <input className="input" value={form.ram || ''} onChange={(e) => setForm({ ...form, ram: e.target.value })} placeholder="ej. 16GB DDR5 4800MHz" />
+              <input className="input" list="rams-list" value={form.ram || ''} onChange={(e) => setForm({ ...form, ram: e.target.value })} placeholder="ej. 16GB DDR5 4800MHz" />
             </label>
             <label className="block">
               <span className="label">Almacenamiento</span>
-              <input className="input" value={form.storage || ''} onChange={(e) => setForm({ ...form, storage: e.target.value })} placeholder="ej. 1TB NVMe SSD" />
+              <input className="input" list="storages-list" value={form.storage || ''} onChange={(e) => setForm({ ...form, storage: e.target.value })} placeholder="ej. 1TB NVMe SSD" />
             </label>
             <label className="block">
               <span className="label">Tarjeta de Video (GPU)</span>
-              <input className="input" value={form.gpu || ''} onChange={(e) => setForm({ ...form, gpu: e.target.value })} placeholder="ej. NVIDIA RTX 4060 / Intel Iris Xe" />
+              <input className="input" list="gpus-list" value={form.gpu || ''} onChange={(e) => setForm({ ...form, gpu: e.target.value })} placeholder="ej. NVIDIA RTX 4060 / Intel Iris Xe" />
             </label>
             <label className="block sm:col-span-2">
               <span className="label">Placa Madre (Motherboard)</span>
-              <input className="input" value={form.motherboard || ''} onChange={(e) => setForm({ ...form, motherboard: e.target.value })} placeholder="ej. ASUS Prime B760M-A" />
+              <input className="input" list="motherboards-list" value={form.motherboard || ''} onChange={(e) => setForm({ ...form, motherboard: e.target.value })} placeholder="ej. ASUS Prime B760M-A" />
             </label>
           </div>
         </div>
