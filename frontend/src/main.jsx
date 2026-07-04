@@ -5168,23 +5168,16 @@ function SubnetMap({ rows, getSubnetLabel, devices = [], onOpen }) {
     return acc;
   }, {});
 
-  const barColor = (status) => {
-    return {
-      online: 'text-emerald-500 dark:text-emerald-400',
-      offline: 'text-rose-500 dark:text-rose-400',
-      slow: 'text-amber-500 dark:text-amber-400'
-    }[status] || 'text-zinc-500';
-  };
+  const barColor = (status) => ({
+    online: 'text-emerald-500 dark:text-emerald-400',
+    offline: 'text-rose-500 dark:text-rose-400',
+    slow:    'text-amber-500 dark:text-amber-400'
+  }[status] || 'text-zinc-500');
 
-  const statusLabel = (status) => {
-    return {
-      online: 'Online',
-      offline: 'Offline',
-      slow: 'Lento'
-    }[status] || status;
-  };
+  const statusLabel = (status) => ({
+    online: 'Online', offline: 'Offline', slow: 'Lento'
+  }[status] || status);
 
-  // Same sort order as the main device list: online → slow → offline, then alphabetical
   const STATUS_ORDER = { online: 0, slow: 1, offline: 2 };
   const sortDevices = (list) =>
     [...list].sort((a, b) => {
@@ -5194,69 +5187,80 @@ function SubnetMap({ rows, getSubnetLabel, devices = [], onOpen }) {
       return (a.hostname || a.ip || '').localeCompare(b.hostname || b.ip || '');
     });
 
-  const subnetDevices = selectedSubnet
-    ? sortDevices(devices.filter(d => d.subnet === selectedSubnet))
-    : [];
-
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        {Object.entries(grouped).map(([subnet, stats]) => {
-          const total = stats.reduce((sum, r) => sum + r.total, 0);
-          const online = stats.find(r => r.status === 'online')?.total || 0;
-          const slow = stats.find(r => r.status === 'slow')?.total || 0;
-          const offline = stats.find(r => r.status === 'offline')?.total || 0;
-          const activeCount = online + slow;
-          const pct = total > 0 ? Math.round((activeCount / total) * 100) : 0;
+    <div className="grid gap-3 sm:grid-cols-2">
+      {Object.entries(grouped).map(([subnet, stats]) => {
+        const total  = stats.reduce((s, r) => s + r.total, 0);
+        const online = stats.find(r => r.status === 'online')?.total || 0;
+        const slow   = stats.find(r => r.status === 'slow')?.total   || 0;
+        const pct    = total > 0 ? Math.round(((online + slow) / total) * 100) : 0;
 
-          let color1 = 'rgb(16, 185, 129)';
-          let color1Alpha = 'rgba(16, 185, 129, 0.65)';
-          let color2Alpha = 'rgba(52, 211, 153, 0.35)';
-          let glow = 'rgba(16, 185, 129, 0.4)';
-          let textColor = 'text-emerald-500 dark:text-emerald-400';
+        let color1      = 'rgb(16, 185, 129)';
+        let color1Alpha = 'rgba(16, 185, 129, 0.65)';
+        let color2Alpha = 'rgba(52, 211, 153, 0.35)';
+        let glow        = 'rgba(16, 185, 129, 0.4)';
+        let textColor   = 'text-emerald-500 dark:text-emerald-400';
+        let borderColor = 'border-emerald-400 dark:border-emerald-500';
+        let activeBg    = 'bg-emerald-50 dark:bg-emerald-950/20';
 
-          if (pct < 50) {
-            color1 = 'rgb(239, 68, 68)';
-            color1Alpha = 'rgba(239, 68, 68, 0.65)';
-            color2Alpha = 'rgba(248, 113, 113, 0.35)';
-            glow = 'rgba(239, 68, 68, 0.4)';
-            textColor = 'text-rose-500 dark:text-rose-400';
-          } else if (pct < 80) {
-            color1 = 'rgb(245, 158, 11)';
-            color1Alpha = 'rgba(245, 158, 11, 0.65)';
-            color2Alpha = 'rgba(253, 186, 116, 0.35)';
-            glow = 'rgba(245, 158, 11, 0.4)';
-            textColor = 'text-amber-500 dark:text-amber-400';
-          }
+        if (pct < 50) {
+          color1      = 'rgb(239, 68, 68)';
+          color1Alpha = 'rgba(239, 68, 68, 0.65)';
+          color2Alpha = 'rgba(248, 113, 113, 0.35)';
+          glow        = 'rgba(239, 68, 68, 0.4)';
+          textColor   = 'text-rose-500 dark:text-rose-400';
+          borderColor = 'border-rose-400 dark:border-rose-500';
+          activeBg    = 'bg-rose-50 dark:bg-rose-950/20';
+        } else if (pct < 80) {
+          color1      = 'rgb(245, 158, 11)';
+          color1Alpha = 'rgba(245, 158, 11, 0.65)';
+          color2Alpha = 'rgba(253, 186, 116, 0.35)';
+          glow        = 'rgba(245, 158, 11, 0.4)';
+          textColor   = 'text-amber-500 dark:text-amber-400';
+          borderColor = 'border-amber-400 dark:border-amber-500';
+          activeBg    = 'bg-amber-50 dark:bg-amber-950/20';
+        }
 
-          const orderedStats = ['online', 'slow', 'offline'].map(status => {
-            const found = stats.find(r => r.status === status);
-            return { status, total: found ? found.total : 0 };
-          });
+        const orderedStats = ['online', 'slow', 'offline'].map(status => ({
+          status,
+          total: stats.find(r => r.status === status)?.total || 0
+        }));
 
-          const isSelected = selectedSubnet === subnet;
+        const isOpen      = selectedSubnet === subnet;
+        const subnetDevs  = isOpen ? sortDevices(devices.filter(d => d.subnet === subnet)) : [];
 
-          return (
+        return (
+          <div key={subnet} className="flex flex-col rounded-2xl overflow-hidden shadow-sm border border-zinc-200 dark:border-slate-800 transition-all duration-200">
+
+            {/* ── Subnet card header (clickable) ── */}
             <button
-              key={subnet}
               type="button"
-              onClick={() => setSelectedSubnet(isSelected ? null : subnet)}
-              className={`flex items-center justify-between rounded-2xl border p-4 text-left w-full transition-all duration-200 shadow-sm ${
-                isSelected
-                  ? 'border-emerald-400 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ring-1 ring-emerald-400/40 shadow-md'
-                  : 'border-zinc-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 hover:shadow-md hover:border-zinc-300 dark:hover:border-slate-700'
+              onClick={() => setSelectedSubnet(isOpen ? null : subnet)}
+              className={`flex items-center justify-between p-4 text-left w-full transition-colors duration-200 ${
+                isOpen
+                  ? `${activeBg} border-b ${borderColor}`
+                  : 'bg-white dark:bg-slate-900/60 hover:bg-zinc-50 dark:hover:bg-slate-800/40'
               }`}
             >
-              <div className="flex-1 min-w-0 pr-4">
-                <div className="mb-0.5 font-extrabold text-sm uppercase tracking-wide text-zinc-800 dark:text-slate-200 truncate flex items-center gap-2">
-                  {getSubnetLabel(subnet)}
-                  {isSelected && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 normal-case tracking-normal">Mostrando equipos ↓</span>}
+              <div className="flex-1 min-w-0 pr-3">
+                {/* Title row */}
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <span className="font-extrabold text-sm uppercase tracking-wide text-zinc-800 dark:text-slate-200 truncate">
+                    {getSubnetLabel(subnet)}
+                  </span>
+                  {isOpen && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/60 dark:bg-slate-900/60 text-zinc-600 dark:text-slate-300 border border-zinc-300 dark:border-slate-600 normal-case tracking-normal whitespace-nowrap">
+                      ▲ ocultar
+                    </span>
+                  )}
                 </div>
-                <div className="text-[10px] text-zinc-400 dark:text-slate-500 font-bold font-mono mb-4">
+                <div className="text-[10px] text-zinc-400 dark:text-slate-500 font-bold font-mono mb-3">
                   {subnet}
                 </div>
+
+                {/* Stats */}
                 <div className="grid grid-cols-3 gap-2">
-                  {orderedStats.map((row) => (
+                  {orderedStats.map(row => (
                     <div key={row.status} className="flex flex-col">
                       <span className="text-[9px] font-bold text-zinc-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
                         {statusLabel(row.status)}
@@ -5268,14 +5272,16 @@ function SubnetMap({ rows, getSubnetLabel, devices = [], onOpen }) {
                   ))}
                 </div>
               </div>
+
+              {/* Donut gauge */}
               <div
-                className="circular-progress-ring relative flex items-center justify-center rounded-full w-20 h-20 shrink-0 shadow-md"
+                className="circular-progress-ring relative flex items-center justify-center rounded-full w-[72px] h-[72px] shrink-0 shadow-md"
                 style={{
-                  background: `conic-gradient(${color1} 0%, ${color1} ${pct}%, rgba(128, 128, 128, 0.15) ${pct}%, rgba(128, 128, 128, 0.15) 100%)`,
+                  background: `conic-gradient(${color1} 0%, ${color1} ${pct}%, rgba(128,128,128,0.15) ${pct}%, rgba(128,128,128,0.15) 100%)`,
                   boxShadow: `0 0 12px ${glow}`
                 }}
               >
-                <div className="liquid-container border-0 bg-white dark:bg-slate-950 relative flex items-center justify-center rounded-full w-[70px] h-[70px] overflow-hidden">
+                <div className="liquid-container border-0 bg-white dark:bg-slate-950 relative flex items-center justify-center rounded-full w-[62px] h-[62px] overflow-hidden">
                   <div
                     className="liquid-bubble absolute bottom-0 left-0 w-full h-full transition-transform duration-1000 ease-out"
                     style={{
@@ -5289,105 +5295,93 @@ function SubnetMap({ rows, getSubnetLabel, devices = [], onOpen }) {
                     <div className="liquid-wave-2" />
                   </div>
                   <div className={`liquid-text text-sm font-black relative z-10 select-none ${textColor}`}>
-                    {pct}
-                    <span className="text-[9px] font-bold ml-0.5">%</span>
+                    {pct}<span className="text-[9px] font-bold ml-0.5">%</span>
                   </div>
                 </div>
               </div>
             </button>
-          );
-        })}
-      </div>
 
-      {/* Subnet device list panel — shown below the cards when a subnet is selected */}
-      {selectedSubnet && (
-        <div className="rounded-2xl border border-emerald-300/50 dark:border-emerald-700/40 bg-white dark:bg-slate-900/80 shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-bold text-sm text-zinc-800 dark:text-slate-200">
-                {getSubnetLabel(selectedSubnet)}
-              </span>
-              <span className="font-mono text-xs text-zinc-400 dark:text-slate-500">{selectedSubnet}</span>
-              <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-slate-800 text-zinc-500 dark:text-slate-400">
-                {subnetDevices.length} equipos
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedSubnet(null)}
-              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200 text-lg font-bold leading-none px-1"
-              title="Cerrar"
+            {/* ── Accordion device list ── smooth expand via max-height */}
+            <div
+              className="overflow-hidden transition-all duration-300 ease-in-out bg-white dark:bg-slate-900/80"
+              style={{ maxHeight: isOpen ? '480px' : '0px' }}
             >
-              ×
-            </button>
-          </div>
-
-          {/* Device rows */}
-          {subnetDevices.length === 0 ? (
-            <p className="text-sm text-zinc-400 dark:text-slate-500 px-4 py-6 text-center">No hay equipos en esta subred.</p>
-          ) : (
-            <div className="divide-y divide-zinc-100 dark:divide-slate-800 max-h-96 overflow-y-auto">
-              {subnetDevices.map(device => (
+              {/* Mini header inside list */}
+              <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-100 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/90">
+                <div className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                  } animate-pulse`} />
+                  <span className="text-xs font-bold text-zinc-600 dark:text-slate-300">
+                    {subnetDevs.length} equipo{subnetDevs.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
                 <button
-                  key={device.id}
                   type="button"
-                  onClick={() => onOpen && onOpen(device)}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-slate-800/60 transition-colors duration-150 group"
+                  onClick={(e) => { e.stopPropagation(); setSelectedSubnet(null); }}
+                  className="text-zinc-400 hover:text-zinc-700 dark:hover:text-slate-200 text-base font-bold leading-none"
+                  title="Cerrar"
                 >
-                  {/* Status dot */}
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${
-                    device.status === 'online' ? 'bg-emerald-500' :
-                    device.status === 'slow'   ? 'bg-amber-500' :
-                                                  'bg-rose-500'
-                  }`} />
-
-                  {/* Hostname + IP */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-zinc-800 dark:text-slate-200 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                      {device.hostname || 'Sin nombre'}
-                    </p>
-                    <p className="text-xs font-mono text-zinc-400 dark:text-slate-500">{device.ip}</p>
-                  </div>
-
-                  {/* Department */}
-                  <span className="hidden sm:block text-xs text-zinc-400 dark:text-slate-500 truncate max-w-[140px]">
-                    {device.department || '—'}
-                  </span>
-
-                  {/* Responsible */}
-                  <span className="hidden md:block text-xs text-zinc-500 dark:text-slate-400 truncate max-w-[160px]">
-                    {device.responsible_user || '—'}
-                  </span>
-
-                  {/* Latency */}
-                  <span className="text-xs font-mono text-zinc-300 dark:text-slate-600 shrink-0 w-14 text-right">
-                    {device.latency_ms != null ? `${device.latency_ms} ms` : '—'}
-                  </span>
-
-                  {/* Status badge */}
-                  <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    device.status === 'online'
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                      : device.status === 'slow'
-                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                      : 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/20'
-                  }`}>
-                    {device.status === 'online' ? 'Online' : device.status === 'slow' ? 'Lento' : 'Offline'}
-                  </span>
-
-                  {/* Arrow */}
-                  <ChevronRight size={14} className="text-zinc-300 dark:text-slate-600 group-hover:text-emerald-500 transition-colors shrink-0" />
+                  ×
                 </button>
-              ))}
+              </div>
+
+              {/* Scrollable device rows */}
+              <div className="overflow-y-auto divide-y divide-zinc-100 dark:divide-slate-800" style={{ maxHeight: '416px' }}>
+                {subnetDevs.length === 0 ? (
+                  <p className="text-xs text-zinc-400 dark:text-slate-500 px-4 py-5 text-center">
+                    No hay equipos en esta subred.
+                  </p>
+                ) : subnetDevs.map(device => (
+                  <button
+                    key={device.id}
+                    type="button"
+                    onClick={() => onOpen && onOpen(device)}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-slate-800/50 transition-colors duration-100 group"
+                  >
+                    {/* Status dot */}
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                      device.status === 'online' ? 'bg-emerald-500' :
+                      device.status === 'slow'   ? 'bg-amber-500'   : 'bg-rose-500'
+                    }`} />
+
+                    {/* Hostname + IP */}
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-xs font-semibold text-zinc-800 dark:text-slate-200 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        {device.hostname || 'Sin nombre'}
+                      </p>
+                      <p className="text-[10px] font-mono text-zinc-400 dark:text-slate-500">{device.ip}</p>
+                    </div>
+
+                    {/* Latency — hidden on tiny screens */}
+                    <span className="hidden xs:block text-[10px] font-mono text-zinc-300 dark:text-slate-600 shrink-0 w-12 text-right">
+                      {device.latency_ms != null ? `${device.latency_ms} ms` : '—'}
+                    </span>
+
+                    {/* Status badge */}
+                    <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                      device.status === 'online'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                        : device.status === 'slow'
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                        : 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/20'
+                    }`}>
+                      {device.status === 'online' ? 'Online' : device.status === 'slow' ? 'Lento' : 'Offline'}
+                    </span>
+
+                    <ChevronRight size={12} className="text-zinc-300 dark:text-slate-700 group-hover:text-emerald-500 transition-colors shrink-0" />
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        );
+      })}
     </div>
   );
 }
+
+
 
 function NetworkGroups({ rows, getSubnetLabel }) {
   return <div className="space-y-2 text-sm">{rows.slice(0, 12).map((row, index) => (
