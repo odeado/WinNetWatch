@@ -648,13 +648,6 @@ function Dashboard({ token, user, theme, setTheme }) {
           return prev;
         });
 
-        setSelected(prev => {
-          if (prev && prev.id) {
-            const updated = list.find(d => d.id === prev.id);
-            return updated || null;
-          }
-          return prev;
-        });
       }, handleFirebaseError);
 
       unsubEmployees = onSnapshot(collection(db, 'employees'), (snapshot) => {
@@ -811,13 +804,6 @@ function Dashboard({ token, user, theme, setTheme }) {
           return prev;
         });
 
-        setSelected(prev => {
-          if (prev && prev.id) {
-            const updated = list.find(d => d.id === prev.id);
-            return updated || null;
-          }
-          return prev;
-        });
       }
 
       // 2. Fetch employees
@@ -1104,6 +1090,7 @@ function Dashboard({ token, user, theme, setTheme }) {
     } catch (err) {
       console.error('Error saving device:', err);
       if (err.code === 'resource-exhausted' || (err.message && (err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('exhausted')))) {
+        setFirebaseQuotaExceeded(true);
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
           try {
             console.log('Firebase quota exceeded, attempting local API fallback save...');
@@ -3444,6 +3431,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           existingDepartments={existingDepartments}
           useLocalApi={useLocalApi}
           setEmployeeModal={setEmployeeModal}
+          setFirebaseQuotaExceeded={setFirebaseQuotaExceeded}
         />
       )}
 
@@ -4706,7 +4694,7 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
   );
 }
 
-function DeviceDrawer({ device, employees, infrastructure = [], token, user, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal }) {
+function DeviceDrawer({ device, employees, infrastructure = [], token, user, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal, setFirebaseQuotaExceeded }) {
   const [form, setForm] = useState(device);
   const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
 
@@ -4726,6 +4714,7 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
     } catch (err) {
       console.error('Error saving device from drawer:', err);
       if (err.code === 'resource-exhausted' || (err.message && (err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('exhausted')))) {
+        if (setFirebaseQuotaExceeded) setFirebaseQuotaExceeded(true);
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
           try {
             console.log('Firebase quota exceeded in drawer save, attempting local API fallback...');
