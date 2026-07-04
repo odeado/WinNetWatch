@@ -270,6 +270,20 @@ export async function scanHost(ip, subnet) {
       return { device, event: 'device.new', anomalies: [] };
     }
 
+    // Auto-limpieza de fantasmas de red (falsos positivos de ping/ARP)
+    const isGhost = !online && 
+                    (!hostname || hostname === ip) && 
+                    (!mac || mac === '') && 
+                    !previous.responsible_user && 
+                    !previous.department && 
+                    !previous.employee_id && 
+                    !previous.switch_id;
+    
+    if (isGhost) {
+      await client.query('DELETE FROM devices WHERE id = $1', [previous.id]);
+      return { device: null, event: 'device.deleted_ghost', anomalies: [] };
+    }
+
     // Actualizar equipo existente con nuevas columnas de monitoreo
     device = (await client.query(
       `UPDATE devices
@@ -391,7 +405,7 @@ export async function scanHost(ip, subnet) {
   }
 
   // Log de anomalías detectadas
-  if (result.anomalies && result.anomalies.length > 0) {
+  if (result.device && result.anomalies && result.anomalies.length > 0) {
     console.log(`\n⚡ ANOMALÍAS EN ${ip} (${hostname || 'sin nombre'}):`);
     for (const anomaly of result.anomalies) {
       console.log(`   - ${anomaly.type} [${anomaly.severity}]`);
@@ -412,7 +426,9 @@ export async function scanHost(ip, subnet) {
     }
   }
 
-  if (result.event) {
+  if (result.event === 'device.deleted_ghost') {
+    broadcast('device-event', { device: null, event: 'device.deleted_ghost', previousId: previous.id });
+  } else if (result.event && result.device) {
     broadcast('device-event', result);
     await sendAlert(result.event, result.device);
 
