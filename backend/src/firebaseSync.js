@@ -22,7 +22,7 @@ function handleFirebaseWriteError(err) {
   }
 }
 
-function stringToUUID(str) {
+export function stringToUUID(str) {
   if (!str) return null;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (uuidRegex.test(str)) return str;

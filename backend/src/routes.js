@@ -18,7 +18,8 @@ import {
   pushAlertToFirebase,
   pushInfrastructureToFirebase,
   deleteInfrastructureFromFirebase,
-  isFirebaseQuotaExceeded
+  isFirebaseQuotaExceeded,
+  stringToUUID
 } from './firebaseSync.js';
 
 export const router = express.Router();
@@ -237,6 +238,7 @@ router.get('/devices', requirePermission('devices:read'), async (req, res, next)
 
 router.get('/devices/:id', requirePermission('devices:read'), async (req, res, next) => {
   try {
+    req.params.id = stringToUUID(req.params.id);
     const device = (await query('SELECT * FROM devices WHERE id = $1', [req.params.id])).rows[0];
     if (!device) return res.status(404).json({ error: 'Equipo no encontrado' });
     const [events, tickets, rdp] = await Promise.all([
@@ -252,6 +254,7 @@ router.get('/devices/:id', requirePermission('devices:read'), async (req, res, n
 
 router.patch('/devices/:id', requirePermission('devices:write'), async (req, res, next) => {
   try {
+    req.params.id = stringToUUID(req.params.id);
     const before = (await query('SELECT * FROM devices WHERE id = $1', [req.params.id])).rows[0];
     if (!before) return res.status(404).json({ error: 'Equipo no encontrado' });
 
@@ -385,6 +388,7 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
 
 router.get('/devices/:id/rdp', requirePermission('rdp:connect'), async (req, res, next) => {
   try {
+    req.params.id = stringToUUID(req.params.id);
     const device = (await query('SELECT id, hostname, ip FROM devices WHERE id = $1', [req.params.id])).rows[0];
     if (!device) return res.status(404).json({ error: 'Equipo no encontrado' });
     await query('INSERT INTO rdp_history(device_id, user_id, ip, action) VALUES ($1, $2, $3, $4)', [device.id, req.user.sub, device.ip, 'download']);
@@ -408,6 +412,7 @@ use multimon:i:1
 
 router.post('/devices/:id/credentials', requirePermission('devices:write'), async (req, res, next) => {
   try {
+    req.params.id = stringToUUID(req.params.id);
     const encrypted = encryptSecret(req.body.secret || '');
     const { rows } = await query(
       `INSERT INTO credentials(device_id, label, username, encrypted_secret, allowed_roles)
@@ -424,6 +429,7 @@ router.post('/devices/:id/credentials', requirePermission('devices:write'), asyn
 
 router.post('/devices/:id/actions/:action', requirePermission('actions:remote'), async (req, res, next) => {
   try {
+    req.params.id = stringToUUID(req.params.id);
     const allowed = ['wake-on-lan', 'restart', 'shutdown', 'powershell'];
     if (!allowed.includes(req.params.action)) return res.status(400).json({ error: 'Accion no soportada' });
     await query(
@@ -811,13 +817,15 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
 
 router.delete('/devices/:id', requirePermission('devices:write'), async (req, res, next) => {
   try {
-    const before = (await query('SELECT * FROM devices WHERE id = $1', [req.params.id])).rows[0];
+    const rawId = req.params.id;
+    const dbId = stringToUUID(rawId);
+    const before = (await query('SELECT * FROM devices WHERE id = $1', [dbId])).rows[0];
     if (!before) return res.status(404).json({ error: 'Equipo no encontrado' });
 
-    await query('DELETE FROM devices WHERE id = $1', [req.params.id]);
-    await deleteDoc(doc(db, 'devices', req.params.id));
-    await audit(req.user.sub, 'device.delete', 'device', req.params.id, before, null);
-    res.json({ success: true, id: req.params.id });
+    await query('DELETE FROM devices WHERE id = $1', [dbId]);
+    await deleteDoc(doc(db, 'devices', rawId));
+    await audit(req.user.sub, 'device.delete', 'device', dbId, before, null);
+    res.json({ success: true, id: rawId });
   } catch (error) {
     next(error);
   }
@@ -1136,6 +1144,7 @@ router.get('/anomalies', requireAuth, async (req, res, next) => {
 // Ver reinicios de un dispositivo
 router.get('/devices/:id/reboots', requireAuth, async (req, res, next) => {
   try {
+    req.params.id = stringToUUID(req.params.id);
     const { rows } = await query(`
       SELECT boot_count, last_reboot, estimated_uptime_seconds, status
       FROM devices
@@ -1150,6 +1159,7 @@ router.get('/devices/:id/reboots', requireAuth, async (req, res, next) => {
 // Ver historial de anomalías
 router.get('/devices/:id/anomalies', requireAuth, async (req, res, next) => {
   try {
+    req.params.id = stringToUUID(req.params.id);
     const { rows } = await query(`
       SELECT * FROM device_anomalies
       WHERE device_id = $1
