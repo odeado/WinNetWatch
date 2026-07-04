@@ -12,7 +12,7 @@ import {
 import './styles.css';
 import { db, auth } from './firebase.js';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, onIdTokenChanged } from 'firebase/auth';
 
 let API_URL = localStorage.getItem('custom_api_url') || (
   import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
@@ -41,6 +41,29 @@ function App() {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (localStorage.getItem('use_local_api') === 'true') return;
+
+    const unsubscribe = onIdTokenChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        try {
+          const freshToken = await fbUser.getIdToken();
+          localStorage.setItem('token', freshToken);
+          setToken(freshToken);
+        } catch (err) {
+          console.error('Error refreshing Firebase token:', err);
+        }
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setToken('');
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   if (!token) {
     return <Login onLogin={(session) => {
