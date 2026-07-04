@@ -4,7 +4,7 @@ import {
   Activity, Bell, Boxes, Building2, Cable, CheckCircle2, Clock3, Download,
   FileDown, Laptop, Moon, Network, Play, RefreshCw, Search, Shield, Sun,
   TerminalSquare, Users, WifiOff, User, Plus, Trash2, Cpu, Eye, LogOut, Upload, Info,
-  Briefcase, MapPin, Lock, UserPlus, Edit3, ToggleLeft, ToggleRight, AlertTriangle
+  Briefcase, MapPin, Lock, UserPlus, Edit3, ToggleLeft, ToggleRight, AlertTriangle, ChevronRight
 } from 'lucide-react';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -2124,7 +2124,7 @@ function Dashboard({ token, user, theme, setTheme }) {
 
             <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
               <Panel title="Mapa de estado de red" icon={<Boxes size={18} />}>
-                <SubnetMap rows={bySubnet} getSubnetLabel={getSubnetLabel} />
+                <SubnetMap rows={bySubnet} getSubnetLabel={getSubnetLabel} devices={devices} onOpen={(device) => setSelected(device)} />
               </Panel>
               <Panel title="Tendencia histórica" icon={<Activity size={18} />}>
                 <div className="h-56">
@@ -5159,7 +5159,9 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
   );
 }
 
-function SubnetMap({ rows, getSubnetLabel }) {
+function SubnetMap({ rows, getSubnetLabel, devices = [], onOpen }) {
+  const [selectedSubnet, setSelectedSubnet] = useState(null);
+
   const grouped = rows.reduce((acc, row) => {
     acc[row.subnet] ||= [];
     acc[row.subnet].push(row);
@@ -5182,103 +5184,207 @@ function SubnetMap({ rows, getSubnetLabel }) {
     }[status] || status;
   };
 
+  // Same sort order as the main device list: online → slow → offline, then alphabetical
+  const STATUS_ORDER = { online: 0, slow: 1, offline: 2 };
+  const sortDevices = (list) =>
+    [...list].sort((a, b) => {
+      const sa = STATUS_ORDER[a.status] ?? 3;
+      const sb = STATUS_ORDER[b.status] ?? 3;
+      if (sa !== sb) return sa - sb;
+      return (a.hostname || a.ip || '').localeCompare(b.hostname || b.ip || '');
+    });
+
+  const subnetDevices = selectedSubnet
+    ? sortDevices(devices.filter(d => d.subnet === selectedSubnet))
+    : [];
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {Object.entries(grouped).map(([subnet, stats]) => {
-        // Calcular totales de la subred
-        const total = stats.reduce((sum, r) => sum + r.total, 0);
-        const online = stats.find(r => r.status === 'online')?.total || 0;
-        const slow = stats.find(r => r.status === 'slow')?.total || 0;
-        const offline = stats.find(r => r.status === 'offline')?.total || 0;
-        
-        // El porcentaje de "salud" (online + slow) de la subred
-        const activeCount = online + slow;
-        const pct = total > 0 ? Math.round((activeCount / total) * 100) : 0;
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        {Object.entries(grouped).map(([subnet, stats]) => {
+          const total = stats.reduce((sum, r) => sum + r.total, 0);
+          const online = stats.find(r => r.status === 'online')?.total || 0;
+          const slow = stats.find(r => r.status === 'slow')?.total || 0;
+          const offline = stats.find(r => r.status === 'offline')?.total || 0;
+          const activeCount = online + slow;
+          const pct = total > 0 ? Math.round((activeCount / total) * 100) : 0;
 
-        // Colores de la ola y texto según el porcentaje
-        let color1 = 'rgb(16, 185, 129)'; // Verde (#10b981)
-        let color1Alpha = 'rgba(16, 185, 129, 0.65)';
-        let color2Alpha = 'rgba(52, 211, 153, 0.35)';
-        let glow = 'rgba(16, 185, 129, 0.4)';
-        let textColor = 'text-emerald-500 dark:text-emerald-400';
+          let color1 = 'rgb(16, 185, 129)';
+          let color1Alpha = 'rgba(16, 185, 129, 0.65)';
+          let color2Alpha = 'rgba(52, 211, 153, 0.35)';
+          let glow = 'rgba(16, 185, 129, 0.4)';
+          let textColor = 'text-emerald-500 dark:text-emerald-400';
 
-        if (pct < 50) {
-          color1 = 'rgb(239, 68, 68)'; // Rojo (#ef4444)
-          color1Alpha = 'rgba(239, 68, 68, 0.65)';
-          color2Alpha = 'rgba(248, 113, 113, 0.35)';
-          glow = 'rgba(239, 68, 68, 0.4)';
-          textColor = 'text-rose-500 dark:text-rose-400';
-        } else if (pct < 80) {
-          color1 = 'rgb(245, 158, 11)'; // Amarillo (#f59e0b)
-          color1Alpha = 'rgba(245, 158, 11, 0.65)';
-          color2Alpha = 'rgba(253, 186, 116, 0.35)';
-          glow = 'rgba(245, 158, 11, 0.4)';
-          textColor = 'text-amber-500 dark:text-amber-400';
-        }
+          if (pct < 50) {
+            color1 = 'rgb(239, 68, 68)';
+            color1Alpha = 'rgba(239, 68, 68, 0.65)';
+            color2Alpha = 'rgba(248, 113, 113, 0.35)';
+            glow = 'rgba(239, 68, 68, 0.4)';
+            textColor = 'text-rose-500 dark:text-rose-400';
+          } else if (pct < 80) {
+            color1 = 'rgb(245, 158, 11)';
+            color1Alpha = 'rgba(245, 158, 11, 0.65)';
+            color2Alpha = 'rgba(253, 186, 116, 0.35)';
+            glow = 'rgba(245, 158, 11, 0.4)';
+            textColor = 'text-amber-500 dark:text-amber-400';
+          }
 
-        // Ordenar stats para consistencia
-        const orderedStats = ['online', 'slow', 'offline'].map(status => {
-          const found = stats.find(r => r.status === status);
-          return { status, total: found ? found.total : 0 };
-        });
+          const orderedStats = ['online', 'slow', 'offline'].map(status => {
+            const found = stats.find(r => r.status === status);
+            return { status, total: found ? found.total : 0 };
+          });
 
-        return (
-          <div 
-            className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60 shadow-sm transition-all duration-300 hover:shadow-md hover:border-zinc-300 dark:hover:border-slate-700" 
-            key={subnet}
-          >
-            <div className="flex-1 min-w-0 pr-4">
-              <div className="mb-0.5 font-extrabold text-sm uppercase tracking-wide text-zinc-800 dark:text-slate-200 truncate">
-                {getSubnetLabel(subnet)}
-              </div>
-              <div className="text-[10px] text-zinc-400 dark:text-slate-500 font-bold font-mono mb-4">
-                {subnet}
-              </div>
+          const isSelected = selectedSubnet === subnet;
 
-              <div className="grid grid-cols-3 gap-2">
-                {orderedStats.map((row) => (
-                  <div key={row.status} className="flex flex-col">
-                    <span className="text-[9px] font-bold text-zinc-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
-                      {statusLabel(row.status)}
-                    </span>
-                    <span className={`text-base font-extrabold ${barColor(row.status)}`}>
-                      {row.total}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Glowing Ring + Liquid Wave Circular Gauge (Bola de agua mediana estilo Hardware Sensor) */}
-            <div 
-              className="circular-progress-ring relative flex items-center justify-center rounded-full w-20 h-20 shrink-0 shadow-md"
-              style={{
-                background: `conic-gradient(${color1} 0%, ${color1} ${pct}%, rgba(128, 128, 128, 0.15) ${pct}%, rgba(128, 128, 128, 0.15) 100%)`,
-                boxShadow: `0 0 12px ${glow}`
-              }}
+          return (
+            <button
+              key={subnet}
+              type="button"
+              onClick={() => setSelectedSubnet(isSelected ? null : subnet)}
+              className={`flex items-center justify-between rounded-2xl border p-4 text-left w-full transition-all duration-200 shadow-sm ${
+                isSelected
+                  ? 'border-emerald-400 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ring-1 ring-emerald-400/40 shadow-md'
+                  : 'border-zinc-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 hover:shadow-md hover:border-zinc-300 dark:hover:border-slate-700'
+              }`}
             >
-              <div className="liquid-container border-0 bg-white dark:bg-slate-950 relative flex items-center justify-center rounded-full w-[70px] h-[70px] overflow-hidden">
-                <div 
-                  className="liquid-bubble absolute bottom-0 left-0 w-full h-full transition-transform duration-1000 ease-out" 
-                  style={{ 
-                    transform: `translateY(${100 - pct}%)`,
-                    '--wave-color-1': color1Alpha,
-                    '--wave-color-2': color2Alpha,
-                    '--wave-glow': glow
-                  }}
-                >
-                  <div className="liquid-wave-1" />
-                  <div className="liquid-wave-2" />
+              <div className="flex-1 min-w-0 pr-4">
+                <div className="mb-0.5 font-extrabold text-sm uppercase tracking-wide text-zinc-800 dark:text-slate-200 truncate flex items-center gap-2">
+                  {getSubnetLabel(subnet)}
+                  {isSelected && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 normal-case tracking-normal">Mostrando equipos ↓</span>}
                 </div>
-                <div className={`liquid-text text-sm font-black relative z-10 select-none ${textColor}`}>
-                  {pct}
-                  <span className="text-[9px] font-bold ml-0.5">%</span>
+                <div className="text-[10px] text-zinc-400 dark:text-slate-500 font-bold font-mono mb-4">
+                  {subnet}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {orderedStats.map((row) => (
+                    <div key={row.status} className="flex flex-col">
+                      <span className="text-[9px] font-bold text-zinc-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
+                        {statusLabel(row.status)}
+                      </span>
+                      <span className={`text-base font-extrabold ${barColor(row.status)}`}>
+                        {row.total}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
+              <div
+                className="circular-progress-ring relative flex items-center justify-center rounded-full w-20 h-20 shrink-0 shadow-md"
+                style={{
+                  background: `conic-gradient(${color1} 0%, ${color1} ${pct}%, rgba(128, 128, 128, 0.15) ${pct}%, rgba(128, 128, 128, 0.15) 100%)`,
+                  boxShadow: `0 0 12px ${glow}`
+                }}
+              >
+                <div className="liquid-container border-0 bg-white dark:bg-slate-950 relative flex items-center justify-center rounded-full w-[70px] h-[70px] overflow-hidden">
+                  <div
+                    className="liquid-bubble absolute bottom-0 left-0 w-full h-full transition-transform duration-1000 ease-out"
+                    style={{
+                      transform: `translateY(${100 - pct}%)`,
+                      '--wave-color-1': color1Alpha,
+                      '--wave-color-2': color2Alpha,
+                      '--wave-glow': glow
+                    }}
+                  >
+                    <div className="liquid-wave-1" />
+                    <div className="liquid-wave-2" />
+                  </div>
+                  <div className={`liquid-text text-sm font-black relative z-10 select-none ${textColor}`}>
+                    {pct}
+                    <span className="text-[9px] font-bold ml-0.5">%</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Subnet device list panel — shown below the cards when a subnet is selected */}
+      {selectedSubnet && (
+        <div className="rounded-2xl border border-emerald-300/50 dark:border-emerald-700/40 bg-white dark:bg-slate-900/80 shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-bold text-sm text-zinc-800 dark:text-slate-200">
+                {getSubnetLabel(selectedSubnet)}
+              </span>
+              <span className="font-mono text-xs text-zinc-400 dark:text-slate-500">{selectedSubnet}</span>
+              <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-slate-800 text-zinc-500 dark:text-slate-400">
+                {subnetDevices.length} equipos
+              </span>
             </div>
+            <button
+              type="button"
+              onClick={() => setSelectedSubnet(null)}
+              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200 text-lg font-bold leading-none px-1"
+              title="Cerrar"
+            >
+              ×
+            </button>
           </div>
-        );
-      })}
+
+          {/* Device rows */}
+          {subnetDevices.length === 0 ? (
+            <p className="text-sm text-zinc-400 dark:text-slate-500 px-4 py-6 text-center">No hay equipos en esta subred.</p>
+          ) : (
+            <div className="divide-y divide-zinc-100 dark:divide-slate-800 max-h-96 overflow-y-auto">
+              {subnetDevices.map(device => (
+                <button
+                  key={device.id}
+                  type="button"
+                  onClick={() => onOpen && onOpen(device)}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-slate-800/60 transition-colors duration-150 group"
+                >
+                  {/* Status dot */}
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${
+                    device.status === 'online' ? 'bg-emerald-500' :
+                    device.status === 'slow'   ? 'bg-amber-500' :
+                                                  'bg-rose-500'
+                  }`} />
+
+                  {/* Hostname + IP */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-zinc-800 dark:text-slate-200 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      {device.hostname || 'Sin nombre'}
+                    </p>
+                    <p className="text-xs font-mono text-zinc-400 dark:text-slate-500">{device.ip}</p>
+                  </div>
+
+                  {/* Department */}
+                  <span className="hidden sm:block text-xs text-zinc-400 dark:text-slate-500 truncate max-w-[140px]">
+                    {device.department || '—'}
+                  </span>
+
+                  {/* Responsible */}
+                  <span className="hidden md:block text-xs text-zinc-500 dark:text-slate-400 truncate max-w-[160px]">
+                    {device.responsible_user || '—'}
+                  </span>
+
+                  {/* Latency */}
+                  <span className="text-xs font-mono text-zinc-300 dark:text-slate-600 shrink-0 w-14 text-right">
+                    {device.latency_ms != null ? `${device.latency_ms} ms` : '—'}
+                  </span>
+
+                  {/* Status badge */}
+                  <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    device.status === 'online'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                      : device.status === 'slow'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      : 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/20'
+                  }`}>
+                    {device.status === 'online' ? 'Online' : device.status === 'slow' ? 'Lento' : 'Offline'}
+                  </span>
+
+                  {/* Arrow */}
+                  <ChevronRight size={14} className="text-zinc-300 dark:text-slate-600 group-hover:text-emerald-500 transition-colors shrink-0" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
