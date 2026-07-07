@@ -798,8 +798,8 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
         $28, $29, $30, $31, $32, $33, $34
       ) RETURNING *`,
       [
-        hostname, ip || null, mac, os, status, subnet, finalCity, branch, finalDept,
-        finalResponsible, finalJobTitle, finalPhone, finalEmail, notes, brand, model, serial_number,
+        hostname, ip || null, mac || null, os, status, subnet, finalCity, branch, finalDept,
+        finalResponsible, finalJobTitle, finalPhone || null, finalEmail, notes, brand, model, serial_number,
         asset_status, critical, managed, tags, employee_id || null, cpu, ram, storage, gpu, motherboard,
         image_url, device_type, location, office, antivirus, authorized_systems, ip_type
       ]

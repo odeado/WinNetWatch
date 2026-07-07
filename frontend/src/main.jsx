@@ -1131,6 +1131,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           finalForm.department = emp.department || '';
           finalForm.city = emp.city || '';
           finalForm.phone = emp.phone || '';
+          finalForm.job_title = emp.job_title || '';
         }
       }
 
@@ -1146,7 +1147,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       const payload = {
         hostname: finalForm.hostname || '',
         ip: finalForm.ip && finalForm.ip.trim() !== '' ? finalForm.ip.trim() : null,
-        mac: finalForm.mac || '',
+        mac: finalForm.mac && finalForm.mac.trim() !== '' ? finalForm.mac.trim() : null,
         os: finalForm.os || '',
         office: finalForm.office || '',
         antivirus: finalForm.antivirus || '',
@@ -1158,8 +1159,10 @@ function Dashboard({ token, user, theme, setTheme }) {
         branch: finalForm.branch || '',
         department: finalForm.department || '',
         responsible_user: finalForm.responsible_user || '',
-        phone: finalForm.phone || '',
+        phone: finalForm.phone && finalForm.phone.trim() !== '' ? finalForm.phone.trim() : null,
         email: finalForm.email || '',
+        job_title: finalForm.job_title || '',
+        authorized_systems: finalForm.authorized_systems || '',
         notes: finalForm.notes || '',
         brand: finalForm.brand || '',
         model: finalForm.model || '',
