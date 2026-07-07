@@ -903,6 +903,7 @@ function Dashboard({ token, user, theme, setTheme }) {
   // WebSocket connection for real-time scan logs
   const [scanLogs, setScanLogs] = useState([]);
   const [isTerminalScrolling, setIsTerminalScrolling] = useState(true);
+  const [consoleSearch, setConsoleSearch] = useState('');
 
   useEffect(() => {
     if (!token || !useLocalApi) return;
@@ -2362,7 +2363,22 @@ function Dashboard({ token, user, theme, setTheme }) {
                 title="Consola de Escaneo en Tiempo Real"
                 icon={<TerminalSquare size={18} className="text-emerald-500" />}
                 headerAction={
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={consoleSearch}
+                        onChange={e => setConsoleSearch(e.target.value)}
+                        placeholder="Buscar IP…"
+                        className="bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] rounded px-2 py-0.5 pl-5 w-28 focus:outline-none focus:border-emerald-500 placeholder-zinc-600"
+                      />
+                      <span className="absolute left-1.5 top-0.5 text-zinc-500 text-[10px] select-none">🔍</span>
+                      {consoleSearch.trim() && (
+                        <span className="ml-1 text-[9px] text-emerald-400 font-bold">
+                          {scanLogs.filter(l => l.toLowerCase().includes(consoleSearch.trim().toLowerCase())).length} resultados
+                        </span>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => setIsTerminalScrolling(!isTerminalScrolling)}
@@ -2382,7 +2398,11 @@ function Dashboard({ token, user, theme, setTheme }) {
                   </div>
                 }
               >
-                <TerminalConsole logs={scanLogs} autoScroll={isTerminalScrolling} />
+                <TerminalConsole
+                  logs={scanLogs}
+                  autoScroll={isTerminalScrolling && !consoleSearch.trim()}
+                  searchTerm={consoleSearch}
+                />
               </Panel>
             )}
 
@@ -4906,14 +4926,34 @@ function Panel({ title, icon, headerAction, children }) {
   );
 }
 
-function TerminalConsole({ logs, autoScroll }) {
+function TerminalConsole({ logs, autoScroll, searchTerm = '' }) {
   const containerRef = useRef(null);
+  const term = searchTerm.trim().toLowerCase();
+
+  const filteredLogs = term
+    ? logs.filter(log => log.toLowerCase().includes(term))
+    : logs;
 
   useEffect(() => {
-    if (autoScroll && containerRef.current) {
+    if (autoScroll && !term && containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [logs, autoScroll]);
+  }, [logs, autoScroll, term]);
+
+  function highlight(text) {
+    if (!term) return text;
+    const idx = text.toLowerCase().indexOf(term);
+    if (idx === -1) return text;
+    return (
+      <>
+        {text.slice(0, idx)}
+        <mark style={{ background: '#fbbf24', color: '#000', borderRadius: '2px', padding: '0 2px' }}>
+          {text.slice(idx, idx + term.length)}
+        </mark>
+        {text.slice(idx + term.length)}
+      </>
+    );
+  }
 
   return (
     <div
@@ -4928,9 +4968,13 @@ function TerminalConsole({ logs, autoScroll }) {
         <div className="flex h-full items-center justify-center text-slate-500 animate-pulse">
           <span>&gt; Esperando actividad de escaneo del backend local...</span>
         </div>
+      ) : filteredLogs.length === 0 ? (
+        <div className="flex h-full items-center justify-center text-amber-400">
+          <span>&gt; Sin resultados para &quot;{searchTerm}&quot;</span>
+        </div>
       ) : (
         <div className="space-y-1 text-[11px] md:text-xs">
-          {logs.map((log, idx) => {
+          {filteredLogs.map((log, idx) => {
             let colorClass = 'text-slate-300';
             if (log.includes('Online')) colorClass = 'text-emerald-400';
             else if (log.includes('Offline') || log.includes('offline')) colorClass = 'text-rose-400';
@@ -4943,7 +4987,7 @@ function TerminalConsole({ logs, autoScroll }) {
             return (
               <div key={idx} className={`${colorClass} whitespace-pre-wrap break-all`}>
                 <span className="text-slate-600 mr-2 select-none">&gt;</span>
-                {log}
+                {highlight(log)}
               </div>
             );
           })}
