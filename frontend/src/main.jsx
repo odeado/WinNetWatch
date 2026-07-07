@@ -2519,7 +2519,19 @@ function Dashboard({ token, user, theme, setTheme }) {
                                     <span>{emp.full_name}</span>
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 text-zinc-500 dark:text-slate-400">{emp.email || '—'}</td>
+                                 <td className="py-3 px-4 text-zinc-500 dark:text-slate-400">
+                                   {emp.email ? (
+                                     <a
+                                       href={`mailto:${emp.email}`}
+                                       className="text-zinc-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:underline transition-colors"
+                                       title="Enviar correo"
+                                     >
+                                       {emp.email}
+                                     </a>
+                                   ) : (
+                                     '—'
+                                   )}
+                                 </td>
                                 <td className="py-3 px-4">{emp.department || '—'}</td>
                                 <td className="py-3 px-4">
                                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -3785,7 +3797,17 @@ function Dashboard({ token, user, theme, setTheme }) {
                 <div className="pt-4 xs:pt-6 px-4 xs:px-6">
                   <div className="mb-4">
                     <h2 className="text-xl font-bold text-zinc-950 dark:text-white leading-tight">{employeeModal.form.full_name}</h2>
-                    <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium">{employeeModal.form.email || 'Sin correo registrado'}</p>
+                    {employeeModal.form.email ? (
+                      <a
+                        href={`mailto:${employeeModal.form.email}`}
+                        className="text-xs text-zinc-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:underline font-medium transition-colors"
+                        title="Enviar correo"
+                      >
+                        {employeeModal.form.email}
+                      </a>
+                    ) : (
+                      <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium">Sin correo registrado</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-zinc-50 dark:bg-slate-950 p-2.5 xs:p-3 rounded-xl border border-zinc-200 dark:border-slate-800">
