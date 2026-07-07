@@ -956,7 +956,9 @@ function Dashboard({ token, user, theme, setTheme }) {
         vpn_active: form.vpn_active || false,
         vpn_type: form.vpn_type || 'Agencia',
         image_url: form.image_url || '',
-        active: form.active !== undefined ? form.active : true
+        active: form.active !== undefined ? form.active : true,
+        job_title: form.job_title || '',
+        authorized_systems: form.authorized_systems || ''
       };
 
       if (useLocalApi) {
