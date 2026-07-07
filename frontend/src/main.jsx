@@ -222,6 +222,26 @@ function getInitials(name) {
   return parts[0].substring(0, 2).toUpperCase();
 }
 
+function formatMAC(value, previousValue) {
+  if (!value) return '';
+  if (previousValue && value.length < previousValue.length) {
+    if (previousValue.endsWith(':') && !value.endsWith(':')) {
+      value = value.slice(0, -1);
+    }
+    return value.toUpperCase();
+  }
+  let cleaned = value.replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+  cleaned = cleaned.substring(0, 12);
+  let formatted = '';
+  for (let i = 0; i < cleaned.length; i++) {
+    if (i > 0 && i % 2 === 0) {
+      formatted += ':';
+    }
+    formatted += cleaned[i];
+  }
+  return formatted;
+}
+
 function playNotificationSound(type) {
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -334,6 +354,21 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [activeSwitchForPorts, setActiveSwitchForPorts] = useState(null);
   const [deviceLinkSearch, setDeviceLinkSearch] = useState('');
   const [showDeviceLinkSelector, setShowDeviceLinkSelector] = useState(false);
+
+  const allIps = useMemo(() => {
+    const set = new Set();
+    devices.forEach(d => { if (d.ip) set.add(d.ip); });
+    infrastructure.forEach(i => { if (i.ip) set.add(i.ip); });
+    return Array.from(set);
+  }, [devices, infrastructure]);
+
+  const allEmails = useMemo(() => {
+    const set = new Set();
+    employees.forEach(e => { if (e.email) set.add(e.email); });
+    appUsers.forEach(u => { if (u.email) set.add(u.email); });
+    devices.forEach(d => { if (d.email) set.add(d.email); });
+    return Array.from(set);
+  }, [employees, appUsers, devices]);
 
   useEffect(() => {
     setShowDeviceLinkSelector(false);
@@ -2136,6 +2171,16 @@ function Dashboard({ token, user, theme, setTheme }) {
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-slate-950 dark:text-slate-100 font-sans transition-colors duration-300">
+      <datalist id="existing-ips">
+        {allIps.map(ip => (
+          <option key={ip} value={ip} />
+        ))}
+      </datalist>
+      <datalist id="existing-emails">
+        {allEmails.map(email => (
+          <option key={email} value={email} />
+        ))}
+      </datalist>
       {firebaseQuotaExceeded && (
         <div className="bg-amber-500 text-zinc-950 text-center py-2 px-4 text-xs font-bold flex items-center justify-center gap-2 border-b border-amber-600/20 shadow-md">
           <AlertTriangle size={14} className="flex-shrink-0 animate-pulse text-amber-950" />
@@ -2485,7 +2530,25 @@ function Dashboard({ token, user, theme, setTheme }) {
                                     {emp.workplace || emp.status || 'Presencial'}
                                   </span>
                                 </td>
-                                <td className="py-3 px-4 font-mono text-xs">{emp.phone || '—'}</td>
+                                 <td className="py-3 px-4 font-mono text-xs">
+                                   {emp.phone ? (() => {
+                                     const digits = emp.phone.replace(/\D/g, '');
+                                     const waNum = digits.length === 9 && digits.startsWith('9') ? '56' + digits : digits;
+                                     return (
+                                       <a
+                                         href={`https://wa.me/${waNum}`}
+                                         target="_blank"
+                                         rel="noopener noreferrer"
+                                         className="text-emerald-500 hover:text-emerald-400 hover:underline font-semibold inline-flex items-center gap-1"
+                                         title="Escribir o llamar por WhatsApp"
+                                       >
+                                         {emp.phone}
+                                       </a>
+                                     );
+                                   })() : (
+                                     '—'
+                                   )}
+                                 </td>
                                 <td className="py-3 px-4">
                                   {emp.vpn_active ? (
                                     <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400">
@@ -3438,6 +3501,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                             <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Dirección IP</label>
                             <input
                               className="input w-full"
+                              list="existing-ips"
                               placeholder="ej. 172.30.100.10"
                               value={infraModal.form.ip || ''}
                               onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, ip: e.target.value } })}
@@ -3449,7 +3513,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                               className="input w-full"
                               placeholder="ej. AA:BB:CC:DD:EE:FF"
                               value={infraModal.form.mac || ''}
-                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, mac: e.target.value } })}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, mac: formatMAC(e.target.value, infraModal.form.mac) } })}
                             />
                           </div>
                         </div>
@@ -3729,7 +3793,23 @@ function Dashboard({ token, user, theme, setTheme }) {
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-zinc-50 dark:bg-slate-950 p-2.5 xs:p-3 rounded-xl border border-zinc-200 dark:border-slate-800">
                     <div>
                       <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Teléfono</span>
-                      <span className="text-xs font-medium">{employeeModal.form.phone || '—'}</span>
+                      {employeeModal.form.phone ? (() => {
+                        const digits = employeeModal.form.phone.replace(/\D/g, '');
+                        const waNum = digits.length === 9 && digits.startsWith('9') ? '56' + digits : digits;
+                        return (
+                          <a
+                            href={`https://wa.me/${waNum}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-500 hover:text-emerald-400 hover:underline text-xs font-semibold block"
+                            title="Escribir o llamar por WhatsApp"
+                          >
+                            {employeeModal.form.phone}
+                          </a>
+                        );
+                      })() : (
+                        <span className="text-xs font-medium text-zinc-500 dark:text-slate-400">—</span>
+                      )}
                     </div>
                     <div>
                       <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Cargo</span>
@@ -3965,6 +4045,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                     <input
                       className="input"
                       type="email"
+                      list="existing-emails"
                       value={employeeModal.form.email || ''}
                       onChange={(e) =>
                         setEmployeeModal({
@@ -4271,6 +4352,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             <span className="label">{form.ip_type === 'dynamic' ? 'Dirección IP (Opcional)' : 'Dirección IP *'}</span>
             <input
               className="input"
+              list="existing-ips"
               disabled={deviceModal.mode === 'edit'}
               value={form.ip || ''}
               onChange={(e) => {
@@ -4434,7 +4516,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             <input
               className="input"
               value={form.mac || ''}
-              onChange={(e) => setForm({ ...form, mac: e.target.value })}
+              onChange={(e) => setForm({ ...form, mac: formatMAC(e.target.value, form.mac) })}
               placeholder="ej. AA:BB:CC:DD:EE:FF"
             />
           </label>
@@ -4581,6 +4663,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             <input
               className="input"
               type="email"
+              list="existing-emails"
               value={form.email || ''}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
@@ -5231,7 +5314,7 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
             </label>
             <label className="block">
               <span className="label">Correo</span>
-              <input className="input" type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <input className="input" type="email" list="existing-emails" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </label>
             <label className="block">
               <span className="label">Versión de Office</span>
