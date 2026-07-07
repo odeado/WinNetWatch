@@ -241,6 +241,13 @@ async function runMigrations() {
       `);
     }
 
+    // 11. Add ip_type column, drop ip NOT NULL, and drop unique constraint
+    await query(`
+      ALTER TABLE devices ADD COLUMN IF NOT EXISTS ip_type TEXT DEFAULT 'static';
+      ALTER TABLE devices ALTER COLUMN ip DROP NOT NULL;
+      ALTER TABLE devices DROP CONSTRAINT IF EXISTS devices_ip_key;
+    `);
+
     console.log('Database migrations and roles updated successfully');
   } catch (error) {
     console.error('Failed to run database migrations:', error);

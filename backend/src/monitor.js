@@ -8,6 +8,11 @@ import { pushDeviceToFirebase, pushEventToFirebase, pushAnomalyToFirebase } from
 let running = false;
 let criticalRunning = false;
 
+function logScan(message) {
+  console.log(message);
+  broadcast('scan-log', message);
+}
+
 // ============================================================
 // Funciones de Detección de Anomalías
 // ============================================================
@@ -130,25 +135,25 @@ export async function scanAll() {
   if (running) return;
   running = true;
   try {
-    console.log(`Scan started for ${config.subnets.join(', ')}`);
+    logScan(`Scan started for ${config.subnets.join(', ')}`);
     for (const subnet of config.subnets) {
       await scanSubnet(subnet);
     }
     const summary = await getSummary();
-    console.log(
+    logScan(
       `[${new Date().toLocaleTimeString()}] Equipos:${summary.total} Online:${summary.online} Offline:${summary.offline} RDP:${summary.rdp}`
     );
     broadcast('summary', summary);
-    console.log('Scan finished');
+    logScan('Scan finished');
   } catch (error) {
-    console.error('Scan error', error);
+    logScan(`[ERROR] Scan error: ${error.message || error}`);
   } finally {
     running = false;
   }
 }
 
 export async function scanSubnet(subnet) {
-  console.log(`Scanning subnet ${subnet}`);
+  logScan(`Scanning subnet ${subnet}`);
   const hosts = expandCidr(subnet);
   const concurrency = config.scanConcurrency;
   let hostIndex = 0;
@@ -160,7 +165,7 @@ export async function scanSubnet(subnet) {
     }
   });
   await Promise.all(workers);
-  console.log(`Finished subnet ${subnet}`);
+  logScan(`Finished subnet ${subnet}`);
 }
 
 /**
@@ -178,13 +183,13 @@ async function scanCriticalDevices() {
        LIMIT 30`
     );
     if (criticalDevices.length === 0) return;
-    console.log(`\n⚡ [CRITICAL SCAN] Escaneando ${criticalDevices.length} dispositivos críticos/managed...`);
+    logScan(`[CRITICAL SCAN] Escaneando ${criticalDevices.length} dispositivos críticos/managed...`);
     for (const device of criticalDevices) {
       await scanHost(device.ip, device.subnet);
     }
-    console.log(`✓ [CRITICAL SCAN] Completado\n`);
+    logScan(`[CRITICAL SCAN] Completado`);
   } catch (error) {
-    console.error('[Critical Scan Error]', error);
+    logScan(`[ERROR] Critical Scan Error: ${error.message || error}`);
   } finally {
     criticalRunning = false;
   }
@@ -273,7 +278,7 @@ export async function scanHost(ip, subnet) {
     // Auto-limpieza de fantasmas de red (falsos positivos de ping/ARP)
     const isGhost = !online && 
                     (!hostname || hostname === ip) && 
-                    (!mac || mac === '') && 
+                    (!previous.mac || previous.mac === '') && 
                     !previous.responsible_user && 
                     !previous.department && 
                     !previous.employee_id && 
@@ -353,7 +358,7 @@ export async function scanHost(ip, subnet) {
     // ============================================================
     let eventType = null;
     if (previous.status !== status) {
-      console.log(`🔄 CAMBIO: ${ip} ${previous.status} → ${status}`);
+      logScan(`🔄 CAMBIO: ${ip} ${previous.status} → ${status}`);
       eventType = status === 'offline' ? 'device.offline' : 'device.online';
 
       await client.query(
@@ -406,13 +411,12 @@ export async function scanHost(ip, subnet) {
 
   // Log de anomalías detectadas
   if (result.device && result.anomalies && result.anomalies.length > 0) {
-    console.log(`\n⚡ ANOMALÍAS EN ${ip} (${hostname || 'sin nombre'}):`);
+    logScan(`⚡ ANOMALÍAS EN ${ip} (${hostname || 'sin nombre'}):`);
     for (const anomaly of result.anomalies) {
-      console.log(`   - ${anomaly.type} [${anomaly.severity}]`);
-      if (anomaly.message) console.log(`     ${anomaly.message}`);
-      if (anomaly.durationSeconds) console.log(`     Duración: ${anomaly.durationSeconds}s`);
+      logScan(`   - ${anomaly.type} [${anomaly.severity}]`);
+      if (anomaly.message) logScan(`     ${anomaly.message}`);
+      if (anomaly.durationSeconds) logScan(`     Duración: ${anomaly.durationSeconds}s`);
     }
-    console.log();
 
     // Subir cada anomalía a Firestore
     for (const anomaly of result.anomalies) {

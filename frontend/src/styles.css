@@ -169,3 +169,51 @@ body {
 .dark .liquid-text {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
+
+/* ============================================================
+   PERSONALIZACIÓN DE SCROLLBARS GLOBALES (A-DOCK CON EL TEMA)
+   ============================================================ */
+
+/* Navegadores basados en Webkit (Chrome, Safari, Edge, etc.) */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f4f4f5; /* zinc-100 para tema claro */
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a; /* slate-900 para tema oscuro */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8; /* zinc-300 para tema claro */
+  border-radius: 9999px;
+  border: 2.5px solid #f4f4f5;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155; /* slate-700 para tema oscuro */
+  border-radius: 9999px;
+  border: 2.5px solid #0f172a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa; /* zinc-400 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #10b981; /* Verde esmeralda brillante al hacer hover en tema oscuro */
+}
+
+/* Navegadores Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d8 #f4f4f5;
+}
+
+.dark * {
+  scrollbar-color: #334155 #0f172a;
+}

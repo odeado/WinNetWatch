@@ -641,7 +641,7 @@ function Dashboard({ token, user, theme, setTheme }) {
         setDevices(list);
 
         setDeviceModal(prev => {
-          if (prev && prev.form?.id) {
+          if (prev && prev.mode !== 'edit' && prev.form?.id) {
             const updated = list.find(d => d.id === prev.form.id);
             if (updated) return { ...prev, form: updated };
           }
@@ -658,7 +658,7 @@ function Dashboard({ token, user, theme, setTheme }) {
         setEmployees(list);
 
         setEmployeeModal(prev => {
-          if (prev && prev.form?.id) {
+          if (prev && prev.mode !== 'edit' && prev.form?.id) {
             const updated = list.find(e => e.id === prev.form.id);
             if (updated) return { ...prev, form: updated };
           }
@@ -797,7 +797,7 @@ function Dashboard({ token, user, theme, setTheme }) {
         prevDevicesRef.current = nextRef;
 
         setDeviceModal(prev => {
-          if (prev && prev.form?.id) {
+          if (prev && prev.mode !== 'edit' && prev.form?.id) {
             const updated = list.find(d => d.id === prev.form.id);
             if (updated) return { ...prev, form: updated };
           }
@@ -813,7 +813,7 @@ function Dashboard({ token, user, theme, setTheme }) {
         setEmployees(list);
 
         setEmployeeModal(prev => {
-          if (prev && prev.form?.id) {
+          if (prev && prev.mode !== 'edit' && prev.form?.id) {
             const updated = list.find(e => e.id === prev.form.id);
             if (updated) return { ...prev, form: updated };
           }
@@ -864,6 +864,52 @@ function Dashboard({ token, user, theme, setTheme }) {
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, [token, useLocalApi, loadData]);
+
+  // WebSocket connection for real-time scan logs
+  const [scanLogs, setScanLogs] = useState([]);
+  const [isTerminalScrolling, setIsTerminalScrolling] = useState(true);
+
+  useEffect(() => {
+    if (!token || !useLocalApi) return;
+
+    let ws;
+    let reconnectTimeout;
+
+    function connect() {
+      // Resolve proper WebSocket URL based on protocol
+      const wsUrl = getWsUrl(API_URL);
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        setScanLogs(prev => [...prev.slice(-199), `[${new Date().toLocaleTimeString()}] Conectado a la consola de escaneo local`]);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'scan-log') {
+            setScanLogs(prev => [...prev.slice(-199), msg.payload]);
+          }
+        } catch (e) {}
+      };
+
+      ws.onclose = () => {
+        setScanLogs(prev => [...prev.slice(-199), `[${new Date().toLocaleTimeString()}] Conexión con consola local cerrada. Reconectando...`]);
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => {
+        // Silently handle error and let onclose reconnect
+      };
+    }
+
+    connect();
+
+    return () => {
+      if (ws) ws.close();
+      clearTimeout(reconnectTimeout);
+    };
+  }, [token, useLocalApi]);
 
   // ------------------------------------------------------------
   // Cloud Database Actions
@@ -997,6 +1043,43 @@ function Dashboard({ token, user, theme, setTheme }) {
   async function saveDevice(form) {
     try {
       let finalForm = { ...form };
+      const isDynamic = finalForm.ip_type === 'dynamic';
+
+      // 1. IP validation (IP is mandatory only for static IPs)
+      if (!isDynamic && (!finalForm.ip || finalForm.ip.trim() === '')) {
+        throw new Error('La dirección IP es obligatoria para IPs estáticas.');
+      }
+
+      // 2. IP address validation for duplicates (excluding the device itself, and only for static IPs)
+      if (!isDynamic && finalForm.ip && finalForm.ip.trim() !== '') {
+        const targetIp = finalForm.ip.trim();
+        const duplicateIp = devices.find(d => 
+          d.id !== finalForm.id && 
+          d.ip_type !== 'dynamic' &&
+          d.ip && 
+          d.ip.trim() === targetIp
+        );
+        if (duplicateIp) {
+          throw new Error(`La dirección IP "${targetIp}" ya está registrada en otro equipo (${duplicateIp.hostname || 'Sin nombre'}). Por favor, usa una IP única.`);
+        }
+      }
+
+      // 3. Serial number validation for duplicates (excluding the device itself if editing)
+      if (finalForm.serial_number && finalForm.serial_number.trim() !== '') {
+        const targetSerial = finalForm.serial_number.trim().toLowerCase();
+        // Ignore generic placeholder serial numbers
+        const ignoreSerials = ['', 'n/a', 'na', 'unknown', 'sin serie', 'system serial number', 'to be filled by o.e.m.', '00000000', '12345678', 'none'];
+        if (!ignoreSerials.includes(targetSerial)) {
+          const duplicateSerial = devices.find(d => 
+            d.id !== finalForm.id && 
+            d.serial_number && 
+            d.serial_number.trim().toLowerCase() === targetSerial
+          );
+          if (duplicateSerial) {
+            throw new Error(`El número de serie "${finalForm.serial_number.trim()}" ya está registrado en otro equipo (${duplicateSerial.hostname || 'Sin nombre'} - IP: ${duplicateSerial.ip}).`);
+          }
+        }
+      }
 
       if (typeof finalForm.tags === 'string') {
         finalForm.tags = finalForm.tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -1015,12 +1098,17 @@ function Dashboard({ token, user, theme, setTheme }) {
       }
 
       // Calculate subnet client-side
-      const ipParts = (finalForm.ip || '').split('.');
-      const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'unknown';
+      let subnet = 'unknown';
+      if (finalForm.ip && finalForm.ip.trim() !== '') {
+        const ipParts = finalForm.ip.trim().split('.');
+        if (ipParts.length === 4) {
+          subnet = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24`;
+        }
+      }
 
       const payload = {
         hostname: finalForm.hostname || '',
-        ip: finalForm.ip,
+        ip: finalForm.ip && finalForm.ip.trim() !== '' ? finalForm.ip.trim() : null,
         mac: finalForm.mac || '',
         os: finalForm.os || '',
         office: finalForm.office || '',
@@ -1050,7 +1138,8 @@ function Dashboard({ token, user, theme, setTheme }) {
         image_url: finalForm.image_url || '',
         device_type: finalForm.device_type || 'PC',
         location: finalForm.location || 'Matta',
-        last_seen: finalForm.last_seen || new Date().toISOString()
+        last_seen: finalForm.last_seen || new Date().toISOString(),
+        ip_type: finalForm.ip_type || 'static'
       };
 
       if (useLocalApi) {
@@ -2207,6 +2296,36 @@ function Dashboard({ token, user, theme, setTheme }) {
                 <Feed rows={anomalies} kind="anomaly" devices={devices} />
               </div>
             </Panel>
+
+            {useLocalApi && (
+              <Panel
+                title="Consola de Escaneo en Tiempo Real"
+                icon={<TerminalSquare size={18} className="text-emerald-500" />}
+                headerAction={
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsTerminalScrolling(!isTerminalScrolling)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition ${
+                        isTerminalScrolling ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                      }`}
+                    >
+                      {isTerminalScrolling ? 'Auto-scroll: On' : 'Auto-scroll: Off'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScanLogs([])}
+                      className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 hover:text-white transition"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                }
+              >
+                <TerminalConsole logs={scanLogs} autoScroll={isTerminalScrolling} />
+              </Panel>
+            )}
+
             <Panel title="Vista jerárquica" icon={<Building2 size={18} />}>
                <NetworkGroups rows={networkMap} getSubnetLabel={getSubnetLabel} />
             </Panel>
@@ -3566,7 +3685,7 @@ function Dashboard({ token, user, theme, setTheme }) {
       {/* Employee Modal (Ficha de Empleado) */}
       {employeeModal && (
         <div className={`fixed inset-0 ${employeeModal.mode === 'create' ? 'z-[60]' : 'z-50'} flex items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-sm p-0 sm:p-4`}>
-          <div className="w-full h-[100dvh] sm:h-auto sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden flex flex-col transition-all duration-300">
+          <div className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden flex flex-col transition-all duration-300">
             {employeeModal.mode === 'view' ? (
               <div className="flex-1 flex flex-col justify-between overflow-hidden">
                 <div className="flex-1 overflow-y-auto space-y-4 pb-4">
@@ -4129,7 +4248,7 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 overflow-hidden">
-      <div className="w-full h-[100dvh] sm:h-auto sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-900 dark:text-slate-100 overflow-hidden flex flex-col justify-between my-0 sm:my-8 transition-all duration-300">
+      <div className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-900 dark:text-slate-100 overflow-hidden flex flex-col justify-between my-0 sm:my-8 transition-all duration-300">
         <div className="px-6 py-4 border-b border-zinc-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
           <div>
             <h3 className="text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2 leading-tight">
@@ -4147,11 +4266,11 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
 
         <div className="flex-1 overflow-y-auto p-4 xs:p-6 grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="label">Dirección IP *</span>
+            <span className="label">{form.ip_type === 'dynamic' ? 'Dirección IP (Opcional)' : 'Dirección IP *'}</span>
             <input
               className="input"
               disabled={deviceModal.mode === 'edit'}
-              value={form.ip}
+              value={form.ip || ''}
               onChange={(e) => {
                 const newIp = e.target.value;
                 const ipParts = newIp.split('.');
@@ -4179,8 +4298,34 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
                 }
                 setForm({ ...form, ip: newIp, city: autoCity, branch: autoBranch });
               }}
-              placeholder="ej. 172.30.100.15"
+              placeholder={form.ip_type === 'dynamic' ? 'Dejar vacío si no se conoce' : 'ej. 172.30.100.15'}
             />
+            {deviceModal.mode !== 'edit' && (
+              <div className="mt-2 flex gap-4">
+                <label className="flex items-center gap-1.5 cursor-pointer text-[10px] font-bold uppercase text-zinc-500 dark:text-slate-400">
+                  <input
+                    type="radio"
+                    name="ip_type"
+                    value="static"
+                    checked={form.ip_type !== 'dynamic'}
+                    onChange={() => setForm({ ...form, ip_type: 'static' })}
+                    className="rounded-full border-zinc-300 text-emerald-500 focus:ring-emerald-500 h-3 w-3"
+                  />
+                  <span>IP Estática</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[10px] font-bold uppercase text-zinc-500 dark:text-slate-400">
+                  <input
+                    type="radio"
+                    name="ip_type"
+                    value="dynamic"
+                    checked={form.ip_type === 'dynamic'}
+                    onChange={() => setForm({ ...form, ip_type: 'dynamic', ip: '' })}
+                    className="rounded-full border-zinc-300 text-emerald-500 focus:ring-emerald-500 h-3 w-3"
+                  />
+                  <span>IP Dinámica (DHCP)</span>
+                </label>
+              </div>
+            )}
           </label>
           <label className="block">
             <span className="label">Nombre Equipo (Hostname)</span>
@@ -4633,12 +4778,62 @@ function Stats({ summary }) {
   ))}</div>;
 }
 
-function Panel({ title, icon, children }) {
+function Panel({ title, icon, headerAction, children }) {
   return (
     <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-      <div className="mb-4 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-slate-200 uppercase tracking-wider border-b border-zinc-100 dark:border-slate-800/80 pb-2">{icon}{title}</div>
+      <div className="mb-4 flex items-center justify-between border-b border-zinc-100 dark:border-slate-800/80 pb-2">
+        <div className="flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-slate-200 uppercase tracking-wider">{icon}{title}</div>
+        {headerAction && <div>{headerAction}</div>}
+      </div>
       {children}
     </section>
+  );
+}
+
+function TerminalConsole({ logs, autoScroll }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (autoScroll && containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [logs, autoScroll]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="h-56 overflow-y-auto rounded-xl border border-slate-200/80 bg-slate-950 p-3.5 font-mono text-xs text-slate-300 leading-relaxed shadow-inner dark:border-slate-850"
+      style={{
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'rgba(255,255,255,0.1) rgba(0,0,0,0.2)'
+      }}
+    >
+      {logs.length === 0 ? (
+        <div className="flex h-full items-center justify-center text-slate-500 animate-pulse">
+          <span>&gt; Esperando actividad de escaneo del backend local...</span>
+        </div>
+      ) : (
+        <div className="space-y-1 text-[11px] md:text-xs">
+          {logs.map((log, idx) => {
+            let colorClass = 'text-slate-300';
+            if (log.includes('Online')) colorClass = 'text-emerald-400';
+            else if (log.includes('Offline') || log.includes('offline')) colorClass = 'text-rose-400';
+            else if (log.includes('🔄 CAMBIO:')) colorClass = 'text-amber-400 font-semibold';
+            else if (log.includes('⚡ ANOMALÍAS') || log.includes('ANOMALÍA') || log.includes('⚡ UPTIME')) colorClass = 'text-amber-400 font-semibold';
+            else if (log.includes('[ERROR]')) colorClass = 'text-rose-500 font-bold';
+            else if (log.includes('Scan started') || log.includes('Scan finished')) colorClass = 'text-cyan-400 font-semibold';
+            else if (log.includes('Scanning subnet') || log.includes('Finished subnet')) colorClass = 'text-blue-400';
+
+            return (
+              <div key={idx} className={`${colorClass} whitespace-pre-wrap break-all`}>
+                <span className="text-slate-600 mr-2 select-none">&gt;</span>
+                {log}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -4664,8 +4859,11 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
           <h3 className="truncate text-base font-bold text-zinc-900 dark:text-white" title={device.responsible_user || 'Sin responsable'}>
             {device.responsible_user || 'Sin responsable'}
           </h3>
-          <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">
-            {device.ip}
+          <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
+            {device.ip || 'IP Dinámica'}
+            {device.ip_type === 'dynamic' && (
+              <span className="px-1.5 py-0.2 text-[8px] font-extrabold uppercase tracking-wider rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">DHCP</span>
+            )}
           </p>
           <p className="text-xs text-zinc-400 dark:text-slate-500 font-semibold truncate mt-1">
             Equipo: {device.hostname || 'Equipo sin nombre'}
@@ -4802,9 +5000,12 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-950 dark:text-white">
               <Laptop className="text-emerald-500" size={22} />
-              {form.hostname || form.ip}
+              {form.hostname || form.ip || 'Equipo sin nombre'}
+              {form.ip_type === 'dynamic' && (
+                <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 ml-2">DHCP</span>
+              )}
             </h2>
-            <p className="text-xs text-zinc-500 dark:text-slate-400 mt-1 font-mono">{form.ip} · {form.mac || 'MAC no detectada'} · {form.os || 'SO no identificado'}</p>
+            <p className="text-xs text-zinc-500 dark:text-slate-400 mt-1 font-mono">{form.ip || 'IP Dinámica'} · {form.mac || 'MAC no detectada'} · {form.os || 'SO no identificado'}</p>
           </div>
           <button className="text-2xl text-zinc-400 hover:text-zinc-650 dark:hover:text-slate-200 font-semibold px-2" onClick={onClose}>×</button>
         </div>
@@ -5191,7 +5392,15 @@ function SubnetMap({ rows, getSubnetLabel, devices = [], onOpen }) {
       const sa = STATUS_ORDER[a.status] ?? 3;
       const sb = STATUS_ORDER[b.status] ?? 3;
       if (sa !== sb) return sa - sb;
-      return (a.hostname || a.ip || '').localeCompare(b.hostname || b.ip || '');
+      
+      const partsA = (a.ip || '').split('.').map(n => parseInt(n, 10) || 0);
+      const partsB = (b.ip || '').split('.').map(n => parseInt(n, 10) || 0);
+      for (let i = 0; i < 4; i++) {
+        const valA = partsA[i] || 0;
+        const valB = partsB[i] || 0;
+        if (valA !== valB) return valA - valB;
+      }
+      return 0;
     });
 
   return (

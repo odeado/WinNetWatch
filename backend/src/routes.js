@@ -314,10 +314,10 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
     }
 
     const allowed = [
-      'hostname', 'os', 'city', 'branch', 'department', 'responsible_user', 'job_title', 'phone', 'email',
-      'notes', 'brand', 'model', 'serial_number', 'acquired_at', 'warranty_until', 'asset_status',
-      'critical', 'managed', 'tags', 'employee_id', 'cpu', 'ram', 'storage', 'gpu', 'motherboard',
-      'image_url', 'device_type', 'location', 'office', 'antivirus', 'authorized_systems', 'switch_id', 'switch_port'
+      'hostname', 'ip', 'mac', 'os', 'status', 'city', 'branch', 'department',
+      'responsible_user', 'job_title', 'phone', 'email', 'notes', 'brand', 'model',
+      'serial_number', 'asset_status', 'critical', 'managed', 'tags', 'employee_id', 'cpu', 'ram', 'storage',
+      'gpu', 'motherboard', 'image_url', 'device_type', 'location', 'office', 'antivirus', 'authorized_systems', 'switch_id', 'switch_port', 'ip_type'
     ];
     const fields = [];
     const values = [req.params.id];
@@ -744,11 +744,11 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
       responsible_user, job_title, phone, email, notes, brand, model, serial_number,
       asset_status = 'active', critical = false, managed = false, tags = [],
       employee_id, cpu, ram, storage, gpu, motherboard, image_url, device_type = 'PC', location = 'Matta',
-      office, antivirus, authorized_systems
+      office, antivirus, authorized_systems, ip_type = 'static'
     } = req.body;
 
-    if (!ip) {
-      return res.status(400).json({ error: 'La dirección IP es obligatoria' });
+    if (ip_type === 'static' && (!ip || ip.trim() === '')) {
+      return res.status(400).json({ error: 'La dirección IP es obligatoria para IPs estáticas' });
     }
 
     // Sync employee details if employee_id is changing
@@ -770,26 +770,31 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
     }
 
     // Calculate subnet
-    const ipParts = ip.split('.');
-    const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'unknown';
+    let subnet = 'unknown';
+    if (ip && ip.trim() !== '') {
+      const ipParts = ip.split('.');
+      if (ipParts.length === 4) {
+        subnet = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24`;
+      }
+    }
 
     const { rows } = await query(
       `INSERT INTO devices(
         hostname, ip, mac, os, status, rdp_available, subnet, city, branch, department,
         responsible_user, job_title, phone, email, notes, brand, model, serial_number,
         asset_status, critical, managed, tags, employee_id, cpu, ram, storage, gpu, motherboard,
-        image_url, device_type, location, office, antivirus, authorized_systems
+        image_url, device_type, location, office, antivirus, authorized_systems, ip_type
       ) VALUES (
         $1, $2, $3, $4, $5, false, $6, $7, $8, $9,
         $10, $11, $12, $13, $14, $15, $16, $17,
         $18, $19, $20, $21, $22, $23, $24, $25, $26, $27,
-        $28, $29, $30, $31, $32, $33
+        $28, $29, $30, $31, $32, $33, $34
       ) RETURNING *`,
       [
-        hostname, ip, mac, os, status, subnet, finalCity, branch, finalDept,
+        hostname, ip || null, mac, os, status, subnet, finalCity, branch, finalDept,
         finalResponsible, finalJobTitle, phone, finalEmail, notes, brand, model, serial_number,
         asset_status, critical, managed, tags, employee_id || null, cpu, ram, storage, gpu, motherboard,
-        image_url, device_type, location, office, antivirus, authorized_systems
+        image_url, device_type, location, office, antivirus, authorized_systems, ip_type
       ]
     );
 

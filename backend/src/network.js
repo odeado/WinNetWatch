@@ -4,6 +4,7 @@ import tls from 'node:tls';
 import { execFile, exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config } from './config.js';
+import { broadcast } from './wsHub.js';
 
 const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
@@ -175,43 +176,44 @@ export async function lookupMac(ip) {
 }
 
 export async function probeWindowsHost(ip) {
-
-
-
   const [ping, ports] = await Promise.all([
     pingHost(ip),
     probePorts(ip, config.windowsProbePorts)
   ]);
 
-if (ip === '172.30.100.35') {
-  console.log('PUERTOS DETECTADOS:', ports);
-}
-
-  const [hostname, mac] = await Promise.all([
-    resolveHostname(ip),
-    lookupMac(ip)
-  ]);
   const openPorts = Object.entries(ports)
     .filter(([, open]) => open)
     .map(([port]) => Number(port));
   const rdpAvailable = Boolean(ports[3389]);
+
+  const reachable = ping.online || openPorts.length > 0;
+
+  if (ip === '172.30.100.35') {
+    console.log('PUERTOS DETECTADOS:', ports);
+  }
+
+  // ONLY query hostname and MAC if the host is reachable!
+  // This avoids spawning thousands of useless child processes (nbtstat, ping -a, arp) for offline IPs.
+  let hostname = null;
+  let mac = null;
+  if (reachable) {
+    const [hName, macAddr] = await Promise.all([
+      resolveHostname(ip),
+      lookupMac(ip)
+    ]);
+    hostname = hName;
+    mac = macAddr;
+  }
+
   const confidence = scoreEvidence({ ping, openPorts, hostname, mac });
 
-  console.log(
-  ip,
-  'ping.received=',
-  ping.received,
-  'ping.online=',
-  ping.online,
-  'openPorts=',
-  openPorts,
-  'confidence=',
-  confidence
-);
+  const logMsg = `${ip} | Ping: ${ping.online ? 'Online' : 'Offline'} (${ping.received}/${ping.sent}) | Puertos: [${openPorts.join(', ') || 'ninguno'}] | Confianza: ${confidence}`;
+  console.log(logMsg);
+  broadcast('scan-log', logMsg);
 
   return {
     online: confidence >= config.newDeviceMinConfidence || ping.received >= 2,
-    reachable: ping.online || openPorts.length > 0,
+    reachable,
     confidence,
     ping,
     latencyMs: ping.latencyMs,
