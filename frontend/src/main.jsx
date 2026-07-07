@@ -1191,7 +1191,11 @@ function Dashboard({ token, user, theme, setTheme }) {
           headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (!response.ok) throw new Error('Failed to save device via local API');
+        if (!response.ok) {
+          let errBody = '';
+          try { errBody = JSON.stringify(await response.json()); } catch {}
+          throw new Error(`Error ${response.status} al guardar equipo: ${errBody || response.statusText}`);
+        }
         
         setDeviceModal(null);
         setSelected(null);

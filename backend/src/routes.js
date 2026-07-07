@@ -344,32 +344,6 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
     const after = rows[0];
 
     let finalDevice = after;
-    if (req.body.employee_id) {
-      const employee = (
-        await query(
-          `SELECT full_name, email, department, city FROM employees WHERE id = $1`,
-          [req.body.employee_id]
-        )
-      ).rows[0];
-
-      if (employee) {
-        finalDevice = (
-          await query(
-            `UPDATE devices
-             SET responsible_user = $2, email = $3, department = $4, city = $5
-             WHERE id = $1
-             RETURNING *`,
-            [
-              req.params.id,
-              employee.full_name,
-              employee.email,
-              employee.department,
-              employee.city
-            ]
-          )
-        ).rows[0];
-      }
-    }
 
     // Respond immediately — Firebase syncs in the background (fire-and-forget)
     await audit(req.user.sub, 'device.update', 'device', req.params.id, before, finalDevice);
