@@ -2536,9 +2536,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                                      const waNum = digits.length === 9 && digits.startsWith('9') ? '56' + digits : digits;
                                      return (
                                        <a
-                                         href={`https://wa.me/${waNum}`}
-                                         target="_blank"
-                                         rel="noopener noreferrer"
+                                         href={`whatsapp://send?phone=${waNum}`}
                                          className="text-emerald-500 hover:text-emerald-400 hover:underline font-semibold inline-flex items-center gap-1"
                                          title="Escribir o llamar por WhatsApp"
                                        >
@@ -3798,9 +3796,7 @@ function Dashboard({ token, user, theme, setTheme }) {
                         const waNum = digits.length === 9 && digits.startsWith('9') ? '56' + digits : digits;
                         return (
                           <a
-                            href={`https://wa.me/${waNum}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`whatsapp://send?phone=${waNum}`}
                             className="text-emerald-500 hover:text-emerald-400 hover:underline text-xs font-semibold block"
                             title="Escribir o llamar por WhatsApp"
                           >
