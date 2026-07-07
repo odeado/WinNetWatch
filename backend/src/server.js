@@ -96,7 +96,7 @@ async function runMigrations() {
       ADD COLUMN IF NOT EXISTS antivirus TEXT
     `);
 
-    // Add job_title and systems columns to app_users/employees
+    // Add job_title and systems columns to app_users/employees/devices
     await query(`
       ALTER TABLE app_users
       ADD COLUMN IF NOT EXISTS job_title TEXT,
@@ -106,6 +106,11 @@ async function runMigrations() {
     await query(`
       ALTER TABLE employees
       ADD COLUMN IF NOT EXISTS job_title TEXT,
+      ADD COLUMN IF NOT EXISTS authorized_systems TEXT
+    `);
+
+    await query(`
+      ALTER TABLE devices
       ADD COLUMN IF NOT EXISTS authorized_systems TEXT
     `);
 
