@@ -4975,7 +4975,8 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
         email: '',
         department: '',
         city: '',
-        phone: ''
+        phone: '',
+        job_title: ''
       }));
     } else {
       setForm(prev => ({
@@ -4985,7 +4986,8 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
         email: emp.email || '',
         department: emp.department || '',
         city: emp.city || '',
-        phone: emp.phone || ''
+        phone: emp.phone || '',
+        job_title: emp.job_title || ''
       }));
     }
   };

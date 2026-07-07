@@ -267,13 +267,17 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
         req.body.email = null;
         req.body.department = null;
         req.body.city = null;
+        req.body.phone = null;
+        req.body.job_title = null;
       } else {
-        const emp = (await query('SELECT full_name, email, department, city FROM employees WHERE id = $1', [empId])).rows[0];
+        const emp = (await query('SELECT full_name, email, department, city, phone, job_title FROM employees WHERE id = $1', [empId])).rows[0];
         if (emp) {
           req.body.responsible_user = emp.full_name;
           req.body.email = emp.email;
           req.body.department = emp.department;
           req.body.city = emp.city;
+          req.body.phone = emp.phone || null;
+          req.body.job_title = emp.job_title || null;
         }
       }
     }
@@ -676,10 +680,11 @@ router.patch('/employees/:id', requirePermission('users:write'), async (req, res
         email = $3,
         department = $4,
         city = $5,
-        job_title = $6
+        job_title = $6,
+        phone = $7
        WHERE employee_id = $1
        RETURNING *`,
-      [req.params.id, after.full_name, after.email, after.department, after.city, after.job_title]
+      [req.params.id, after.full_name, after.email, after.department, after.city, after.job_title, after.phone]
     );
 
     for (const dev of updatedDevices) {
@@ -757,15 +762,17 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
     let finalDept = department;
     let finalCity = city;
     let finalJobTitle = job_title;
+    let finalPhone = phone;
 
     if (employee_id) {
-      const emp = (await query('SELECT full_name, email, department, city, job_title FROM employees WHERE id = $1', [employee_id])).rows[0];
+      const emp = (await query('SELECT full_name, email, department, city, job_title, phone FROM employees WHERE id = $1', [employee_id])).rows[0];
       if (emp) {
         finalResponsible = emp.full_name;
         finalEmail = emp.email;
         finalDept = emp.department;
         finalCity = emp.city;
         finalJobTitle = emp.job_title;
+        finalPhone = emp.phone;
       }
     }
 
@@ -792,7 +799,7 @@ router.post('/devices', requirePermission('devices:write'), async (req, res, nex
       ) RETURNING *`,
       [
         hostname, ip || null, mac, os, status, subnet, finalCity, branch, finalDept,
-        finalResponsible, finalJobTitle, phone, finalEmail, notes, brand, model, serial_number,
+        finalResponsible, finalJobTitle, finalPhone, finalEmail, notes, brand, model, serial_number,
         asset_status, critical, managed, tags, employee_id || null, cpu, ram, storage, gpu, motherboard,
         image_url, device_type, location, office, antivirus, authorized_systems, ip_type
       ]
