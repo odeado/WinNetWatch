@@ -947,6 +947,37 @@ function Dashboard({ token, user, theme, setTheme }) {
     };
   }, [token, useLocalApi]);
 
+  const [isProbing, setIsProbing] = useState(false);
+
+  async function handleProbeIp() {
+    const ip = consoleSearch.trim();
+    if (!ip) return;
+    setIsProbing(true);
+    setScanLogs(prev => [...prev.slice(-199), `[${new Date().toLocaleTimeString()}] 🔍 Iniciando consulta en tiempo real para: ${ip}...`]);
+    try {
+      const response = await fetch(`${API_URL}/api/scan/probe/${ip}`, {
+        headers: { authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        throw new Error(`Error HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      
+      const statusText = data.reachable ? '🟢 ONLINE' : '🔴 OFFLINE';
+      const latencyText = data.latencyMs !== null ? `${data.latencyMs} ms` : 'N/A';
+      const hostnameText = data.hostname || 'Desconocido';
+      const macText = data.mac || 'Desconocida';
+      const portsText = data.openPorts && data.openPorts.length > 0 ? `[${data.openPorts.join(', ')}]` : 'ninguno';
+
+      const logMsg = `[CONSULTA] ${ip} - ${statusText} | Latencia: ${latencyText} | Hostname: ${hostnameText} | MAC: ${macText} | Puertos: ${portsText}`;
+      setScanLogs(prev => [...prev.slice(-199), logMsg]);
+    } catch (err) {
+      setScanLogs(prev => [...prev.slice(-199), `[ERROR] Error en consulta para ${ip}: ${err.message}`]);
+    } finally {
+      setIsProbing(false);
+    }
+  }
+
   // ------------------------------------------------------------
   // Cloud Database Actions
   // ------------------------------------------------------------
@@ -2364,18 +2395,30 @@ function Dashboard({ token, user, theme, setTheme }) {
                 icon={<TerminalSquare size={18} className="text-emerald-500" />}
                 headerAction={
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={consoleSearch}
-                        onChange={e => setConsoleSearch(e.target.value)}
-                        placeholder="Buscar IP…"
-                        className="bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] rounded px-2 py-0.5 pl-5 w-28 focus:outline-none focus:border-emerald-500 placeholder-zinc-600"
-                      />
-                      <span className="absolute left-1.5 top-0.5 text-zinc-500 text-[10px] select-none">🔍</span>
+                    <div className="relative flex items-center gap-1.5">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={consoleSearch}
+                          onChange={e => setConsoleSearch(e.target.value)}
+                          placeholder="Buscar IP…"
+                          className="bg-zinc-800 border border-zinc-700 text-zinc-200 text-[10px] rounded px-2 py-0.5 pl-5 w-28 focus:outline-none focus:border-emerald-500 placeholder-zinc-600"
+                        />
+                        <span className="absolute left-1.5 top-0.5 text-zinc-500 text-[10px] select-none">🔍</span>
+                      </div>
                       {consoleSearch.trim() && (
-                        <span className="ml-1 text-[9px] text-emerald-400 font-bold">
-                          {scanLogs.filter(l => l.toLowerCase().includes(consoleSearch.trim().toLowerCase())).length} resultados
+                        <button
+                          type="button"
+                          disabled={isProbing}
+                          onClick={handleProbeIp}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition disabled:opacity-50"
+                        >
+                          {isProbing ? 'Probando...' : 'Probar IP'}
+                        </button>
+                      )}
+                      {consoleSearch.trim() && (
+                        <span className="text-[9px] text-emerald-400 font-bold whitespace-nowrap">
+                          {scanLogs.filter(l => l.toLowerCase().includes(consoleSearch.trim().toLowerCase())).length} res
                         </span>
                       )}
                     </div>
