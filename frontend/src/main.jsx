@@ -436,6 +436,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   const [savingInfra, setSavingInfra] = useState(false);
   const [deviceLinkSearch, setDeviceLinkSearch] = useState('');
   const [showDeviceLinkSelector, setShowDeviceLinkSelector] = useState(false);
+  const [showTopologyMap, setShowTopologyMap] = useState(false);
 
   const allIps = useMemo(() => {
     const set = new Set();
@@ -3965,6 +3966,13 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                       <Printer size={15} /> PDF
                     </button>
                     <button
+                      className="button secondary text-xs flex items-center gap-1.5 px-3.5 py-2.5 font-bold rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 hover:bg-violet-500/20"
+                      onClick={() => setShowTopologyMap(true)}
+                      title="Ver Diagrama de Flujo / Topología de Red"
+                    >
+                      <Network size={15} className="text-violet-500" /> Topología
+                    </button>
+                    <button
                       className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
                       onClick={() => setInfraModal({ mode: 'create', form: { type: 'Switch', brand: '', model: '', serial_number: '', ports_count: 24, location: 'Matta', status: 'nuevo', acquired_at: new Date().toISOString().split('T')[0], notes: '', mac: '', floor: '1', ip: '', city: 'Antofagasta' } })}
                     >
@@ -4460,6 +4468,16 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
           onOpenDeviceDrawer={(device) => {
             setSelected(device);
           }}
+        />
+      )}
+
+      {showTopologyMap && (
+        <TopologyMapModal
+          isOpen={showTopologyMap}
+          onClose={() => setShowTopologyMap(false)}
+          infrastructure={infrastructure}
+          devices={devices}
+          setActiveSwitchForPorts={setActiveSwitchForPorts}
         />
       )}
 
@@ -6520,6 +6538,361 @@ function buildChart(events) {
     'Desconexiones': counts.offline,
     'Otros': counts.otros
   }));
+}
+
+function TopologyMapModal({
+  isOpen,
+  onClose,
+  infrastructure = [],
+  devices = [],
+  setActiveSwitchForPorts
+}) {
+  const [selectedCity, setSelectedCity] = useState('Todos');
+  const [selectedNode, setSelectedNode] = useState(null);
+
+  if (!isOpen) return null;
+
+  // 1. Filter infrastructure by selected city/group
+  const filteredInfra = useMemo(() => {
+    if (selectedCity === 'Todos') return infrastructure;
+    return infrastructure.filter(item => getInfraGroup(item) === selectedCity);
+  }, [infrastructure, selectedCity]);
+
+  // 2. Build tree structure: children map & unique roots
+  const { roots, childrenMap } = useMemo(() => {
+    const childrenMap = {};
+    const roots = [];
+    const itemIds = new Set(filteredInfra.map(i => i.id));
+
+    filteredInfra.forEach(item => {
+      // If it points to a parent that exists in our current filtered list, it's a child
+      if (item.switch_id && itemIds.has(item.switch_id)) {
+        if (!childrenMap[item.switch_id]) childrenMap[item.switch_id] = [];
+        childrenMap[item.switch_id].push(item);
+      } else {
+        roots.push(item);
+      }
+    });
+
+    // Also check if any item's parent is missing in the list (treat as root)
+    filteredInfra.forEach(item => {
+      if (item.switch_id) {
+        const parentExists = filteredInfra.some(p => p.id === item.switch_id);
+        if (!parentExists) {
+          roots.push(item);
+        }
+      }
+    });
+
+    const uniqueRoots = Array.from(new Set(roots));
+    return { roots: uniqueRoots, childrenMap };
+  }, [filteredInfra]);
+
+  // Get list of existing city groups for filtering
+  const cityGroups = useMemo(() => {
+    const groups = new Set(infrastructure.map(getInfraGroup));
+    return ['Todos', ...Array.from(groups).sort()];
+  }, [infrastructure]);
+
+  // Connected elements details for selected node
+  const selectedNodeDetails = useMemo(() => {
+    if (!selectedNode) return null;
+    const connectedDevs = devices.filter(d => d.switch_id === selectedNode.id);
+    const connectedInfras = infrastructure.filter(i => i.switch_id === selectedNode.id);
+    
+    // Parent connection details
+    let parentInfo = null;
+    if (selectedNode.switch_id) {
+      const parent = infrastructure.find(i => i.id === selectedNode.switch_id);
+      if (parent) {
+        parentInfo = {
+          parent,
+          localPort: selectedNode.local_port,
+          parentPort: selectedNode.switch_port
+        };
+      }
+    }
+
+    return {
+      connectedDevs,
+      connectedInfras,
+      parentInfo
+    };
+  }, [selectedNode, devices, infrastructure]);
+
+  const renderIcon = (type) => {
+    switch (type) {
+      case 'Fortinet': return <Shield size={16} className="text-orange-505 dark:text-orange-500" />;
+      case 'Router': return <Server size={16} className="text-violet-505 dark:text-violet-500" />;
+      case 'Conversor': return <Cable size={16} className="text-pink-505 dark:text-pink-500" />;
+      case 'Switch': return <Network size={16} className="text-sky-505 dark:text-sky-500" />;
+      default: return <Router size={16} className="text-emerald-505 dark:text-emerald-500" />;
+    }
+  };
+
+  const getBorderColor = (status) => {
+    if (status === 'nuevo' || status === 'online') return 'border-emerald-500/40 hover:border-emerald-500 shadow-emerald-500/5';
+    if (status === 'apagado') return 'border-zinc-650/40 hover:border-zinc-500 shadow-zinc-500/5';
+    if (status === 'malo') return 'border-red-500/40 hover:border-red-500 shadow-red-500/5';
+    return 'border-amber-500/40 hover:border-amber-500 shadow-amber-500/5'; // usado
+  };
+
+  const getStatusBadge = (status) => {
+    const base = "px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ";
+    if (status === 'nuevo' || status === 'online') return base + "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20";
+    if (status === 'apagado') return base + "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border border-zinc-500/20";
+    if (status === 'malo') return base + "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20";
+    return base + "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"; // usado
+  };
+
+  // Recursive Tree Node Renderer
+  const renderTreeNode = (node) => {
+    const children = childrenMap[node.id] || [];
+    const hasChildren = children.length > 0;
+    const isSelected = selectedNode && selectedNode.id === node.id;
+    const connDevs = devices.filter(d => d.switch_id === node.id);
+
+    return (
+      <div key={node.id} className="flex items-center">
+        {/* Node Card Container */}
+        <div className="relative py-2 flex-shrink-0">
+          <div 
+            onClick={() => setSelectedNode(node)}
+            className={`w-60 p-3.5 bg-slate-950/70 dark:bg-slate-900/90 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${getBorderColor(node.status)} ${
+              isSelected ? 'ring-2 ring-sky-500 scale-[1.03] border-sky-500 z-10' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                {renderIcon(node.type)}
+                <span className="text-xs font-bold truncate text-slate-100">{node.brand} {node.model}</span>
+              </div>
+              <span className={getStatusBadge(node.status)}>{node.status}</span>
+            </div>
+
+            <div className="text-[10px] space-y-1 font-mono text-slate-400">
+              <div className="flex justify-between">
+                <span>IP:</span>
+                <span className="text-slate-200 font-bold">{node.ip || '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Ubic.:</span>
+                <span className="text-slate-300 max-w-[120px] truncate" title={node.location}>{node.location || '—'}</span>
+              </div>
+              {connDevs.length > 0 && (
+                <div className="flex justify-between text-sky-400 text-[9px] font-sans pt-1 border-t border-slate-800/60 mt-1">
+                  <span>Conexiones:</span>
+                  <span className="font-bold">🖥️ {connDevs.length} activos</span>
+                </div>
+              )}
+            </div>
+
+            {/* Display connection label inside card if it's connected to parent */}
+            {node.switch_id && node.local_port && (
+              <div className="mt-2 text-[9px] bg-sky-500/5 text-cyan-405 border border-cyan-500/10 rounded px-1.5 py-0.5 text-center font-mono flex items-center justify-between">
+                <span>Boca: {getPortName(node.type, node.model, node.local_port)}</span>
+                <span>➜</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right horizontal connector line leading to children vertical line */}
+          {hasChildren && (
+            <div className="absolute top-1/2 -right-6 w-6 h-0.5 bg-slate-700/60"></div>
+          )}
+        </div>
+
+        {/* Children Render Column */}
+        {hasChildren && (
+          <div className="flex flex-col gap-4 ml-6 relative pl-4 border-l-2 border-slate-700/50 py-3">
+            {children.map(child => {
+              return (
+                <div key={child.id} className="relative flex items-center">
+                  {/* Left horizontal line connecting child to vertical parent line */}
+                  <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-slate-700/50"></div>
+                  {renderTreeNode(child)}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-0 md:p-6 text-slate-100">
+      <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-none md:rounded-2xl w-full h-full md:h-[90vh] md:max-w-6xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Modal Header */}
+        <div className="px-6 py-4 bg-slate-905 border-b border-slate-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-shrink-0">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+              <Network className="text-violet-500" size={24} />
+              Diagrama de Flujo / Topología de Red
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">
+              Mapa jerárquico interactivo de los switches, routers, conversores y módems configurados.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* City Selector */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400 font-bold">Subred:</span>
+              <select
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                value={selectedCity}
+                onChange={(e) => { setSelectedCity(e.target.value); setSelectedNode(null); }}
+              >
+                {cityGroups.map(cg => (
+                  <option key={cg} value={cg}>{cg}</option>
+                ))}
+              </select>
+            </div>
+            
+            <button 
+              className="text-2xl text-slate-400 hover:text-white font-bold ml-2 leading-none" 
+              onClick={onClose}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* Main Work Area */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+          
+          {/* Left Area: Tree Diagram Canvas */}
+          <div className="flex-1 overflow-auto p-8 bg-slate-950/60 flex items-start justify-start select-none relative">
+            {/* Grid dot background effect */}
+            <div className="absolute inset-0 bg-[radial-gradient(#334155_1.5px,transparent_1.5px)] [background-size:24px_24px] opacity-25 pointer-events-none"></div>
+
+            <div className="min-w-max flex flex-col gap-12 py-4 relative z-10">
+              {roots.length > 0 ? (
+                roots.map(root => (
+                  <div key={root.id} className="flex items-start">
+                    {renderTreeNode(root)}
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 font-medium">
+                  <Network size={40} className="text-slate-700 mb-3 animate-pulse" />
+                  <p className="text-sm">No se encontraron dispositivos de red principales para mostrar.</p>
+                  <p className="text-xs text-slate-600 mt-1">Asegúrate de agregar switches o conversores en esta subred.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Area: Selected Node Inspector Panel */}
+          <div className="w-full md:w-[350px] flex-shrink-0 p-6 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col overflow-y-auto min-h-0">
+            {selectedNode ? (
+              <div className="space-y-5">
+                {/* Node Summary Card */}
+                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-slate-800 rounded-lg text-slate-300">
+                      {renderIcon(selectedNode.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-extrabold text-sm text-white truncate">
+                        {selectedNode.brand} {selectedNode.model}
+                      </h4>
+                      <span className="text-[10px] text-slate-400 capitalize block mt-0.5 font-semibold">{selectedNode.type}</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-800/60 pt-2.5 space-y-2 text-xs font-mono">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Dirección IP:</span>
+                      <span className="font-bold text-slate-200">{selectedNode.ip || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Dirección MAC:</span>
+                      <span className="text-slate-200">{selectedNode.mac || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Ubicación:</span>
+                      <span className="text-slate-200">{selectedNode.location || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">N° Serie:</span>
+                      <span className="text-slate-200">{selectedNode.serial_number || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Observaciones:</span>
+                      <span className="text-slate-300 text-right truncate max-w-[150px]" title={selectedNode.notes}>{selectedNode.notes || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Connection Path details */}
+                {selectedNodeDetails.parentInfo && (
+                  <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3.5 space-y-2 text-xs">
+                    <h5 className="font-bold text-cyan-400 flex items-center gap-1.5">
+                      <Network size={14} /> Conexión Superior (Padre)
+                    </h5>
+                    <p className="text-slate-300">
+                      Este equipo se conecta desde su puerto <strong className="text-white">{getPortName(selectedNode.type, selectedNode.model, selectedNodeDetails.parentInfo.localPort)}</strong> hacia:
+                    </p>
+                    <div className="bg-slate-955 p-2 rounded border border-slate-800 font-mono text-[10px] space-y-1">
+                      <div>Equipo: <strong className="text-cyan-400">{selectedNodeDetails.parentInfo.parent.brand} {selectedNodeDetails.parentInfo.parent.model}</strong></div>
+                      <div>Puerto Padre: <strong className="text-cyan-400">{getPortName(selectedNodeDetails.parentInfo.parent.type, selectedNodeDetails.parentInfo.parent.model, selectedNodeDetails.parentInfo.parentPort)}</strong></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Connected End Devices list */}
+                <div className="space-y-2.5">
+                  <h5 className="font-extrabold text-xs uppercase tracking-wider text-slate-400">
+                    🖥️ Activos Conectados ({selectedNodeDetails.connectedDevs.length})
+                  </h5>
+                  <div className="max-h-[220px] overflow-y-auto border border-slate-800/80 rounded-xl divide-y divide-slate-800/80">
+                    {selectedNodeDetails.connectedDevs.length > 0 ? (
+                      selectedNodeDetails.connectedDevs.map(d => (
+                        <div key={d.id} className="p-3 bg-slate-950/20 flex flex-col gap-1">
+                          <div className="flex justify-between text-xs font-bold text-slate-200">
+                            <span className="truncate max-w-[160px]" title={d.hostname}>{d.hostname || 'Sin hostname'}</span>
+                            <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">Boca #{d.switch_port}</span>
+                          </div>
+                          <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                            <span>IP: {d.ip || '—'}</span>
+                            <span className="truncate max-w-[120px]" title={d.responsible_user}>{d.responsible_user || 'Sin resp.'}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-slate-500 text-xs italic">
+                        No hay equipos terminales (PCs, impresoras) conectados a este puerto.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions Bar */}
+                <div className="pt-4 border-t border-slate-800 space-y-2">
+                  <button
+                    onClick={() => {
+                      setActiveSwitchForPorts(selectedNode);
+                      onClose();
+                    }}
+                    className="w-full button primary py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 border-0"
+                  >
+                    <Network size={14} /> Administrar Puertos Físicos
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                <Info size={30} className="text-slate-700 mb-2" />
+                <p className="text-xs">Selecciona cualquier tarjeta en el diagrama de flujo para ver sus conexiones y administrar sus bocas.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SwitchPortMapModal({
