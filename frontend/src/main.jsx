@@ -67,6 +67,27 @@ const getInfraGroup = (item) => {
   return city;
 };
 
+const getPortName = (type, model, portNum) => {
+  if (!portNum) return '—';
+  const isFortinet = type === 'Fortinet';
+  const isCisco2901 = type === 'Router' && (model || '').toLowerCase().includes('2901');
+  const isRaisecom = type === 'Conversor' && (model || '').toLowerCase().includes('rc552');
+  
+  if (isFortinet) {
+    const labels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+    return labels[portNum - 1] || `Boca #${portNum}`;
+  }
+  if (isCisco2901) {
+    const labels = ['Console', 'Aux', 'GE 0/0', 'GE 0/1'];
+    return labels[portNum - 1] || `Boca #${portNum}`;
+  }
+  if (isRaisecom) {
+    const labels = ['Optico (Fibra)', 'FastEthernet (LAN)', 'Console'];
+    return labels[portNum - 1] || `Boca #${portNum}`;
+  }
+  return `Boca #${portNum}`;
+};
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || 'null'));
@@ -2099,10 +2120,21 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
 
     const buildPortsGrid = (item) => {
       const isFortinet = item.type === 'Fortinet';
-      const fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
-      const fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+      const isCisco2901 = item.type === 'Router' && (item.model || '').toLowerCase().includes('2901');
+      const isRaisecom = item.type === 'Conversor' && (item.model || '').toLowerCase().includes('rc552');
       
-      const count = isFortinet ? 11 : (item.ports_count || 24);
+      let fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+      let fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+      
+      if (isCisco2901) {
+        fortinetLabels = ['Console', 'Aux', 'GE 0/0', 'GE 0/1'];
+        fortinetShort = ['CNS', 'AUX', 'GE0', 'GE1'];
+      } else if (isRaisecom) {
+        fortinetLabels = ['Optico (Fibra)', 'FastEthernet (LAN)', 'Console'];
+        fortinetShort = ['OPT', 'FE', 'CNS'];
+      }
+      
+      const count = isFortinet ? 11 : (isCisco2901 ? 4 : (isRaisecom ? 3 : (item.ports_count || 24)));
       const portDeviceMap = {};
       
       const connectedDevs = devices.filter(d => d.switch_id === item.id && d.switch_port).map(d => ({ ...d, isDevice: true }));
@@ -2122,15 +2154,15 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         <div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,18px));gap:2px;width:100%;">`;
       for (let p = 1; p <= count; p++) {
         const dev = portDeviceMap[p];
-        const label = isFortinet ? fortinetShort[p - 1] : p;
-        const fullName = isFortinet ? fortinetLabels[p - 1] : `Puerto ${p}`;
+        const label = (isFortinet || isCisco2901 || isRaisecom) ? fortinetShort[p - 1] : p;
+        const fullName = getPortName(item.type, item.model, p);
         const bg = dev ? 'rgba(16,185,129,0.2)' : 'rgba(30,41,59,0.6)';
         const border = dev ? '1.5px solid #10b981' : '1.5px dashed #475569';
         const color = dev ? '#10b981' : '#475569';
         const symbol = dev ? '&#9679;' : '+';
         
         // Font size adjustments for labels like 'CNS', 'W2'
-        const labelFontSize = isFortinet && label.length > 2 ? '3px' : '4px';
+        const labelFontSize = (isFortinet || isCisco2901 || isRaisecom) && label.length > 2 ? '3px' : '4px';
         
         const titleText = dev 
           ? (dev.isInfra ? `${dev.type}: ${dev.brand} ${dev.model}` : (dev.responsible_user||dev.hostname||'Ocupado'))
@@ -2156,7 +2188,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
           if (d.notes) {
             lbl += ` (Obs: ${d.notes})`;
           }
-          const portStr = isFortinet ? fortinetLabels[d.switch_port - 1] : `P${d.switch_port}`;
+          const portStr = getPortName(item.type, item.model, d.switch_port);
           html += `<li style="margin-bottom:1px;"><strong>${portStr}:</strong> ${lbl} — ${d.ip||'—'}</li>`;
         });
         html += `</ul></div>`;
@@ -2315,9 +2347,14 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
     Object.keys(grouped).sort().forEach(city => {
       content += `<div class="city-block"><div class="city-title">📍 Ciudad: ${city}</div><div class="cards-grid">`;
       grouped[city].forEach(item => {
-        const isSwitch = item.type === 'Switch' || item.type === 'Fortinet';
-        const badgeType = item.type === 'Switch' ? 'badge-switch' : item.type === 'Fortinet' ? 'badge-fortinet' : 'badge-modem';
-        const badgeLabel = item.type === 'Switch' ? 'SWITCH' : item.type === 'Fortinet' ? 'FORTINET' : 'MÓDEM';
+        const isSwitch = item.type === 'Switch' || item.type === 'Fortinet' || item.type === 'Router' || item.type === 'Conversor';
+        
+        let badgeType = 'badge-modem';
+        let badgeLabel = 'MÓDEM';
+        if (item.type === 'Switch') { badgeType = 'badge-switch'; badgeLabel = 'SWITCH'; }
+        else if (item.type === 'Fortinet') { badgeType = 'badge-fortinet'; badgeLabel = 'FORTINET'; }
+        else if (item.type === 'Router') { badgeType = 'badge-switch'; badgeLabel = 'ROUTER'; }
+        else if (item.type === 'Conversor') { badgeType = 'badge-fortinet'; badgeLabel = 'CONVERSOR'; }
         
         let badgeStatus = 'badge-used';
         if (item.status === 'nuevo') badgeStatus = 'badge-new';
@@ -2329,7 +2366,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         content += `<div class="card">
           <div class="card-left">
             <div class="card-header">
-              <span class="card-title">${item.type === 'Fortinet' ? '🛡️' : isSwitch ? '🔌' : '📡'} ${item.brand} ${item.model}</span>
+              <span class="card-title">${item.type === 'Fortinet' ? '🛡️' : item.type === 'Router' ? '📶' : item.type === 'Conversor' ? '🔄' : isSwitch ? '🔌' : '📡'} ${item.brand} ${item.model}</span>
               <div class="badges">
                 <span class="badge ${badgeType}">${badgeLabel}</span>
                 <span class="badge ${badgeStatus}">${item.status}</span>
@@ -2339,7 +2376,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
               <div class="detail"><strong>IP</strong><span>${item.ip||'—'}</span></div>
               <div class="detail"><strong>MAC</strong><span>${item.mac||'—'}</span></div>
               <div class="detail"><strong>N° Serie</strong><span>${item.serial_number||'—'}</span></div>
-              <div class="detail"><strong>Bocas</strong><span>${(item.ports_count||0) > 0 ? (item.ports_count + (item.type === 'Switch' ? ' puertos' : item.type === 'Fortinet' ? ' int.' : ' LAN')) : '—'}</span></div>
+              <div class="detail"><strong>Bocas</strong><span>${(item.ports_count||0) > 0 ? (item.ports_count + (item.type === 'Switch' ? ' puertos' : item.type === 'Fortinet' ? ' int.' : item.type === 'Router' ? ' int.' : item.type === 'Conversor' ? ' int.' : ' LAN')) : '—'}</span></div>
               <div class="detail"><strong>Ubicación</strong><span>${item.location||'—'}</span></div>
               <div class="detail"><strong>Piso</strong><span>${item.floor ? 'Piso '+item.floor : '—'}</span></div>
               <div class="detail"><strong>Estado</strong><span>${item.status||'—'}</span></div>
@@ -4019,6 +4056,16 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                           <Shield size={13} className="text-orange-500" />
                                           <span>Fortinet</span>
                                         </div>
+                                      ) : item.type === 'Router' ? (
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 text-xs font-bold shadow-sm">
+                                          <Server size={13} className="text-violet-500" />
+                                          <span>Router</span>
+                                        </div>
+                                      ) : item.type === 'Conversor' ? (
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 text-xs font-bold shadow-sm">
+                                          <Cable size={13} className="text-pink-500" />
+                                          <span>Conversor</span>
+                                        </div>
                                       ) : (
                                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold shadow-sm">
                                           <Router size={13} className="text-emerald-500" />
@@ -4041,7 +4088,13 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                   </td>
                                   <td className="py-3 px-4">
                                     {item.ports_count !== null && item.ports_count !== undefined
-                                      ? `${item.ports_count} ${item.type === 'Switch' ? 'Bocas' : item.type === 'Fortinet' ? 'Int.' : 'Bocas LAN'}`
+                                      ? `${item.ports_count} ${
+                                          item.type === 'Switch' ? 'Bocas' :
+                                          item.type === 'Fortinet' ? 'Int.' :
+                                          item.type === 'Router' ? 'Int.' :
+                                          item.type === 'Conversor' ? 'Int.' :
+                                          'Bocas LAN'
+                                        }`
                                       : '—'}
                                   </td>
                                   <td className="py-3 px-4">
@@ -4071,7 +4124,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                   </td>
                                   <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-end gap-2">
-                                      {(item.type === 'Switch' || item.type === 'Fortinet' || item.type === 'Modem') && (
+                                      {(item.type === 'Switch' || item.type === 'Fortinet' || item.type === 'Modem' || item.type === 'Router' || item.type === 'Conversor') && (
                                         <button
                                           onClick={(e) => { e.stopPropagation(); setActiveSwitchForPorts(item); }}
                                           className={`button primary py-1 px-2.5 text-xs flex items-center gap-1 border-0 whitespace-nowrap ${
@@ -4079,10 +4132,20 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                               ? 'bg-gradient-to-r from-orange-600 to-red-700 hover:from-orange-500 hover:to-red-600'
                                               : item.type === 'Modem'
                                               ? 'bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600'
+                                              : item.type === 'Router'
+                                              ? 'bg-gradient-to-r from-violet-600 to-indigo-700 hover:from-violet-500 hover:to-indigo-600'
+                                              : item.type === 'Conversor'
+                                              ? 'bg-gradient-to-r from-pink-600 to-fuchsia-700 hover:from-pink-500 hover:to-fuchsia-600'
                                               : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600'
                                           }`}
                                         >
-                                          <Network size={12} /> {item.type === 'Fortinet' ? 'Interfaces' : item.type === 'Modem' ? 'Bocas' : 'Puertos'}
+                                          <Network size={12} /> {
+                                            item.type === 'Fortinet' ? 'Interfaces' :
+                                            item.type === 'Router' ? 'Interfaces' :
+                                            item.type === 'Conversor' ? 'Interfaces' :
+                                            item.type === 'Modem' ? 'Bocas' :
+                                            'Puertos'
+                                          }
                                         </button>
                                       )}
                                       <button
@@ -4130,6 +4193,8 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                               <option value="Switch">Switch</option>
                               <option value="Modem">Módem</option>
                               <option value="Fortinet">Fortinet / Firewall</option>
+                              <option value="Router">Router</option>
+                              <option value="Conversor">Conversor</option>
                             </select>
                           </div>
                           <div>
@@ -4195,12 +4260,17 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">
-                              {infraModal.form.type === 'Switch' ? 'Bocas / Puertos' : 'Bocas LAN'}
+                              {infraModal.form.type === 'Modem' ? 'Bocas LAN' : 'Bocas / Interfaces'}
                             </label>
                             <input
                               className="input w-full"
                               type="number"
-                              placeholder={infraModal.form.type === 'Switch' ? 'ej. 24, 48' : 'ej. 4, 5'}
+                              placeholder={
+                                infraModal.form.type === 'Fortinet' ? '11 (Por defecto)' :
+                                infraModal.form.type === 'Router' ? '4 (Por defecto)' :
+                                infraModal.form.type === 'Conversor' ? '3 (Por defecto)' :
+                                'ej. 24, 48'
+                              }
                               value={infraModal.form.ports_count || ''}
                               onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, ports_count: parseInt(e.target.value, 10) || 0 } })}
                             />
@@ -6470,17 +6540,36 @@ function SwitchPortMapModal({
     }
   }, [selectedDeviceToAssign]);
 
-  const destCount = selectedDeviceToAssign && selectedDeviceToAssign.isInfra
-    ? (selectedDeviceToAssign.type === 'Fortinet' ? 11 : (selectedDeviceToAssign.ports_count || 24))
-    : 0;
+  const destCount = useMemo(() => {
+    if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return 0;
+    const isDestFortinet = selectedDeviceToAssign.type === 'Fortinet';
+    const isDestCisco2901 = selectedDeviceToAssign.type === 'Router' && (selectedDeviceToAssign.model || '').toLowerCase().includes('2901');
+    const isDestRaisecom = selectedDeviceToAssign.type === 'Conversor' && (selectedDeviceToAssign.model || '').toLowerCase().includes('rc552');
+    
+    if (isDestFortinet) return 11;
+    if (isDestCisco2901) return 4;
+    if (isDestRaisecom) return 3;
+    return selectedDeviceToAssign.ports_count || 24;
+  }, [selectedDeviceToAssign]);
 
   const targetPorts = useMemo(() => {
     if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return [];
     const isDestFortinet = selectedDeviceToAssign.type === 'Fortinet';
-    const destFortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+    const isDestCisco2901 = selectedDeviceToAssign.type === 'Router' && (selectedDeviceToAssign.model || '').toLowerCase().includes('2901');
+    const isDestRaisecom = selectedDeviceToAssign.type === 'Conversor' && (selectedDeviceToAssign.model || '').toLowerCase().includes('rc552');
+    
+    let destLabels = [];
+    if (isDestFortinet) {
+      destLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+    } else if (isDestCisco2901) {
+      destLabels = ['Console', 'Aux', 'GE 0/0', 'GE 0/1'];
+    } else if (isDestRaisecom) {
+      destLabels = ['Optico (Fibra)', 'FastEthernet (LAN)', 'Console'];
+    }
+
     const list = [];
     for (let p = 1; p <= destCount; p++) {
-      const label = isDestFortinet ? destFortinetLabels[p - 1] : `Boca #${p}`;
+      const label = (isDestFortinet || isDestCisco2901 || isDestRaisecom) ? destLabels[p - 1] : `Boca #${p}`;
       list.push({ value: p, label });
     }
     return list;
@@ -6529,11 +6618,22 @@ function SwitchPortMapModal({
   }, [connectedElements]);
 
   const isFortinet = currentActiveSwitch.type === 'Fortinet';
-  const fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
-  const fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+  const isCisco2901 = currentActiveSwitch.type === 'Router' && (currentActiveSwitch.model || '').toLowerCase().includes('2901');
+  const isRaisecom = currentActiveSwitch.type === 'Conversor' && (currentActiveSwitch.model || '').toLowerCase().includes('rc552');
+
+  let fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+  let fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+
+  if (isCisco2901) {
+    fortinetLabels = ['Console', 'Aux', 'GE 0/0', 'GE 0/1'];
+    fortinetShort = ['CNS', 'AUX', 'GE0', 'GE1'];
+  } else if (isRaisecom) {
+    fortinetLabels = ['Optico (Fibra)', 'FastEthernet (LAN)', 'Console'];
+    fortinetShort = ['OPT', 'FE', 'CNS'];
+  }
   
   // Total ports count
-  const portsCount = isFortinet ? 11 : (currentActiveSwitch.ports_count || 24);
+  const portsCount = isFortinet ? 11 : (isCisco2901 ? 4 : (isRaisecom ? 3 : (currentActiveSwitch.ports_count || 24)));
 
   // Search filtered devices and infrastructure that are eligible for binding (restricted strictly to the switch's city)
   const eligibleDevices = useMemo(() => {
@@ -6651,8 +6751,9 @@ function SwitchPortMapModal({
         // Usar jerarquía para decidir qué registro actualiza switch_id
         const rank = (s) => {
           if (s.type === 'Fortinet') return 3;
+          if (s.type === 'Router') return 3;
           if (s.type === 'Switch') return 2;
-          return 1; // Modem
+          return 1; // Modem / Conversor
         };
         const activeRank = rank(currentActiveSwitch);
         const itemRank = rank(item);
@@ -6770,7 +6871,7 @@ function SwitchPortMapModal({
               Mapa de Puertos: {activeSwitch.brand} {activeSwitch.model}
             </h3>
             <p className="text-xs text-zinc-500 dark:text-slate-400 mt-0.5">
-              Ubicación: <strong>{activeSwitch.location}</strong> · N° Serie: <strong>{activeSwitch.serial_number || '—'}</strong> · Capacidad: <strong>{isFortinet ? '11 interfaces' : `${portsCount} puertos`}</strong>
+              Ubicación: <strong>{activeSwitch.location}</strong> · N° Serie: <strong>{activeSwitch.serial_number || '—'}</strong> · Capacidad: <strong>{isFortinet ? '11 interfaces' : isCisco2901 ? '4 interfaces' : isRaisecom ? '3 interfaces' : `${portsCount} puertos`}</strong>
             </p>
           </div>
           <button className="text-2xl text-zinc-400 hover:text-zinc-650 dark:hover:text-slate-200 font-bold" onClick={onClose}>×</button>
@@ -6784,7 +6885,7 @@ function SwitchPortMapModal({
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-bold uppercase text-zinc-450 dark:text-slate-500 tracking-wider">
-                  {isFortinet ? 'VISTA POSTERIOR DEL FIREWALL' : 'VISTA FRONTAL DEL SWITCH'}
+                  {isFortinet ? 'VISTA POSTERIOR DEL FIREWALL' : isCisco2901 ? 'VISTA FRONTAL DEL ROUTER' : isRaisecom ? 'VISTA FRONTAL DEL CONVERSOR' : 'VISTA FRONTAL DEL SWITCH'}
                 </span>
                 <div className="flex items-center gap-4 text-xs font-semibold">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"></span> Ocupado</span>
@@ -6795,7 +6896,7 @@ function SwitchPortMapModal({
               {/* The "Switch Bezel" */}
               <div className="bg-zinc-800 dark:bg-slate-900 border-4 border-zinc-700 dark:border-slate-850 p-4 rounded-xl shadow-inner max-w-4xl mx-auto">
                 <div className="flex justify-between items-center text-[10px] text-zinc-400 font-mono mb-3">
-                  <span>{activeSwitch.brand.toUpperCase()} {isFortinet ? 'FIREWALL NETWORKING' : 'NETWORKING SYSTEM'}</span>
+                  <span>{activeSwitch.brand.toUpperCase()} {isFortinet ? 'FIREWALL NETWORKING' : isCisco2901 ? 'ROUTER SYSTEM' : isRaisecom ? 'MEDIA CONVERTER' : 'NETWORKING SYSTEM'}</span>
                   <span className="flex items-center gap-1">
                     SYS OK <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   </span>
@@ -6806,9 +6907,9 @@ function SwitchPortMapModal({
                     const portNum = i + 1;
                     const dev = portDeviceMap[portNum];
                     const isSelected = selectedPort === portNum;
-                    const label = isFortinet ? fortinetShort[i] : portNum;
-                    const fullName = isFortinet ? fortinetLabels[i] : `Puerto ${portNum}`;
-                    const labelFontSize = isFortinet && label.length > 2 ? 'text-[7.5px]' : 'text-[10px]';
+                    const label = (isFortinet || isCisco2901 || isRaisecom) ? fortinetShort[i] : portNum;
+                    const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum);
+                    const labelFontSize = (isFortinet || isCisco2901 || isRaisecom) && label.length > 2 ? 'text-[7.5px]' : 'text-[10px]';
                     return (
                       <div
                         key={portNum}
@@ -6843,7 +6944,7 @@ function SwitchPortMapModal({
             <div className="grid grid-cols-3 gap-4 border-t border-zinc-200 dark:border-slate-800 pt-4 text-center">
               <div>
                 <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-slate-500 block">Capacidad</span>
-                <span className="text-lg font-extrabold">{isFortinet ? '11 interfaces' : `${portsCount} bocas`}</span>
+                <span className="text-lg font-extrabold">{isFortinet ? '11 interfaces' : isCisco2901 ? '4 interfaces' : isRaisecom ? '3 interfaces' : `${portsCount} bocas`}</span>
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-slate-500 block">Ocupados</span>
@@ -6863,9 +6964,9 @@ function SwitchPortMapModal({
                 <div className="space-y-5">
                   <div className="bg-zinc-50 dark:bg-slate-950/40 p-4 rounded-xl border border-zinc-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-zinc-455 dark:text-slate-500">Puerto seleccionado</span>
+                      <span className="text-[10px] uppercase font-bold text-zinc-455 dark:text-slate-550">Puerto seleccionado</span>
                       <h4 className="text-xl font-black text-zinc-900 dark:text-white">
-                        {isFortinet ? `INTERFAZ ${fortinetLabels[selectedPort - 1]}` : `BOCA #${selectedPort}`}
+                        {isFortinet || isCisco2901 || isRaisecom ? `INTERFAZ: ${getPortName(activeSwitch.type, activeSwitch.model, selectedPort).toUpperCase()}` : `BOCA #${selectedPort}`}
                       </h4>
                     </div>
                     <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${
@@ -6903,10 +7004,8 @@ function SwitchPortMapModal({
                                 <span className="text-zinc-455 dark:text-slate-550">Enlace de Red:</span>
                                 <span className="font-bold text-zinc-900 dark:text-cyan-400 bg-cyan-500/5 px-2 py-0.5 rounded border border-cyan-500/10">
                                   {selectedDevice.isParent
-                                    ? (selectedDevice.type === 'Fortinet'
-                                      ? `Va a Interfaz ${['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'][activeSwitch.switch_port - 1] || activeSwitch.switch_port} de este ${selectedDevice.type}`
-                                      : `Va a Boca #${activeSwitch.switch_port} de este ${selectedDevice.type}`)
-                                    : `Viene de Boca #${selectedDevice.local_port} de este ${selectedDevice.type}`
+                                    ? `Va a Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, activeSwitch.switch_port)} de este ${selectedDevice.type}`
+                                    : `Viene de Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, selectedDevice.local_port)} de este ${selectedDevice.type}`
                                   }
                                 </span>
                               </p>
