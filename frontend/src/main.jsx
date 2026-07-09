@@ -4630,6 +4630,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
           existingStorages={existingStorages}
           existingGpus={existingGpus}
           existingMotherboards={existingMotherboards}
+          infrastructure={infrastructure}
         />
       )}
 
@@ -4672,7 +4673,8 @@ function DeviceModalDialog({
   existingRams = [],
   existingStorages = [],
   existingGpus = [],
-  existingMotherboards = []
+  existingMotherboards = [],
+  infrastructure = []
 }) {
   const [form, setForm] = useState(deviceModal.form);
   const [employeeSearchText, setEmployeeSearchText] = useState('');
@@ -5305,6 +5307,29 @@ function DeviceModalDialog({
               <span className="text-sm font-semibold">Administrado / Monitoreado</span>
             </label>
           </div>
+
+          {(() => {
+            const matchedSwitch = form.switch_id ? infrastructure.find(i => i.id === form.switch_id) : null;
+            if (!matchedSwitch) return null;
+            return (
+              <div className="sm:col-span-2 bg-emerald-50/40 dark:bg-emerald-950/10 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/30 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                    <Network size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-zinc-450 dark:text-slate-500 uppercase tracking-wider">Conexión de Red Física</h4>
+                    <p className="text-sm font-extrabold text-zinc-950 dark:text-white mt-0.5">
+                      Switch: {matchedSwitch.brand} {matchedSwitch.model}
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-slate-400 mt-0.5 font-medium">
+                      Ubicación: {matchedSwitch.location} · Puerto: <strong className="text-emerald-600 dark:text-emerald-400">{getPortName(matchedSwitch.type, matchedSwitch.model, form.switch_port)}</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <label className="block sm:col-span-2">
             <span className="label">Observaciones</span>
@@ -6549,6 +6574,7 @@ function TopologyMapModal({
 }) {
   const [selectedCity, setSelectedCity] = useState('Todos');
   const [selectedNode, setSelectedNode] = useState(null);
+  const [showEndDevices, setShowEndDevices] = useState(false);
 
   if (!isOpen) return null;
 
@@ -6630,7 +6656,10 @@ function TopologyMapModal({
     }
   };
 
-  const getBorderColor = (status) => {
+  const getBorderColor = (node) => {
+    const status = node.status;
+    const isSelected = selectedNode && selectedNode.id === node.id;
+    if (isSelected) return 'border-sky-500 shadow-sky-500/10';
     if (status === 'nuevo' || status === 'online') return 'border-emerald-500/40 hover:border-emerald-500 shadow-emerald-500/5';
     if (status === 'apagado') return 'border-zinc-650/40 hover:border-zinc-500 shadow-zinc-500/5';
     if (status === 'malo') return 'border-red-500/40 hover:border-red-500 shadow-red-500/5';
@@ -6648,9 +6677,9 @@ function TopologyMapModal({
   // Recursive Tree Node Renderer
   const renderTreeNode = (node) => {
     const children = childrenMap[node.id] || [];
-    const hasChildren = children.length > 0;
-    const isSelected = selectedNode && selectedNode.id === node.id;
     const connDevs = devices.filter(d => d.switch_id === node.id);
+    const hasChildren = children.length > 0 || (showEndDevices && connDevs.length > 0);
+    const isSelected = selectedNode && selectedNode.id === node.id;
 
     return (
       <div key={node.id} className="flex items-center">
@@ -6658,7 +6687,7 @@ function TopologyMapModal({
         <div className="relative py-2 flex-shrink-0">
           <div 
             onClick={() => setSelectedNode(node)}
-            className={`w-60 p-3.5 bg-slate-950/70 dark:bg-slate-900/90 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${getBorderColor(node.status)} ${
+            className={`w-60 p-3.5 bg-slate-950/70 dark:bg-slate-900/90 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${getBorderColor(node)} ${
               isSelected ? 'ring-2 ring-sky-500 scale-[1.03] border-sky-500 z-10' : ''
             }`}
           >
@@ -6705,12 +6734,39 @@ function TopologyMapModal({
         {/* Children Render Column */}
         {hasChildren && (
           <div className="flex flex-col gap-4 ml-6 relative pl-4 border-l-2 border-slate-700/50 py-3">
+            {/* Render Switch/Router children first */}
             {children.map(child => {
               return (
                 <div key={child.id} className="relative flex items-center">
                   {/* Left horizontal line connecting child to vertical parent line */}
                   <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-slate-700/50"></div>
                   {renderTreeNode(child)}
+                </div>
+              );
+            })}
+
+            {/* Render End Devices next if checked */}
+            {showEndDevices && connDevs.map(d => {
+              const isPrinter = d.device_type === 'Impresora' || (d.hostname || '').toLowerCase().includes('prn') || (d.hostname || '').toLowerCase().includes('imp');
+              const isOffline = d.status === 'offline';
+              return (
+                <div key={d.id} className="relative flex items-center">
+                  <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-slate-700/50"></div>
+                  
+                  <div className={`w-48 p-2.5 bg-slate-950/50 dark:bg-slate-900/65 rounded-xl border transition duration-150 flex items-center gap-2 shadow-sm ${
+                    isOffline ? 'border-slate-800/80 opacity-60' : 'border-slate-800 hover:border-sky-500/40'
+                  }`}>
+                    <div className={`p-1.5 rounded flex-shrink-0 ${isOffline ? 'bg-slate-900 text-slate-500' : 'bg-slate-800 text-slate-300'}`}>
+                      {isPrinter ? <Printer size={12} /> : <Laptop size={12} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-bold text-slate-200 truncate" title={d.hostname}>{d.hostname || 'Sin hostname'}</div>
+                      <div className="text-[9px] font-mono text-slate-500 mt-0.5 flex justify-between items-center">
+                        <span>{d.ip || 'DHCP'}</span>
+                        <span className="bg-slate-800 text-slate-400 px-1 rounded text-[8px] font-semibold">Boca {d.switch_port}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -6736,11 +6792,22 @@ function TopologyMapModal({
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {/* Show End Devices Checkbox */}
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-350 dark:text-slate-300 select-none mr-2 bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-1.5">
+              <input
+                type="checkbox"
+                checked={showEndDevices}
+                onChange={(e) => setShowEndDevices(e.target.checked)}
+                className="rounded border-slate-700 text-sky-500 focus:ring-sky-500 bg-slate-950 h-4 w-4"
+              />
+              <span className="font-semibold">Mostrar PCs/Impresoras</span>
+            </label>
+
             {/* City Selector */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-400 font-bold">Subred:</span>
               <select
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                className="bg-slate-955 border border-slate-850 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
                 value={selectedCity}
                 onChange={(e) => { setSelectedCity(e.target.value); setSelectedNode(null); }}
               >
