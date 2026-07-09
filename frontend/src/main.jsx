@@ -4,7 +4,8 @@ import {
   Activity, Bell, Boxes, Building2, Cable, CheckCircle2, Clock3, Download,
   FileDown, Laptop, Moon, Network, Play, RefreshCw, Search, Shield, Sun,
   TerminalSquare, Users, WifiOff, User, Plus, Trash2, Cpu, Eye, LogOut, Upload, Info,
-  Briefcase, MapPin, Lock, UserPlus, Edit3, ToggleLeft, ToggleRight, AlertTriangle, ChevronRight
+  Briefcase, MapPin, Lock, UserPlus, Edit3, ToggleLeft, ToggleRight, AlertTriangle, ChevronRight,
+  Router, Printer, Server
 } from 'lucide-react';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -74,7 +75,7 @@ function App() {
     }} />;
   }
 
-  return <Dashboard token={token} user={user} theme={theme} setTheme={setTheme} />;
+  return <Dashboard token={token} user={user} theme={theme} setTheme={setTheme} setToken={setToken} />;
 }
 
 function Login({ onLogin }) {
@@ -310,7 +311,15 @@ function getSubnetLabelGlobal(subnet) {
   return mapping[subnet] ? `${mapping[subnet]} (${subnet})` : subnet;
 }
 
-function Dashboard({ token, user, theme, setTheme }) {
+function getDeviceDisplayName(dev) {
+  if (!dev) return '';
+  const name = dev.responsible_user && dev.responsible_user !== 'Sin responsable' ? dev.responsible_user : '';
+  const host = dev.hostname || dev.ip || '';
+  if (name && host) return `${name} (${host})`;
+  return name || host;
+}
+
+function Dashboard({ token, user, theme, setTheme, setToken }) {
   const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
   const [toasts, setToasts] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -347,11 +356,29 @@ function Dashboard({ token, user, theme, setTheme }) {
   const [userModal, setUserModal] = useState(null);
   const [userFilter, setUserFilter] = useState('');
 
+  // Auto-select text in inputs/textareas globally when focused
+  useEffect(() => {
+    const handleFocus = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        if (e.target.type !== 'checkbox' && e.target.type !== 'radio' && e.target.type !== 'file' && e.target.type !== 'date') {
+          setTimeout(() => {
+            if (document.activeElement === e.target) {
+              e.target.select();
+            }
+          }, 50);
+        }
+      }
+    };
+    document.addEventListener('focusin', handleFocus);
+    return () => document.removeEventListener('focusin', handleFocus);
+  }, []);
+
   // Infrastructure inventory states
   const [infrastructure, setInfrastructure] = useState([]);
   const [infraModal, setInfraModal] = useState(null);
   const [infraFilter, setInfraFilter] = useState('');
   const [activeSwitchForPorts, setActiveSwitchForPorts] = useState(null);
+  const [savingInfra, setSavingInfra] = useState(false);
   const [deviceLinkSearch, setDeviceLinkSearch] = useState('');
   const [showDeviceLinkSelector, setShowDeviceLinkSelector] = useState(false);
 
@@ -607,7 +634,7 @@ function Dashboard({ token, user, theme, setTheme }) {
 
   // Toast Helper
   const triggerToast = (text, type) => {
-    const toastId = Date.now();
+    const toastId = Date.now() + Math.random();
     setToasts(prev => {
       const existe = prev.some(t => t.text === text);
       if (existe) return prev;
@@ -660,10 +687,10 @@ function Dashboard({ token, user, theme, setTheme }) {
             if (prev && prev.status !== dev.status) {
               if (dev.status === 'offline') {
                 playNotificationSound('offline');
-                triggerToast(`🔴 ${dev.hostname || dev.ip} se desconectó`, 'offline');
+                triggerToast(`🔴 ${getDeviceDisplayName(dev)} se desconectó`, 'offline');
               } else if (dev.status === 'online') {
                 playNotificationSound('online');
-                triggerToast(`🟢 ${dev.hostname || dev.ip} volvió a estar disponible`, 'online');
+                triggerToast(`🟢 ${getDeviceDisplayName(dev)} volvió a estar disponible`, 'online');
               }
             }
           });
@@ -819,10 +846,10 @@ function Dashboard({ token, user, theme, setTheme }) {
             if (prev && prev.status !== dev.status) {
               if (dev.status === 'offline') {
                 playNotificationSound('offline');
-                triggerToast(`🔴 ${dev.hostname || dev.ip} se desconectó`, 'offline');
+                triggerToast(`🔴 ${getDeviceDisplayName(dev)} se desconectó`, 'offline');
               } else if (dev.status === 'online') {
                 playNotificationSound('online');
-                triggerToast(`🟢 ${dev.hostname || dev.ip} volvió a estar disponible`, 'online');
+                triggerToast(`🟢 ${getDeviceDisplayName(dev)} volvió a estar disponible`, 'online');
               }
             }
           });
@@ -1701,6 +1728,8 @@ function Dashboard({ token, user, theme, setTheme }) {
 
   // Infrastructure CRUD functions
   async function saveInfrastructure(form) {
+    if (savingInfra) return;
+    setSavingInfra(true);
     try {
       const isEdit = !!form.id;
       const payload = {
@@ -1715,7 +1744,8 @@ function Dashboard({ token, user, theme, setTheme }) {
         notes: form.notes || '',
         mac: form.mac || '',
         floor: form.floor || '',
-        ip: form.ip || ''
+        ip: form.ip || '',
+        city: form.city || 'Antofagasta'
       };
 
       if (useLocalApi) {
@@ -1751,6 +1781,8 @@ function Dashboard({ token, user, theme, setTheme }) {
       } else {
         alert('Error al guardar elemento de infraestructura: ' + err.message);
       }
+    } finally {
+      setSavingInfra(false);
     }
   }
 
@@ -1823,6 +1855,478 @@ function Dashboard({ token, user, theme, setTheme }) {
   }, [devices]);
 
   const chartData = trendHistory;
+
+  const downloadInfraExcel = (cityFilter = null) => {
+    const base = infrastructure.filter(item => {
+      const q = infraFilter.toLowerCase().trim();
+      const matchQuery = !q || (
+        (item.type || '').toLowerCase().includes(q) ||
+        (item.brand || '').toLowerCase().includes(q) ||
+        (item.model || '').toLowerCase().includes(q) ||
+        (item.location || '').toLowerCase().includes(q) ||
+        (item.city || '').toLowerCase().includes(q) ||
+        (item.ip || '').toLowerCase().includes(q) ||
+        (item.serial_number || '').toLowerCase().includes(q)
+      );
+      const matchCity = !cityFilter || (item.city || 'Antofagasta') === cityFilter;
+      return matchQuery && matchCity;
+    });
+
+    // Sort by City alphabetically, then by Location to keep it clean
+    base.sort((a, b) => {
+      const cityA = (a.city || 'Antofagasta').toLowerCase();
+      const cityB = (b.city || 'Antofagasta').toLowerCase();
+      if (cityA !== cityB) {
+        return cityA.localeCompare(cityB);
+      }
+      const locA = (a.location || '').toLowerCase();
+      const locB = (b.location || '').toLowerCase();
+      return locA.localeCompare(locB);
+    });
+
+    const headers = [
+      'Ciudad', 'Lugar', 'Piso', 'Observaciones', 'Marca', 'Modelo',
+      'Bocas', 'Dirección MAC', 'Número de Serie', 'Dirección IP', 'Enlace', 'Estado'
+    ];
+
+    const rowsHtml = base.map(item => {
+      const notes = (item.notes || '').trim();
+      const notesLower = notes.toLowerCase();
+
+      // Deducir el enlace del proveedor a partir de las notas
+      let enlace = '';
+      if (notesLower.includes('entel')) enlace = 'Entel';
+      else if (notesLower.includes('gtd')) enlace = 'GTD';
+      else if (notesLower.includes('movistar')) enlace = 'Movistar';
+      else if (notesLower.includes('claro')) enlace = 'Claro';
+      else if (notesLower.includes('emelnor')) enlace = 'Emelnor';
+
+      const columns = [
+        item.city || 'Antofagasta',
+        item.location || '',
+        item.floor ? `Piso ${item.floor}` : '',
+        notes || '—',
+        item.brand || '',
+        item.model || '',
+        item.ports_count !== null && item.ports_count !== undefined ? `${item.ports_count}P` : '—',
+        item.mac || '',
+        item.serial_number || '',
+        item.ip || '',
+        enlace || '—',
+        item.status || 'usado'
+      ];
+
+      // Colores de fila completa según estado
+      let trStyle = '';
+      if (item.status === 'malo') {
+        trStyle = 'style="background-color: #fee2e2;"'; // soft red for bad
+      } else if (item.status === 'apagado') {
+        trStyle = 'style="background-color: #f1f5f9; color: #475569;"'; // soft gray/slate for offline
+      } else if (item.status === 'nuevo') {
+        trStyle = 'style="background-color: #ecfdf5;"'; // soft green for new
+      }
+
+      return `<tr ${trStyle} style="height:22px;vertical-align:middle;">${columns.map((val, idx) => {
+        let align = 'text-align: center;';
+        if (idx === 1 || idx === 3) {
+          align = 'text-align: left;'; // Lugar y Observaciones alineadas a la izquierda
+        }
+        
+        let s = `border: 1px solid #cbd5e1; padding: 6px; ${align}`;
+        
+        // Estilos específicos de fuente mono para campos técnicos (MAC, Serie, IP)
+        if (idx === 7 || idx === 8 || idx === 9) {
+          s += '; font-family: Consolas, monospace; font-size: 10px;';
+        }
+
+        // Estilos específicos de columna:
+        // Columna Enlace (índice 10)
+        if (idx === 10 && val && val !== '—') {
+          if (val === 'Entel') s += '; background-color: #d1fae5; color: #065f46; font-weight: bold; border: 1px solid #cbd5e1;';
+          else if (val === 'Movistar') s += '; background-color: #e0f2fe; color: #0369a1; font-weight: bold; border: 1px solid #cbd5e1;';
+          else if (val === 'Claro') s += '; background-color: #ffedd5; color: #9a3412; font-weight: bold; border: 1px solid #cbd5e1;';
+          else if (val === 'GTD') s += '; background-color: #f3e8ff; color: #6b21a8; font-weight: bold; border: 1px solid #cbd5e1;';
+          else if (val === 'Emelnor') s += '; background-color: #fef9c3; color: #854d0e; font-weight: bold; border: 1px solid #cbd5e1;';
+        }
+        // Columna Estado (índice 11)
+        else if (idx === 11) {
+          if (val === 'nuevo') s += '; background-color: #d1fae5; color: #065f46; font-weight: bold; border: 1px solid #cbd5e1;';
+          else if (val === 'usado') s += '; background-color: #fffbeb; color: #b45309; border: 1px solid #cbd5e1;';
+          else if (val === 'apagado') s += '; background-color: #e2e8f0; color: #475569; font-weight: bold; border: 1px solid #cbd5e1;';
+          else if (val === 'malo') s += '; background-color: #fca5a5; color: #7f1d1d; font-weight: bold; border: 1px solid #cbd5e1;';
+        }
+
+        return `<td style="${s}">${String(val).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`;
+      }).join('')}</tr>`;
+    }).join('');
+
+    const title = cityFilter
+      ? `Win NetWatch RMM — Infraestructura: ${cityFilter}`
+      : `Win NetWatch RMM — Inventario de Infraestructura (Switches / Módems)`;
+
+    const sheetName = cityFilter
+      ? `Infraestructura ${cityFilter}`
+      : `Infraestructura de Red`;
+    const excelHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8"/>
+  <!--[if gte mso 9]>
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>${sheetName}</x:Name>
+          <x:WorksheetOptions>
+            <x:DisplayGridlines/>
+          </x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <![endif]-->
+  <style>
+    table{border-collapse:collapse;font-family:Segoe UI,sans-serif;}
+    th{background:#1e293b;color:white;font-weight:bold;border:1px solid #cbd5e1;padding:8px;font-size:11px;text-align:center;}
+    td{border:1px solid #cbd5e1;padding:6px;font-size:11px;}
+  </style>
+</head>
+<body>
+  <table>
+    <colgroup>
+      <col width="120" style="width: 120px;"/>
+      <col width="160" style="width: 160px;"/>
+      <col width="80"  style="width: 80px;"/>
+      <col width="260" style="width: 260px;"/>
+      <col width="120" style="width: 120px;"/>
+      <col width="140" style="width: 140px;"/>
+      <col width="80"  style="width: 80px;"/>
+      <col width="160" style="width: 160px;"/>
+      <col width="160" style="width: 160px;"/>
+      <col width="130" style="width: 130px;"/>
+      <col width="120" style="width: 120px;"/>
+      <col width="100" style="width: 100px;"/>
+    </colgroup>
+    <thead>
+      <tr style="height:35px;vertical-align:middle;">
+        <th colspan="12" style="background:#1e293b;color:white;font-size:13px;font-weight:bold;text-align:center;border:1px solid #94a3b8;vertical-align:middle;">
+          ${title.toUpperCase()}
+        </th>
+      </tr>
+      <tr style="height:10px;background:#f8fafc;"><td colspan="12" style="border:none;background:#f8fafc;"></td></tr>
+      <tr style="height:26px;vertical-align:middle;">
+        ${headers.map(h => `<th style="background:#0f172a;color:white;font-weight:bold;border:1px solid #cbd5e1;padding:6px;text-align:center;">${h}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+</body>
+</html>`;
+
+    const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    const safeName = cityFilter
+      ? `infraestructura_${cityFilter.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').toLowerCase()}.xls`
+      : 'infraestructura_completa.xls';
+    anchor.download = safeName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+    triggerToast(`Excel exportado${cityFilter ? ` — ${cityFilter}` : ''}`, 'success');
+  };
+
+  const printInfraPDF = (cityFilter = null) => {
+    const base = infrastructure.filter(item => {
+      const q = infraFilter.toLowerCase().trim();
+      const matchQuery = !q || (
+        (item.type || '').toLowerCase().includes(q) ||
+        (item.brand || '').toLowerCase().includes(q) ||
+        (item.model || '').toLowerCase().includes(q) ||
+        (item.location || '').toLowerCase().includes(q) ||
+        (item.city || '').toLowerCase().includes(q) ||
+        (item.ip || '').toLowerCase().includes(q) ||
+        (item.serial_number || '').toLowerCase().includes(q)
+      );
+      const matchCity = !cityFilter || (item.city || 'Antofagasta') === cityFilter;
+      return matchQuery && matchCity;
+    });
+
+    const grouped = {};
+    base.forEach(item => {
+      const c = item.city || 'Antofagasta';
+      if (!grouped[c]) grouped[c] = [];
+      grouped[c].push(item);
+    });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { alert('Por favor permite los popups para poder imprimir.'); return; }
+
+    const buildPortsGrid = (item) => {
+      const isFortinet = item.type === 'Fortinet';
+      const fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+      const fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+      
+      const count = isFortinet ? 11 : (item.ports_count || 24);
+      const portDeviceMap = {};
+      
+      const connectedDevs = devices.filter(d => d.switch_id === item.id && d.switch_port).map(d => ({ ...d, isDevice: true }));
+      const connectedInfras = infrastructure.filter(i => i.switch_id === item.id && i.switch_port).map(i => ({ ...i, isInfra: true }));
+      const connected = [...connectedDevs, ...connectedInfras];
+
+      connected.forEach(elem => {
+        if (elem.switch_port) portDeviceMap[elem.switch_port] = elem;
+      });
+
+      const cols = count <= 24 ? count : 24;
+      let html = `<div style="background:#1e293b;border:2px solid #334155;padding:6px 8px;border-radius:6px;width:100%;box-sizing:border-box;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;font-size:7px;color:#94a3b8;font-family:monospace;margin-bottom:5px;">
+          <span>${(item.brand||'').toUpperCase()} ${(item.model||'').toUpperCase()}</span>
+          <span>SYS OK &#9679;</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,18px));gap:2px;width:100%;">`;
+      for (let p = 1; p <= count; p++) {
+        const dev = portDeviceMap[p];
+        const label = isFortinet ? fortinetShort[p - 1] : p;
+        const fullName = isFortinet ? fortinetLabels[p - 1] : `Puerto ${p}`;
+        const bg = dev ? 'rgba(16,185,129,0.2)' : 'rgba(30,41,59,0.6)';
+        const border = dev ? '1.5px solid #10b981' : '1.5px dashed #475569';
+        const color = dev ? '#10b981' : '#475569';
+        const symbol = dev ? '&#9679;' : '+';
+        
+        // Font size adjustments for labels like 'CNS', 'W2'
+        const labelFontSize = isFortinet && label.length > 2 ? '3px' : '4px';
+        
+        const titleText = dev 
+          ? (dev.isInfra ? `${dev.type}: ${dev.brand} ${dev.model}` : (dev.responsible_user||dev.hostname||'Ocupado'))
+          : fullName;
+        
+        html += `<div title="${titleText}" style="width:100%;padding-top:100%;position:relative;background:${bg};border:${border};border-radius:2px;overflow:hidden;">
+          <span style="position:absolute;top:1px;left:1px;font-size:${labelFontSize};color:#64748b;line-height:1;font-family:monospace;font-weight:bold;">${label}</span>
+          <span style="position:absolute;bottom:1px;right:0;left:0;text-align:center;font-size:6px;color:${color};">${symbol}</span>
+        </div>`;
+      }
+      html += `</div></div>`;
+      if (connected.length > 0) {
+        html += `<div style="margin-top:6px;font-size:9px;color:#475569;">
+          <strong style="color:#334155;">Equipos vinculados:</strong>
+          <ul style="margin:2px 0 0 14px;padding:0;">`;
+        connected.sort((a,b) => (a.switch_port||0)-(b.switch_port||0)).forEach(d => {
+          let lbl = '';
+          if (d.isInfra) {
+            lbl = `${d.type}: ${d.brand} ${d.model}`;
+          } else {
+            lbl = (d.responsible_user && d.responsible_user !== 'Sin responsable') ? d.responsible_user : (d.hostname || 'Equipo');
+          }
+          if (d.notes) {
+            lbl += ` (Obs: ${d.notes})`;
+          }
+          const portStr = isFortinet ? fortinetLabels[d.switch_port - 1] : `P${d.switch_port}`;
+          html += `<li style="margin-bottom:1px;"><strong>${portStr}:</strong> ${lbl} — ${d.ip||'—'}</li>`;
+        });
+        html += `</ul></div>`;
+      } else {
+        html += `<div style="margin-top:4px;font-size:8px;color:#94a3b8;font-style:italic;">Sin equipos vinculados.</div>`;
+      }
+      return html;
+    };
+
+    const buildModemPanel = (item) => {
+      const portCount = item.ports_count || 0;
+      const portDevMap = {};
+
+      const connectedDevs = devices.filter(d => d.switch_id === item.id && d.switch_port).map(d => ({ ...d, isDevice: true }));
+      const connectedInfras = infrastructure.filter(i => i.switch_id === item.id && i.switch_port).map(i => ({ ...i, isInfra: true }));
+      
+      const parentInfras = [];
+      if (item.switch_id && item.local_port) {
+        const parent = infrastructure.find(i => i.id === item.switch_id);
+        if (parent) {
+          parentInfras.push({
+            ...parent,
+            isInfra: true,
+            isParent: true,
+            switch_port: parseInt(item.local_port, 10)
+          });
+        }
+      }
+
+      const connected = [...connectedDevs, ...connectedInfras, ...parentInfras];
+
+      connected.forEach(elem => {
+        if (elem.switch_port) portDevMap[elem.switch_port] = elem;
+      });
+
+      let portsHtml = '';
+      if (portCount > 0) {
+        portsHtml = `<div style="margin-top:6px;">
+          <div style="font-size:7px;color:#94a3b8;font-family:monospace;margin-bottom:4px;text-transform:uppercase;">Bocas LAN (${portCount})</div>
+          <div style="display:grid;grid-template-columns:repeat(${Math.min(portCount,8)},minmax(0,18px));gap:3px;">`;
+        for (let p = 1; p <= portCount; p++) {
+          const dev = portDevMap[p];
+          const bg = dev ? 'rgba(16,185,129,0.2)' : 'rgba(30,41,59,0.6)';
+          const border = dev ? '1.5px solid #10b981' : '1.5px dashed #475569';
+          const color = dev ? '#10b981' : '#475569';
+          const titleText = dev
+            ? (dev.isInfra ? `${dev.type}: ${dev.brand} ${dev.model}` : (dev.responsible_user||dev.hostname||'Ocupado'))
+            : `Puerto ${p}`;
+
+          portsHtml += `<div title="${titleText}" style="aspect-ratio:1;background:${bg};border:${border};border-radius:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+            <span style="font-size:5px;color:#64748b;position:absolute;top:1px;left:2px;">${p}</span>
+            <span style="font-size:7px;color:${color};margin-top:4px;">${dev ? '●' : '+'}</span>
+          </div>`;
+        }
+        portsHtml += `</div></div>`;
+      }
+ 
+      let html = `<div style="background:#1e293b;border:2px solid #334155;padding:8px;border-radius:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-size:8px;color:#94a3b8;font-family:monospace;font-weight:bold;">📡 MODEM / BROADBAND</div>
+          <div style="display:flex;gap:2px;align-items:flex-end;height:18px;">
+            ${[6,9,12,15,18].map(h => `<div style="width:4px;height:${h}px;background:#10b981;border-radius:1px;opacity:${0.4+h/30};"></div>`).join('')}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:8px;font-family:monospace;color:#94a3b8;margin-bottom:4px;">
+          <div>WAN: <strong style="color:#10b981;">Connected</strong></div>
+          <div>IP: <strong style="color:#e2e8f0;">${item.ip||'—'}</strong></div>
+          <div>MAC: <strong style="color:#e2e8f0;">${item.mac||'—'}</strong></div>
+          <div>Bocas: <strong style="color:#e2e8f0;">${portCount > 0 ? portCount+'P' : '—'}</strong></div>
+        </div>
+        ${portsHtml}
+      </div>`;
+
+      if (connected.length > 0) {
+        html += `<div style="margin-top:6px;font-size:9px;color:#475569;">
+          <strong style="color:#334155;">Equipos vinculados:</strong>
+          <ul style="margin:2px 0 0 14px;padding:0;">`;
+        connected.sort((a,b)=>(a.switch_port||0)-(b.switch_port||0)).forEach(d => {
+          let lbl = '';
+          if (d.isInfra) {
+            lbl = `${d.type}: ${d.brand} ${d.model}`;
+          } else {
+            lbl = (d.responsible_user && d.responsible_user !== 'Sin responsable') ? d.responsible_user : (d.hostname||'Equipo');
+          }
+          if (d.notes) {
+            lbl += ` (Obs: ${d.notes})`;
+          }
+          html += `<li style="margin-bottom:1px;"><strong>P${d.switch_port}:</strong> ${lbl} — ${d.ip||'—'}</li>`;
+        });
+        html += `</ul></div>`;
+      } else {
+        html += `<div style="margin-top:4px;font-size:8px;color:#94a3b8;font-style:italic;">Sin equipos vinculados.</div>`;
+      }
+
+      return html;
+    };
+
+    const titleStr = cityFilter
+      ? `Infraestructura de Red — ${cityFilter}`
+      : `Infraestructura de Red — Todas las Ciudades`;
+
+    let content = `<html><head><title>${titleStr}</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm; }
+  @media print {
+    body { margin:0; background:white !important; color:#0f172a !important; }
+    .no-print { display:none; }
+    /* Modo Impresión: Forzar 1 sola columna vertical de tarjetas */
+    .cards-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+    /* Modo Impresión: Usar 4 columnas de detalles para ahorrar espacio vertical en papel */
+    .details { grid-template-columns: repeat(4, 1fr) !important; gap: 8px 12px !important; }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:#f8fafc; color:#1e293b; padding:20px; font-size:11px; }
+  .page-header { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #10b981; padding-bottom:10px; margin-bottom:16px; }
+  .page-header h1 { margin:0; font-size:18px; color:#0f172a; }
+  .page-header p { margin:3px 0 0; font-size:10px; color:#64748b; }
+  .brand { font-weight:bold; color:#10b981; font-size:15px; }
+  .city-block { margin-bottom:24px; }
+  .city-title { font-size:14px; font-weight:bold; text-transform:uppercase; color:#0f172a; border-bottom:2px solid #e2e8f0; padding-bottom:4px; margin-bottom:12px; letter-spacing:0.05em; page-break-after: avoid; break-after: avoid; }
+  
+  /* Modo Pantalla: 2 columnas horizontales de tarjetas */
+  .cards-grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  
+  /* Tarjeta en diseño de fila (detalles izquierda, diagrama derecha) */
+  .card { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:14px; display:flex; flex-direction:row; gap:16px; page-break-inside:avoid; break-inside:avoid; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .card-left { flex:1; min-width:0; }
+  .card-right { width: 45%; max-width:320px; min-width:240px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-start; }
+  
+  .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #f1f5f9; }
+  .card-title { font-size:12px; font-weight:bold; color:#0f172a; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .badges { display:flex; gap:4px; flex-shrink:0; }
+  .badge { font-size:8px; font-weight:bold; text-transform:uppercase; padding:2px 6px; border-radius:3px; }
+  .badge-switch   { background:#e0f2fe; color:#0369a1; }
+  .badge-modem    { background:#ecfdf5; color:#047857; }
+  .badge-fortinet { background:#fff7ed; color:#c2410c; }
+  .badge-new    { background:#d1fae5; color:#065f46; }
+  .badge-used   { background:#fef3c7; color:#92400e; }
+  .badge-offline { background:#f1f5f9; color:#475569; }
+  .badge-bad { background:#fee2e2; color:#b91c1c; }
+  
+  /* Detalles en 2 columnas en pantalla */
+  .details { display:grid; grid-template-columns: repeat(2, 1fr); gap:4px 10px; }
+  .detail { font-size:9px; }
+  .detail strong { color:#94a3b8; display:block; font-size:7.5px; text-transform:uppercase; margin-bottom:1px; }
+  .detail span { font-weight:600; color:#1e293b; word-break:break-all; }
+  .notes { font-size:8px; color:#64748b; font-style:italic; background:#f8fafc; padding:4px 6px; border-radius:4px; border-left:2px solid #cbd5e1; margin-top:6px; }
+</style></head><body>
+<div class="page-header">
+  <div>
+    <h1>${titleStr}</h1>
+    <p>Generado: ${new Date().toLocaleString()} · ${user?.full_name || 'Administrador'}</p>
+  </div>
+  <div class="brand">Win NetWatch RMM</div>
+</div>`;
+
+    Object.keys(grouped).sort().forEach(city => {
+      content += `<div class="city-block"><div class="city-title">📍 Ciudad: ${city}</div><div class="cards-grid">`;
+      grouped[city].forEach(item => {
+        const isSwitch = item.type === 'Switch' || item.type === 'Fortinet';
+        const badgeType = item.type === 'Switch' ? 'badge-switch' : item.type === 'Fortinet' ? 'badge-fortinet' : 'badge-modem';
+        const badgeLabel = item.type === 'Switch' ? 'SWITCH' : item.type === 'Fortinet' ? 'FORTINET' : 'MÓDEM';
+        
+        let badgeStatus = 'badge-used';
+        if (item.status === 'nuevo') badgeStatus = 'badge-new';
+        else if (item.status === 'apagado') badgeStatus = 'badge-offline';
+        else if (item.status === 'malo') badgeStatus = 'badge-bad';
+
+        const diagram = isSwitch ? buildPortsGrid(item) : buildModemPanel(item);
+
+        content += `<div class="card">
+          <div class="card-left">
+            <div class="card-header">
+              <span class="card-title">${item.type === 'Fortinet' ? '🛡️' : isSwitch ? '🔌' : '📡'} ${item.brand} ${item.model}</span>
+              <div class="badges">
+                <span class="badge ${badgeType}">${badgeLabel}</span>
+                <span class="badge ${badgeStatus}">${item.status}</span>
+              </div>
+            </div>
+            <div class="details">
+              <div class="detail"><strong>IP</strong><span>${item.ip||'—'}</span></div>
+              <div class="detail"><strong>MAC</strong><span>${item.mac||'—'}</span></div>
+              <div class="detail"><strong>N° Serie</strong><span>${item.serial_number||'—'}</span></div>
+              <div class="detail"><strong>Bocas</strong><span>${(item.ports_count||0) > 0 ? (item.ports_count + (item.type === 'Switch' ? ' puertos' : item.type === 'Fortinet' ? ' int.' : ' LAN')) : '—'}</span></div>
+              <div class="detail"><strong>Ubicación</strong><span>${item.location||'—'}</span></div>
+              <div class="detail"><strong>Piso</strong><span>${item.floor ? 'Piso '+item.floor : '—'}</span></div>
+              <div class="detail"><strong>Estado</strong><span>${item.status||'—'}</span></div>
+              <div class="detail"><strong>Ingreso</strong><span>${item.acquired_at ? item.acquired_at.split('T')[0] : '—'}</span></div>
+            </div>
+            ${item.notes ? `<div class="notes"><strong>Obs:</strong> ${item.notes}</div>` : ''}
+          </div>
+          <div class="card-right">${diagram}</div>
+        </div>`;
+      });
+      content += `</div></div>`;
+    });
+
+    content += `</body></html>`;
+    printWindow.document.write(content);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 600);
+  };
+
+
 
   const downloadDevicesCSV = () => {
     const headers = [
@@ -3354,18 +3858,34 @@ function Dashboard({ token, user, theme, setTheme }) {
                   <div className="relative flex-1 max-w-md">
                     <input
                       className="input pr-10"
-                      placeholder="Buscar switch o monitor..."
+                      placeholder="Buscar switch, módem o ubicación..."
                       value={infraFilter}
                       onChange={(e) => setInfraFilter(e.target.value)}
                     />
                     <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                   </div>
-                  <button
-                    className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
-                    onClick={() => setInfraModal({ mode: 'create', form: { type: 'Switch', brand: '', model: '', serial_number: '', ports_count: 24, location: 'Matta', status: 'nuevo', acquired_at: new Date().toISOString().split('T')[0], notes: '', mac: '', floor: '1', ip: '' } })}
-                  >
-                    <Plus size={16} /> Agregar Infraestructura
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="button secondary text-xs flex items-center gap-1.5 px-3.5 py-2.5 font-bold rounded-xl"
+                      onClick={() => downloadInfraExcel()}
+                      title="Exportar a Excel"
+                    >
+                      <FileDown size={15} /> Excel
+                    </button>
+                    <button
+                      className="button secondary text-xs flex items-center gap-1.5 px-3.5 py-2.5 font-bold rounded-xl"
+                      onClick={() => printInfraPDF()}
+                      title="Imprimir reporte en PDF"
+                    >
+                      <Printer size={15} /> PDF
+                    </button>
+                    <button
+                      className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
+                      onClick={() => setInfraModal({ mode: 'create', form: { type: 'Switch', brand: '', model: '', serial_number: '', ports_count: 24, location: 'Matta', status: 'nuevo', acquired_at: new Date().toISOString().split('T')[0], notes: '', mac: '', floor: '1', ip: '', city: 'Antofagasta' } })}
+                    >
+                      <Plus size={16} /> Agregar Infraestructura
+                    </button>
+                  </div>
                 </div>
 
                 <div className="overflow-hidden border border-zinc-200 dark:border-slate-800 rounded-xl shadow-sm bg-white dark:bg-slate-900">
@@ -3388,91 +3908,168 @@ function Dashboard({ token, user, theme, setTheme }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {infrastructure.filter(i => {
+                        {(() => {
                           const query = infraFilter.toLowerCase();
-                          return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query) || (i.ip || '').toLowerCase().includes(query) || (i.notes || '').toLowerCase().includes(query);
-                        }).length === 0 ? (
-                          <tr>
-                            <td colSpan="12" className="py-8 text-center text-zinc-500 dark:text-slate-400 font-semibold">
-                              No se encontraron elementos de infraestructura.
-                            </td>
-                          </tr>
-                        ) : (
-                          infrastructure.filter(i => {
-                            const query = infraFilter.toLowerCase();
-                            return (i.brand || '').toLowerCase().includes(query) || (i.model || '').toLowerCase().includes(query) || (i.serial_number || '').toLowerCase().includes(query) || (i.location || '').toLowerCase().includes(query) || (i.mac || '').toLowerCase().includes(query) || (i.floor || '').toLowerCase().includes(query) || (i.ip || '').toLowerCase().includes(query) || (i.notes || '').toLowerCase().includes(query);
-                          }).map((item) => (
-                            <tr
-                              key={item.id}
-                              className="border-b border-zinc-100 dark:border-slate-800/50 hover:bg-zinc-50/50 dark:hover:bg-slate-800/30 transition duration-150 cursor-pointer"
-                              onClick={() => setInfraModal({ mode: 'edit', form: item })}
-                            >
-                              <td className="py-3 px-4 font-semibold text-zinc-950 dark:text-white">
-                                {item.type}
-                              </td>
-                              <td className="py-3 px-4 font-semibold">
-                                {item.brand} {item.model}
-                              </td>
-                              <td className="py-3 px-4 font-mono text-xs">
-                                {item.serial_number || '—'}
-                              </td>
-                              <td className="py-3 px-4 font-mono text-xs">
-                                {item.ip || '—'}
-                              </td>
-                              <td className="py-3 px-4 font-mono text-xs">
-                                {item.mac || '—'}
-                              </td>
-                              <td className="py-3 px-4">
-                                {item.type === 'Switch' ? `${item.ports_count || 0} Bocas` : '—'}
-                              </td>
-                              <td className="py-3 px-4">
-                                {item.location}
-                              </td>
-                              <td className="py-3 px-4 font-medium">
-                                {item.floor ? `Piso ${item.floor}` : '—'}
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                  item.status === 'nuevo'
-                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300'
-                                    : 'bg-amber-100 text-amber-850 dark:bg-amber-500/10 dark:text-amber-350'
-                                }`}>
-                                  {item.status === 'nuevo' ? 'Nuevo' : 'Usado'}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-xs font-mono">
-                                {item.acquired_at ? new Date(item.acquired_at).toLocaleDateString() : '—'}
-                              </td>
-                              <td className="py-3 px-4 text-xs max-w-[150px] truncate text-zinc-500 dark:text-slate-400 font-normal" title={item.notes}>
-                                {item.notes || '—'}
-                              </td>
-                              <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex justify-end gap-2">
-                                  {item.type === 'Switch' && (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setActiveSwitchForPorts(item); }}
-                                      className="button primary py-1 px-2.5 text-xs flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 border-0"
-                                    >
-                                      <Network size={12} /> Puertos
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => setInfraModal({ mode: 'edit', form: item })}
-                                    className="button secondary py-1 px-2.5 text-xs hover:border-emerald-500"
-                                  >
-                                    Editar
-                                  </button>
-                                  <button
-                                    onClick={() => deleteInfrastructure(item.id)}
-                                    className="button py-1 px-2.5 text-xs text-red-500 border-red-200 dark:border-red-900/30 hover:border-red-500"
-                                  >
-                                    Eliminar
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        )}
+                          const filtered = infrastructure.filter(i => {
+                            return (i.brand || '').toLowerCase().includes(query) ||
+                                   (i.model || '').toLowerCase().includes(query) ||
+                                   (i.serial_number || '').toLowerCase().includes(query) ||
+                                   (i.location || '').toLowerCase().includes(query) ||
+                                   (i.mac || '').toLowerCase().includes(query) ||
+                                   (i.floor || '').toLowerCase().includes(query) ||
+                                   (i.ip || '').toLowerCase().includes(query) ||
+                                   (i.city || '').toLowerCase().includes(query) ||
+                                   (i.notes || '').toLowerCase().includes(query);
+                          });
+
+                          if (filtered.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan="12" className="py-8 text-center text-zinc-500 dark:text-slate-400 font-semibold">
+                                  No se encontraron elementos de infraestructura.
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          // Group by city
+                          const grouped = {};
+                          filtered.forEach(item => {
+                            const c = item.city || 'Antofagasta';
+                            if (!grouped[c]) grouped[c] = [];
+                            grouped[c].push(item);
+                          });
+
+                          return Object.keys(grouped).sort().map(city => (
+                            <React.Fragment key={city}>
+                              <tr className="bg-zinc-100/70 dark:bg-slate-800/40 border-b border-zinc-200 dark:border-slate-800/60 select-none">
+                                <td colSpan="12" className="py-2 px-4">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                      📍 Ciudad: {city}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); downloadInfraExcel(city); }}
+                                        title={`Exportar ${city} a Excel`}
+                                      >
+                                        <FileDown size={12} /> Excel
+                                      </button>
+                                      <button
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20 transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); printInfraPDF(city); }}
+                                        title={`Imprimir PDF de ${city}`}
+                                      >
+                                        <Printer size={12} /> PDF
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                              {grouped[city].map((item) => (
+                                <tr
+                                  key={item.id}
+                                  className="border-b border-zinc-100 dark:border-slate-800/50 hover:bg-zinc-50/50 dark:hover:bg-slate-800/30 transition duration-150 cursor-pointer"
+                                  onClick={() => setInfraModal({ mode: 'edit', form: item })}
+                                >
+                                  <td className="py-3 px-4 font-semibold text-zinc-950 dark:text-white">
+                                    <div className="flex items-center">
+                                      {item.type === 'Switch' ? (
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 text-xs font-bold shadow-sm">
+                                          <Network size={13} className="text-sky-500" />
+                                          <span>Switch</span>
+                                        </div>
+                                      ) : item.type === 'Fortinet' ? (
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-bold shadow-sm">
+                                          <Shield size={13} className="text-orange-500" />
+                                          <span>Fortinet</span>
+                                        </div>
+                                      ) : (
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold shadow-sm">
+                                          <Router size={13} className="text-emerald-500" />
+                                          <span>Módem</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 font-semibold">
+                                    {item.brand} {item.model}
+                                  </td>
+                                  <td className="py-3 px-4 font-mono text-xs">
+                                    {item.serial_number || '—'}
+                                  </td>
+                                  <td className="py-3 px-4 font-mono text-xs">
+                                    {item.ip || '—'}
+                                  </td>
+                                  <td className="py-3 px-4 font-mono text-xs">
+                                    {item.mac || '—'}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    {item.ports_count !== null && item.ports_count !== undefined
+                                      ? `${item.ports_count} ${item.type === 'Switch' ? 'Bocas' : item.type === 'Fortinet' ? 'Int.' : 'Bocas LAN'}`
+                                      : '—'}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    {item.location}
+                                  </td>
+                                  <td className="py-3 px-4 font-medium">
+                                    {item.floor ? `Piso ${item.floor}` : '—'}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
+                                      item.status === 'nuevo'
+                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                        : item.status === 'usado'
+                                        ? 'bg-amber-100 text-amber-850 dark:bg-amber-500/10 dark:text-amber-350'
+                                        : item.status === 'apagado'
+                                        ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-500/20 dark:text-zinc-400'
+                                        : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                                    }`}>
+                                      {item.status || 'usado'}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-4 text-xs font-mono">
+                                    {item.acquired_at ? new Date(item.acquired_at).toLocaleDateString() : '—'}
+                                  </td>
+                                  <td className="py-3 px-4 text-xs max-w-[150px] truncate text-zinc-500 dark:text-slate-400 font-normal" title={item.notes}>
+                                    {item.notes || '—'}
+                                  </td>
+                                  <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex justify-end gap-2">
+                                      {(item.type === 'Switch' || item.type === 'Fortinet' || item.type === 'Modem') && (
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setActiveSwitchForPorts(item); }}
+                                          className={`button primary py-1 px-2.5 text-xs flex items-center gap-1 border-0 whitespace-nowrap ${
+                                            item.type === 'Fortinet'
+                                              ? 'bg-gradient-to-r from-orange-600 to-red-700 hover:from-orange-500 hover:to-red-600'
+                                              : item.type === 'Modem'
+                                              ? 'bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600'
+                                              : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600'
+                                          }`}
+                                        >
+                                          <Network size={12} /> {item.type === 'Fortinet' ? 'Interfaces' : item.type === 'Modem' ? 'Bocas' : 'Puertos'}
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => setInfraModal({ mode: 'edit', form: item })}
+                                        className="button secondary py-1 px-2.5 text-xs hover:border-emerald-500"
+                                      >
+                                        Editar
+                                      </button>
+                                      <button
+                                        onClick={() => deleteInfrastructure(item.id)}
+                                        className="button py-1 px-2.5 text-xs text-red-500 border-red-200 dark:border-red-900/30 hover:border-red-500"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          ));
+                        })()}
                       </tbody>
                     </table>
                   </div>
@@ -3497,7 +4094,8 @@ function Dashboard({ token, user, theme, setTheme }) {
                               required
                             >
                               <option value="Switch">Switch</option>
-                              <option value="Monitor">Monitor</option>
+                              <option value="Modem">Módem</option>
+                              <option value="Fortinet">Fortinet / Firewall</option>
                             </select>
                           </div>
                           <div>
@@ -3510,6 +4108,8 @@ function Dashboard({ token, user, theme, setTheme }) {
                             >
                               <option value="nuevo">Nuevo</option>
                               <option value="usado">Usado</option>
+                              <option value="apagado">Apagado</option>
+                              <option value="malo">Malo</option>
                             </select>
                           </div>
                         </div>
@@ -3559,19 +4159,19 @@ function Dashboard({ token, user, theme, setTheme }) {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                          {infraModal.form.type === 'Switch' && (
-                            <div>
-                              <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Bocas / Puertos</label>
-                              <input
-                                className="input w-full"
-                                type="number"
-                                placeholder="ej. 24, 48"
-                                value={infraModal.form.ports_count || ''}
-                                onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, ports_count: parseInt(e.target.value, 10) || 0 } })}
-                              />
-                            </div>
-                          )}
-                          <div className={infraModal.form.type !== 'Switch' ? 'col-span-2' : ''}>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">
+                              {infraModal.form.type === 'Switch' ? 'Bocas / Puertos' : 'Bocas LAN'}
+                            </label>
+                            <input
+                              className="input w-full"
+                              type="number"
+                              placeholder={infraModal.form.type === 'Switch' ? 'ej. 24, 48' : 'ej. 4, 5'}
+                              value={infraModal.form.ports_count || ''}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, ports_count: parseInt(e.target.value, 10) || 0 } })}
+                            />
+                          </div>
+                          <div>
                             <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Fecha Ingreso</label>
                             <input
                               className="input w-full"
@@ -3618,6 +4218,19 @@ function Dashboard({ token, user, theme, setTheme }) {
                               <option value="Ninguno">Ninguno / Otro</option>
                             </select>
                           </div>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Ciudad</label>
+                            <select
+                              className="input w-full"
+                              value={infraModal.form.city || 'Antofagasta'}
+                              onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, city: e.target.value } })}
+                              required
+                            >
+                              {Array.from(new Set([...existingCities, 'Antofagasta', infraModal.form.city].filter(Boolean))).sort().map(c => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
 
                         <div>
@@ -3630,11 +4243,13 @@ function Dashboard({ token, user, theme, setTheme }) {
                           />
                         </div>
 
-                        <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-slate-800">
-                          <button type="button" className="button secondary" onClick={() => setInfraModal(null)}>Cancelar</button>
-                          <button type="submit" className="button primary flex items-center gap-1.5">
-                            <Plus size={14} />
-                            {infraModal.mode === 'create' ? 'Agregar Elemento' : 'Guardar Cambios'}
+                         <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-slate-800">
+                          <button type="button" className="button secondary" onClick={() => setInfraModal(null)} disabled={savingInfra}>
+                            Cancelar
+                          </button>
+                          <button type="submit" className="button primary flex items-center gap-1.5" disabled={savingInfra}>
+                            {savingInfra ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
+                            {savingInfra ? 'Guardando...' : (infraModal.mode === 'create' ? 'Agregar Elemento' : 'Guardar Cambios')}
                           </button>
                         </div>
                       </form>
@@ -3671,7 +4286,9 @@ function Dashboard({ token, user, theme, setTheme }) {
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 font-semibold text-white pointer-events-auto border-l-4 ${
+            onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+            title="Hacer clic para cerrar"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 font-semibold text-white pointer-events-auto border-l-4 cursor-pointer hover:scale-[1.02] ${
               toast.type === 'offline'
                 ? 'bg-gradient-to-r from-red-600 to-rose-700 border-red-400'
                 : 'bg-gradient-to-r from-emerald-600 to-teal-700 border-emerald-400'
@@ -3690,6 +4307,7 @@ function Dashboard({ token, user, theme, setTheme }) {
 
       {selected && (
         <DeviceDrawer
+          key={selected.id}
           device={selected}
           employees={employees}
           infrastructure={infrastructure}
@@ -3703,6 +4321,11 @@ function Dashboard({ token, user, theme, setTheme }) {
           useLocalApi={useLocalApi}
           setEmployeeModal={setEmployeeModal}
           setFirebaseQuotaExceeded={setFirebaseQuotaExceeded}
+          existingCpus={existingCpus}
+          existingRams={existingRams}
+          existingStorages={existingStorages}
+          existingGpus={existingGpus}
+          existingMotherboards={existingMotherboards}
         />
       )}
 
@@ -3711,6 +4334,7 @@ function Dashboard({ token, user, theme, setTheme }) {
           activeSwitch={activeSwitchForPorts}
           onClose={() => setActiveSwitchForPorts(null)}
           devices={devices}
+          infrastructure={infrastructure}
           token={token}
           user={user}
           useLocalApi={useLocalApi}
@@ -3834,543 +4458,25 @@ function Dashboard({ token, user, theme, setTheme }) {
         </div>
       )}
 
-      {/* Employee Modal (Ficha de Empleado) */}
       {employeeModal && (
-        <div className={`fixed inset-0 ${employeeModal.mode === 'create' ? 'z-[60]' : 'z-50'} flex items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-sm p-0 sm:p-4`}>
-          <div className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden flex flex-col transition-all duration-300">
-            {employeeModal.mode === 'view' ? (
-              <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="flex-1 overflow-y-auto space-y-4 pb-4">
-                  {/* Banner Profile */}
-                  <div className="relative">
-                    <div className="h-16 xs:h-20 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
-                    <div className="absolute left-4 xs:left-6 -bottom-6">
-                    {employeeModal.form.image_url ? (
-                      <img
-                        src={employeeModal.form.image_url}
-                        alt={employeeModal.form.full_name}
-                        className="w-20 h-20 rounded-full border-4 border-white dark:border-slate-900 object-cover shadow-lg"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full border-4 border-white dark:border-slate-900 bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center font-bold text-2xl shadow-lg">
-                        {getInitials(employeeModal.form.full_name)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute right-4 top-4">
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold shadow-sm ${
-                      employeeModal.form.active
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-500/30'
-                        : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-500/30'
-                    }`}>
-                      <span className={`h-2 w-2 rounded-full ${employeeModal.form.active ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                      {employeeModal.form.active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Employee Details Grid */}
-                <div className="pt-4 xs:pt-6 px-4 xs:px-6">
-                  <div className="mb-4">
-                    <h2 className="text-xl font-bold text-zinc-950 dark:text-white leading-tight">{employeeModal.form.full_name}</h2>
-                    {employeeModal.form.email ? (
-                      <a
-                        href={`mailto:${employeeModal.form.email}`}
-                        className="text-xs text-zinc-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:underline font-medium transition-colors"
-                        title="Enviar correo"
-                      >
-                        {employeeModal.form.email}
-                      </a>
-                    ) : (
-                      <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium">Sin correo registrado</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-zinc-50 dark:bg-slate-950 p-2.5 xs:p-3 rounded-xl border border-zinc-200 dark:border-slate-800">
-                    <div>
-                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Teléfono</span>
-                      {employeeModal.form.phone ? (() => {
-                        const digits = employeeModal.form.phone.replace(/\D/g, '');
-                        const waNum = digits.length === 9 && digits.startsWith('9') ? '56' + digits : digits;
-                        return (
-                          <a
-                            href={`whatsapp://send?phone=${waNum}`}
-                            className="text-emerald-500 hover:text-emerald-400 hover:underline text-xs font-semibold block"
-                            title="Escribir o llamar por WhatsApp"
-                          >
-                            {employeeModal.form.phone}
-                          </a>
-                        );
-                      })() : (
-                        <span className="text-xs font-medium text-zinc-500 dark:text-slate-400">—</span>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Cargo</span>
-                      <span className="text-xs font-medium">{employeeModal.form.job_title || '—'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Lugar de Trabajo</span>
-                      <span className="text-xs font-medium">{employeeModal.form.workplace || employeeModal.form.status || 'Presencial'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Departamento</span>
-                      <span className="text-xs font-medium">{employeeModal.form.department || '—'}</span>
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Ciudad</span>
-                      <span className="text-xs font-medium">{employeeModal.form.city || '—'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Sistemas Autorizados</span>
-                      <span className="text-xs font-medium">{employeeModal.form.authorized_systems || '—'}</span>
-                    </div>
-                    <div className="sm:col-span-2 flex items-center gap-3 mt-1 pt-2 border-t border-zinc-200/50 dark:border-slate-800/50">
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Conexión VPN</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          employeeModal.form.vpn_active
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                            : 'bg-zinc-200 text-zinc-600 dark:bg-slate-800 dark:text-slate-400'
-                        }`}>
-                          {employeeModal.form.vpn_active ? 'VPN Conectada' : 'Sin VPN'}
-                        </span>
-                        {employeeModal.form.vpn_active && employeeModal.form.vpn_type && (
-                          <span className="text-[11px] text-zinc-500 dark:text-slate-400">({employeeModal.form.vpn_type})</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Assigned Devices */}
-                <div className="px-4 xs:px-6 pb-4 xs:pb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
-                      <Laptop size={14} className="text-emerald-500" />
-                      Equipos Asignados ({devices.filter(d => d.employee_id === employeeModal.form.id).length})
-                    </h3>
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-                      onClick={() => {
-                        setDeviceModal({
-                          mode: 'create',
-                          form: {
-                            ip: '', hostname: '', mac: '', os: '', city: employeeModal.form.city || '',
-                            branch: '', department: employeeModal.form.department || '',
-                            responsible_user: employeeModal.form.full_name,
-                            job_title: employeeModal.form.job_title || '',
-                            phone: employeeModal.form.phone || '',
-                            email: employeeModal.form.email || '',
-                            notes: '', brand: '', model: '', serial_number: '',
-                            asset_status: 'active', critical: false, managed: false,
-                            tags: [], cpu: '', ram: '', storage: '', gpu: '',
-                            motherboard: '', image_url: '', device_type: 'PC',
-                            location: 'Matta', employee_id: employeeModal.form.id
-                          }
-                        });
-                      }}
-                    >
-                      + Registrar nuevo equipo
-                    </button>
-                  </div>
-                  
-                  <div className="border border-zinc-200 dark:border-slate-800 rounded-xl overflow-hidden bg-zinc-50/50 dark:bg-slate-950/20">
-                    {devices.filter(d => d.employee_id === employeeModal.form.id).length === 0 ? (
-                      <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-500 font-medium">
-                        Este empleado no tiene equipos asignados en el inventario.
-                      </div>
-                    ) : (
-                      <div className="max-h-40 overflow-y-auto">
-                        <table className="w-full text-left border-collapse text-[11px]">
-                          <thead>
-                            <tr className="bg-zinc-100 dark:bg-slate-900 border-b border-zinc-200 dark:border-slate-800 text-zinc-500 dark:text-slate-400 font-semibold">
-                              <th className="py-2 px-3">Equipo</th>
-                              <th className="py-2 px-3">IP</th>
-                              <th className="py-2 px-3">Estado</th>
-                              <th className="py-2 px-3 text-right">Acción</th>
-                            </tr>
-                          </thead>
-                           <tbody>
-                            {devices.filter(d => d.employee_id === employeeModal.form.id).map(dev => (
-                              <tr key={dev.id} className="border-b border-zinc-100 dark:border-slate-800/40 hover:bg-zinc-100/50 dark:hover:bg-slate-900/30">
-                                <td className="py-2 px-3 font-semibold text-zinc-800 dark:text-slate-200">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelected(dev);
-                                      setEmployeeModal(null);
-                                    }}
-                                    className="text-emerald-600 dark:text-emerald-400 hover:underline text-left font-bold"
-                                  >
-                                    {dev.hostname || 'Sin nombre'}
-                                  </button>
-                                </td>
-                                <td className="py-2 px-3 font-mono text-zinc-500 dark:text-slate-400">{dev.ip}</td>
-                                <td className="py-2 px-3"><StatusPill status={dev.status} /></td>
-                                <td className="py-2 px-3 text-right">
-                                  <button
-                                    onClick={() => unlinkDevice(dev.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-500/10 px-2 py-0.5 rounded transition duration-200 font-bold"
-                                  >
-                                    Desvincular
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Assign existing device selector */}
-                  <div className="mt-3 relative">
-                    {!showDeviceLinkSelector ? (
-                      <button
-                        type="button"
-                        className="input text-left py-2 px-3 text-xs w-full flex justify-between items-center bg-white dark:bg-slate-900 border border-zinc-300 dark:border-slate-800 rounded-lg text-zinc-700 dark:text-slate-350 font-semibold"
-                        onClick={() => {
-                          setShowDeviceLinkSelector(true);
-                          setDeviceLinkSearch('');
-                        }}
-                      >
-                        <span>+ Vincular/Asignar Equipo disponible...</span>
-                        <span className="text-zinc-400 text-[10px]">▼</span>
-                      </button>
-                    ) : (
-                      <div className="border border-zinc-200 dark:border-slate-800 rounded-xl p-2.5 bg-zinc-50 dark:bg-slate-950/40 space-y-2">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Buscar por IP, hostname, marca..."
-                            className="input py-1 px-2 text-xs flex-1"
-                            value={deviceLinkSearch}
-                            onChange={(e) => setDeviceLinkSearch(e.target.value)}
-                            autoFocus
-                          />
-                          <button
-                            type="button"
-                            className="button secondary py-1 px-2 text-xs font-bold"
-                            onClick={() => setShowDeviceLinkSelector(false)}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                        <div className="max-h-32 overflow-y-auto divide-y divide-zinc-200/50 dark:divide-slate-800/50 text-[11px] border border-zinc-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
-                          {devices
-                            .filter(d => !d.employee_id)
-                            .filter(d => {
-                              const q = deviceLinkSearch.toLowerCase();
-                              return (
-                                (d.hostname || '').toLowerCase().includes(q) ||
-                                (d.ip || '').toLowerCase().includes(q) ||
-                                (d.brand || '').toLowerCase().includes(q) ||
-                                (d.model || '').toLowerCase().includes(q)
-                              );
-                            })
-                            .map(dev => (
-                              <button
-                                key={dev.id}
-                                type="button"
-                                className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-semibold block"
-                                onClick={() => {
-                                  linkDevice(dev.id, employeeModal.form.id);
-                                  setShowDeviceLinkSelector(false);
-                                  setDeviceLinkSearch('');
-                                }}
-                              >
-                                <span className="font-bold text-zinc-900 dark:text-white">{dev.hostname || 'Sin nombre'}</span> ({dev.ip}) - {dev.brand} {dev.model}
-                              </button>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                </div>
-
-                {/* Modal Actions */}
-                <div className="bg-zinc-50 dark:bg-slate-900/50 px-4 xs:px-6 py-3 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
-                  <button
-                    className="button secondary py-1.5 px-3 text-xs"
-                    onClick={() => setEmployeeModal(null)}
-                  >
-                    Cerrar
-                  </button>
-                  <button
-                    className="button primary py-1.5 px-3 text-xs flex items-center gap-1.5"
-                    onClick={() => setEmployeeModal({ mode: 'edit', form: employeeModal.form })}
-                  >
-                    <Users size={14} /> Editar Datos
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="px-6 py-4 border-b border-zinc-100 dark:border-slate-800 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2">
-                    <User className="text-emerald-500" size={20} />
-                    {employeeModal.mode === 'create' ? 'Agregar Nuevo Empleado' : 'Editar Información Empleado'}
-                  </h3>
-                  <button className="text-2xl text-zinc-400 hover:text-zinc-600 dark:hover:text-slate-200" onClick={() => setEmployeeModal(null)}>×</button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="label">Nombre Completo *</span>
-                    <input
-                      className="input"
-                      value={employeeModal.form.full_name || ''}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, full_name: e.target.value }
-                        })
-                      }
-                      placeholder="ej. Juan Pérez"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="label">Correo Electrónico</span>
-                    <input
-                      className="input"
-                      type="email"
-                      list="existing-emails"
-                      value={employeeModal.form.email || ''}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, email: e.target.value }
-                        })
-                      }
-                      placeholder="ej. jperez@empresa.com"
-                    />
-                  </label>
-
-                  <label className="block bg-zinc-50 dark:bg-slate-950 p-3 rounded-lg border border-dashed border-zinc-300 dark:border-slate-800 sm:col-span-2">
-                    <span className="label mb-2 flex items-center gap-1.5">
-                      <Upload size={14} className="text-emerald-500" />
-                      Foto de Perfil (Subir archivo o pegar URL)
-                    </span>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      {employeeModal.form.image_url ? (
-                        <div className="relative w-16 h-16 rounded-full overflow-hidden border border-zinc-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex-shrink-0">
-                          <img src={employeeModal.form.image_url} alt="Vista previa" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => setEmployeeModal(prev => ({ ...prev, form: { ...prev.form, image_url: '' } }))}
-                            className="absolute inset-0 bg-black/60 hover:bg-black/85 text-white flex items-center justify-center text-[10px] font-bold transition duration-150"
-                          >
-                            Quitar
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-slate-800 border border-zinc-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-500">
-                          <User size={24} />
-                        </div>
-                      )}
-                      <div className="flex-1 space-y-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="text-xs text-zinc-600 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setEmployeeModal(prev => ({
-                                ...prev,
-                                form: { ...prev.form, image_url: reader.result }
-                              }));
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                        />
-                        <input
-                          className="input text-xs py-1"
-                          placeholder="O pega una URL directa de imagen..."
-                          value={employeeModal.form.image_url || ''}
-                          onChange={(e) => setEmployeeModal(prev => ({ ...prev, form: { ...prev.form, image_url: e.target.value } }))}
-                        />
-                      </div>
-                    </div>
-                  </label>
-
-                  <label className="block">
-                    <span className="label">Departamento</span>
-                    <input
-                      className="input"
-                      list="departments-list"
-                      value={employeeModal.form.department || ''}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, department: e.target.value }
-                        })
-                      }
-                      placeholder="ej. Finanzas / TI"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="label">Ciudad</span>
-                    <input
-                      className="input"
-                      list="cities-list"
-                      value={employeeModal.form.city || ''}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, city: e.target.value }
-                        })
-                      }
-                      placeholder="ej. Santiago / Antofagasta"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="label">Teléfono</span>
-                    <input
-                      className="input"
-                      value={employeeModal.form.phone || ''}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, phone: e.target.value }
-                        })
-                      }
-                      placeholder="ej. +56912345678"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="label">Lugar de Trabajo</span>
-                    <select
-                      className="input"
-                      value={employeeModal.form.workplace || employeeModal.form.status || 'Presencial'}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, workplace: e.target.value, status: e.target.value }
-                        })
-                      }
-                    >
-                      <option value="Presencial">Presencial</option>
-                      <option value="Teletrabajo">Teletrabajo / Remoto</option>
-                      <option value="Hibrido">Híbrido</option>
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="label">Cargo (Responsabilidad)</span>
-                    <input
-                      className="input"
-                      value={employeeModal.form.job_title || ''}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, job_title: e.target.value }
-                        })
-                      }
-                      placeholder="ej. Ejecutivo de Ventas / TI"
-                    />
-                  </label>
-
-                  <label className="block sm:col-span-2">
-                    <span className="label">Sistemas Autorizados / Aplicaciones</span>
-                    <input
-                      className="input"
-                      value={employeeModal.form.authorized_systems || ''}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, authorized_systems: e.target.value }
-                        })
-                      }
-                      placeholder="ej. Milenium, CRM Ventas, ERP Contabilidad"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="label">Tipo VPN</span>
-                    <select
-                      className="input"
-                      value={employeeModal.form.vpn_type || 'Agencia'}
-                      onChange={(e) =>
-                        setEmployeeModal({
-                          ...employeeModal,
-                          form: { ...employeeModal.form, vpn_type: e.target.value }
-                        })
-                      }
-                    >
-                      <option value="Agencia">Agencia</option>
-                      <option value="RDP">RDP</option>
-                      <option value="Milenium">Milenium</option>
-                    </select>
-                  </label>
-
-                  <div className="flex flex-col gap-2 pt-5">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={employeeModal.form.vpn_active || false}
-                        onChange={(e) =>
-                          setEmployeeModal({
-                            ...employeeModal,
-                            form: { ...employeeModal.form, vpn_active: e.target.checked }
-                          })
-                        }
-                        className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
-                      />
-                      <span className="text-sm font-semibold">Tiene VPN Activa</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={employeeModal.form.active || false}
-                        onChange={(e) =>
-                          setEmployeeModal({
-                            ...employeeModal,
-                            form: { ...employeeModal.form, active: e.target.checked }
-                          })
-                        }
-                        className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
-                      />
-                      <span className="text-sm font-semibold">Empleado Activo</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800">
-                  <button
-                    className="button secondary"
-                    onClick={() => {
-                      if (employeeModal.mode === 'edit') {
-                        setEmployeeModal({ mode: 'view', form: employeeModal.form });
-                      } else {
-                        setEmployeeModal(null);
-                      }
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="button primary"
-                    onClick={() => saveEmployee(employeeModal.form)}
-                  >
-                    Guardar Cambios
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <EmployeeModalDialog
+          key={employeeModal.mode + '_' + (employeeModal.form.id || 'new')}
+          employeeModal={employeeModal}
+          setEmployeeModal={setEmployeeModal}
+          existingCities={existingCities}
+          existingDepartments={existingDepartments}
+          devices={devices}
+          employees={employees}
+          token={token}
+          useLocalApi={useLocalApi}
+          saveEmployee={saveEmployee}
+          unlinkDevice={unlinkDevice}
+          linkDevice={linkDevice}
+          setSelected={(dev) => {
+            setSelected(dev);
+            setEmployeeModal(null);
+          }}
+        />
       )}
 
       {/* Device Modal (Ficha de Equipo Inventario) */}
@@ -4383,6 +4489,11 @@ function Dashboard({ token, user, theme, setTheme }) {
           existingCities={existingCities}
           existingDepartments={existingDepartments}
           setEmployeeModal={setEmployeeModal}
+          existingCpus={existingCpus}
+          existingRams={existingRams}
+          existingStorages={existingStorages}
+          existingGpus={existingGpus}
+          existingMotherboards={existingMotherboards}
         />
       )}
 
@@ -4413,7 +4524,20 @@ function Dashboard({ token, user, theme, setTheme }) {
 }
 
 // Sub-component for DeviceModalDialog (creation/editing manually) to keep code structured
-function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice, existingCities, existingDepartments, setEmployeeModal }) {
+function DeviceModalDialog({
+  deviceModal,
+  setDeviceModal,
+  employees,
+  saveDevice,
+  existingCities = [],
+  existingDepartments = [],
+  setEmployeeModal,
+  existingCpus = [],
+  existingRams = [],
+  existingStorages = [],
+  existingGpus = [],
+  existingMotherboards = []
+}) {
   const [form, setForm] = useState(deviceModal.form);
   const [employeeSearchText, setEmployeeSearchText] = useState('');
   const [showEmployeeSearchList, setShowEmployeeSearchList] = useState(false);
@@ -4422,6 +4546,15 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
   const predefinedLocations = ['Matta', 'Diario', 'Casa'];
   const isCustomLocation = form.location && !predefinedLocations.includes(form.location);
   const [locationType, setLocationType] = useState(isCustomLocation ? 'Otro' : (form.location || 'Matta'));
+
+  // Custom states for selects + manually entered inputs
+  const [cityType, setCityType] = useState(form.city && !existingCities.includes(form.city) ? 'Otro' : (form.city || ''));
+  const [deptType, setDeptType] = useState(form.department && !existingDepartments.includes(form.department) ? 'Otro' : (form.department || ''));
+  const [cpuType, setCpuType] = useState(form.cpu && !existingCpus.includes(form.cpu) ? 'Otro' : (form.cpu || ''));
+  const [ramType, setRamType] = useState(form.ram && !existingRams.includes(form.ram) ? 'Otro' : (form.ram || ''));
+  const [storageType, setStorageType] = useState(form.storage && !existingStorages.includes(form.storage) ? 'Otro' : (form.storage || ''));
+  const [gpuType, setGpuType] = useState(form.gpu && !existingGpus.includes(form.gpu) ? 'Otro' : (form.gpu || ''));
+  const [mbType, setMbType] = useState(form.motherboard && !existingMotherboards.includes(form.motherboard) ? 'Otro' : (form.motherboard || ''));
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 overflow-hidden">
@@ -4780,12 +4913,29 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
           </label>
           <label className="block">
             <span className="label">Ciudad</span>
-            <input
+            <select
               className="input"
-              list="cities-list"
-              value={form.city || ''}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-            />
+              value={cityType}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCityType(val);
+                if (val !== 'Otro') {
+                  setForm({ ...form, city: val });
+                }
+              }}
+            >
+              <option value="">-- Seleccionar Ciudad --</option>
+              {existingCities.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="Otro">Otro (Escribir manual)...</option>
+            </select>
+            {cityType === 'Otro' && (
+              <input
+                className="input mt-2 animate-in fade-in duration-200"
+                placeholder="Escribe la ciudad..."
+                value={form.city || ''}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+              />
+            )}
           </label>
           <label className="block">
             <span className="label">Sucursal</span>
@@ -4797,12 +4947,29 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
           </label>
           <label className="block">
             <span className="label">Departamento</span>
-            <input
+            <select
               className="input"
-              list="departments-list"
-              value={form.department || ''}
-              onChange={(e) => setForm({ ...form, department: e.target.value })}
-            />
+              value={deptType}
+              onChange={(e) => {
+                const val = e.target.value;
+                setDeptType(val);
+                if (val !== 'Otro') {
+                  setForm({ ...form, department: val });
+                }
+              }}
+            >
+              <option value="">-- Seleccionar Departamento --</option>
+              {existingDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+              <option value="Otro">Otro (Escribir manual)...</option>
+            </select>
+            {deptType === 'Otro' && (
+              <input
+                className="input mt-2 animate-in fade-in duration-200"
+                placeholder="Escribe el departamento..."
+                value={form.department || ''}
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
+              />
+            )}
           </label>
           <label className="block">
             <span className="label">Estado Activo</span>
@@ -4842,53 +5009,133 @@ function DeviceModalDialog({ deviceModal, setDeviceModal, employees, saveDevice,
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="label">CPU (Procesador)</span>
-                <input
+                <select
                   className="input"
-                  list="cpus-list"
-                  value={form.cpu || ''}
-                  onChange={(e) => setForm({ ...form, cpu: e.target.value })}
-                  placeholder="ej. Intel Core i5-12400"
-                />
+                  value={cpuType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCpuType(val);
+                    if (val !== 'Otro') {
+                      setForm({ ...form, cpu: val });
+                    }
+                  }}
+                >
+                  <option value="">-- Seleccionar CPU --</option>
+                  {existingCpus.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="Otro">Otro (Escribir manual)...</option>
+                </select>
+                {cpuType === 'Otro' && (
+                  <input
+                    className="input mt-2 animate-in fade-in duration-200"
+                    placeholder="ej. Intel Core i5-12400"
+                    value={form.cpu || ''}
+                    onChange={(e) => setForm({ ...form, cpu: e.target.value })}
+                  />
+                )}
               </label>
               <label className="block">
                 <span className="label">Memoria RAM</span>
-                <input
+                <select
                   className="input"
-                  list="rams-list"
-                  value={form.ram || ''}
-                  onChange={(e) => setForm({ ...form, ram: e.target.value })}
-                  placeholder="ej. 16GB DDR4"
-                />
+                  value={ramType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRamType(val);
+                    if (val !== 'Otro') {
+                      setForm({ ...form, ram: val });
+                    }
+                  }}
+                >
+                  <option value="">-- Seleccionar RAM --</option>
+                  {existingRams.map(r => <option key={r} value={r}>{r}</option>)}
+                  <option value="Otro">Otro (Escribir manual)...</option>
+                </select>
+                {ramType === 'Otro' && (
+                  <input
+                    className="input mt-2 animate-in fade-in duration-200"
+                    placeholder="ej. 16GB DDR4"
+                    value={form.ram || ''}
+                    onChange={(e) => setForm({ ...form, ram: e.target.value })}
+                  />
+                )}
               </label>
               <label className="block">
                 <span className="label">Almacenamiento (Disco)</span>
-                <input
+                <select
                   className="input"
-                  list="storages-list"
-                  value={form.storage || ''}
-                  onChange={(e) => setForm({ ...form, storage: e.target.value })}
-                  placeholder="ej. 512GB SSD NVMe"
-                />
+                  value={storageType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStorageType(val);
+                    if (val !== 'Otro') {
+                      setForm({ ...form, storage: val });
+                    }
+                  }}
+                >
+                  <option value="">-- Seleccionar Almacenamiento --</option>
+                  {existingStorages.map(s => <option key={s} value={s}>{s}</option>)}
+                  <option value="Otro">Otro (Escribir manual)...</option>
+                </select>
+                {storageType === 'Otro' && (
+                  <input
+                    className="input mt-2 animate-in fade-in duration-200"
+                    placeholder="ej. 512GB SSD NVMe"
+                    value={form.storage || ''}
+                    onChange={(e) => setForm({ ...form, storage: e.target.value })}
+                  />
+                )}
               </label>
               <label className="block">
                 <span className="label">Tarjeta de Video (GPU)</span>
-                <input
+                <select
                   className="input"
-                  list="gpus-list"
-                  value={form.gpu || ''}
-                  onChange={(e) => setForm({ ...form, gpu: e.target.value })}
-                  placeholder="ej. NVIDIA GTX 1650"
-                />
+                  value={gpuType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setGpuType(val);
+                    if (val !== 'Otro') {
+                      setForm({ ...form, gpu: val });
+                    }
+                  }}
+                >
+                  <option value="">-- Seleccionar GPU --</option>
+                  {existingGpus.map(g => <option key={g} value={g}>{g}</option>)}
+                  <option value="Otro">Otro (Escribir manual)...</option>
+                </select>
+                {gpuType === 'Otro' && (
+                  <input
+                    className="input mt-2 animate-in fade-in duration-200"
+                    placeholder="ej. NVIDIA GTX 1650"
+                    value={form.gpu || ''}
+                    onChange={(e) => setForm({ ...form, gpu: e.target.value })}
+                  />
+                )}
               </label>
               <label className="block sm:col-span-2">
                 <span className="label">Placa Madre (Motherboard)</span>
-                <input
+                <select
                   className="input"
-                  list="motherboards-list"
-                  value={form.motherboard || ''}
-                  onChange={(e) => setForm({ ...form, motherboard: e.target.value })}
-                  placeholder="ej. Gigabyte H610M"
-                />
+                  value={mbType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setMbType(val);
+                    if (val !== 'Otro') {
+                      setForm({ ...form, motherboard: val });
+                    }
+                  }}
+                >
+                  <option value="">-- Seleccionar Motherboard --</option>
+                  {existingMotherboards.map(m => <option key={m} value={m}>{m}</option>)}
+                  <option value="Otro">Otro (Escribir manual)...</option>
+                </select>
+                {mbType === 'Otro' && (
+                  <input
+                    className="input mt-2 animate-in fade-in duration-200"
+                    placeholder="ej. Gigabyte H610M"
+                    value={form.motherboard || ''}
+                    onChange={(e) => setForm({ ...form, motherboard: e.target.value })}
+                  />
+                )}
               </label>
             </div>
           </div>
@@ -5098,9 +5345,37 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
   );
 }
 
-function DeviceDrawer({ device, employees, infrastructure = [], token, user, onClose, onSaved, onConnectRdp, existingCities, existingDepartments, useLocalApi, setEmployeeModal, setFirebaseQuotaExceeded }) {
+function DeviceDrawer({
+  device,
+  employees,
+  infrastructure = [],
+  token,
+  user,
+  onClose,
+  onSaved,
+  onConnectRdp,
+  existingCities = [],
+  existingDepartments = [],
+  useLocalApi,
+  setEmployeeModal,
+  setFirebaseQuotaExceeded,
+  existingCpus = [],
+  existingRams = [],
+  existingStorages = [],
+  existingGpus = [],
+  existingMotherboards = []
+}) {
   const [form, setForm] = useState(device);
   const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
+
+  // Custom states for selects + manually entered inputs
+  const [cityType, setCityType] = useState(form.city && !existingCities.includes(form.city) ? 'Otro' : (form.city || ''));
+  const [deptType, setDeptType] = useState(form.department && !existingDepartments.includes(form.department) ? 'Otro' : (form.department || ''));
+  const [cpuType, setCpuType] = useState(form.cpu && !existingCpus.includes(form.cpu) ? 'Otro' : (form.cpu || ''));
+  const [ramType, setRamType] = useState(form.ram && !existingRams.includes(form.ram) ? 'Otro' : (form.ram || ''));
+  const [storageType, setStorageType] = useState(form.storage && !existingStorages.includes(form.storage) ? 'Otro' : (form.storage || ''));
+  const [gpuType, setGpuType] = useState(form.gpu && !existingGpus.includes(form.gpu) ? 'Otro' : (form.gpu || ''));
+  const [mbType, setMbType] = useState(form.motherboard && !existingMotherboards.includes(form.motherboard) ? 'Otro' : (form.motherboard || ''));
 
   async function save() {
     try {
@@ -5416,11 +5691,55 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
             </label>
             <label className="block">
               <span className="label">Departamento</span>
-              <input className="input" list="departments-list" value={form.department || ''} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+              <select
+                className="input"
+                value={deptType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDeptType(val);
+                  if (val !== 'Otro') {
+                    setForm({ ...form, department: val });
+                  }
+                }}
+              >
+                <option value="">-- Seleccionar Departamento --</option>
+                {existingDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                <option value="Otro">Otro (Escribir manual)...</option>
+              </select>
+              {deptType === 'Otro' && (
+                <input
+                  className="input mt-2 animate-in fade-in duration-200"
+                  placeholder="Escribe el departamento..."
+                  value={form.department || ''}
+                  onChange={(e) => setForm({ ...form, department: e.target.value })}
+                />
+              )}
             </label>
             <label className="block">
               <span className="label">Ciudad</span>
-              <input className="input" list="cities-list" value={form.city || ''} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+              <select
+                className="input"
+                value={cityType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCityType(val);
+                  if (val !== 'Otro') {
+                    setForm({ ...form, city: val });
+                  }
+                }}
+              >
+                <option value="">-- Seleccionar Ciudad --</option>
+                {existingCities.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="Otro">Otro (Escribir manual)...</option>
+              </select>
+              {cityType === 'Otro' && (
+                <input
+                  className="input mt-2 animate-in fade-in duration-200"
+                  placeholder="Escribe la ciudad..."
+                  value={form.city || ''}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                />
+              )}
             </label>
             <label className="block">
               <span className="label">Sucursal</span>
@@ -5534,23 +5853,133 @@ function DeviceDrawer({ device, employees, infrastructure = [], token, user, onC
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="label">Procesador (CPU)</span>
-              <input className="input" list="cpus-list" value={form.cpu || ''} onChange={(e) => setForm({ ...form, cpu: e.target.value })} placeholder="ej. Intel i7-13700 / Ryzen 7 7700" />
+              <select
+                className="input"
+                value={cpuType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCpuType(val);
+                  if (val !== 'Otro') {
+                    setForm({ ...form, cpu: val });
+                  }
+                }}
+              >
+                <option value="">-- Seleccionar CPU --</option>
+                {existingCpus.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="Otro">Otro (Escribir manual)...</option>
+              </select>
+              {cpuType === 'Otro' && (
+                <input
+                  className="input mt-2 animate-in fade-in duration-200"
+                  placeholder="ej. Intel i7-13700 / Ryzen 7 7700"
+                  value={form.cpu || ''}
+                  onChange={(e) => setForm({ ...form, cpu: e.target.value })}
+                />
+              )}
             </label>
             <label className="block">
               <span className="label">Memoria RAM</span>
-              <input className="input" list="rams-list" value={form.ram || ''} onChange={(e) => setForm({ ...form, ram: e.target.value })} placeholder="ej. 16GB DDR5 4800MHz" />
+              <select
+                className="input"
+                value={ramType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRamType(val);
+                  if (val !== 'Otro') {
+                    setForm({ ...form, ram: val });
+                  }
+                }}
+              >
+                <option value="">-- Seleccionar RAM --</option>
+                {existingRams.map(r => <option key={r} value={r}>{r}</option>)}
+                <option value="Otro">Otro (Escribir manual)...</option>
+              </select>
+              {ramType === 'Otro' && (
+                <input
+                  className="input mt-2 animate-in fade-in duration-200"
+                  placeholder="ej. 16GB DDR5 4800MHz"
+                  value={form.ram || ''}
+                  onChange={(e) => setForm({ ...form, ram: e.target.value })}
+                />
+              )}
             </label>
             <label className="block">
               <span className="label">Almacenamiento</span>
-              <input className="input" list="storages-list" value={form.storage || ''} onChange={(e) => setForm({ ...form, storage: e.target.value })} placeholder="ej. 1TB NVMe SSD" />
+              <select
+                className="input"
+                value={storageType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setStorageType(val);
+                  if (val !== 'Otro') {
+                    setForm({ ...form, storage: val });
+                  }
+                }}
+              >
+                <option value="">-- Seleccionar Almacenamiento --</option>
+                {existingStorages.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="Otro">Otro (Escribir manual)...</option>
+              </select>
+              {storageType === 'Otro' && (
+                <input
+                  className="input mt-2 animate-in fade-in duration-200"
+                  placeholder="ej. 1TB NVMe SSD"
+                  value={form.storage || ''}
+                  onChange={(e) => setForm({ ...form, storage: e.target.value })}
+                />
+              )}
             </label>
             <label className="block">
               <span className="label">Tarjeta de Video (GPU)</span>
-              <input className="input" list="gpus-list" value={form.gpu || ''} onChange={(e) => setForm({ ...form, gpu: e.target.value })} placeholder="ej. NVIDIA RTX 4060 / Intel Iris Xe" />
+              <select
+                className="input"
+                value={gpuType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGpuType(val);
+                  if (val !== 'Otro') {
+                    setForm({ ...form, gpu: val });
+                  }
+                }}
+              >
+                <option value="">-- Seleccionar GPU --</option>
+                {existingGpus.map(g => <option key={g} value={g}>{g}</option>)}
+                <option value="Otro">Otro (Escribir manual)...</option>
+              </select>
+              {gpuType === 'Otro' && (
+                <input
+                  className="input mt-2 animate-in fade-in duration-200"
+                  placeholder="ej. NVIDIA RTX 4060 / Intel Iris Xe"
+                  value={form.gpu || ''}
+                  onChange={(e) => setForm({ ...form, gpu: e.target.value })}
+                />
+              )}
             </label>
             <label className="block sm:col-span-2">
               <span className="label">Placa Madre (Motherboard)</span>
-              <input className="input" list="motherboards-list" value={form.motherboard || ''} onChange={(e) => setForm({ ...form, motherboard: e.target.value })} placeholder="ej. ASUS Prime B760M-A" />
+              <select
+                className="input"
+                value={mbType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setMbType(val);
+                  if (val !== 'Otro') {
+                    setForm({ ...form, motherboard: val });
+                  }
+                }}
+              >
+                <option value="">-- Seleccionar Motherboard --</option>
+                {existingMotherboards.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="Otro">Otro (Escribir manual)...</option>
+              </select>
+              {mbType === 'Otro' && (
+                <input
+                  className="input mt-2 animate-in fade-in duration-200"
+                  placeholder="ej. ASUS Prime B760M-A"
+                  value={form.motherboard || ''}
+                  onChange={(e) => setForm({ ...form, motherboard: e.target.value })}
+                />
+              )}
             </label>
           </div>
         </div>
@@ -5979,6 +6408,7 @@ function SwitchPortMapModal({
   activeSwitch,
   onClose,
   devices,
+  infrastructure = [],
   token,
   user,
   useLocalApi,
@@ -5988,41 +6418,102 @@ function SwitchPortMapModal({
   const [selectedPort, setSelectedPort] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDeviceToAssign, setSelectedDeviceToAssign] = useState(null);
+  const [selectedTargetPort, setSelectedTargetPort] = useState(1);
   const isAdmin = user?.role === 'Super Administrador' || user?.role === 'Administrador';
+
+  // Reactively fetch the freshest state of activeSwitch from the parent infrastructure list
+  const currentActiveSwitch = useMemo(() => {
+    return infrastructure.find(i => i.id === activeSwitch.id) || activeSwitch;
+  }, [infrastructure, activeSwitch]);
 
   useEffect(() => {
     setSelectedDeviceToAssign(null);
   }, [selectedPort]);
 
-  // Find all devices connected to this switch
-  const connectedDevices = useMemo(() => {
-    return devices.filter(d => d.switch_id === activeSwitch.id);
-  }, [devices, activeSwitch.id]);
+  useEffect(() => {
+    if (selectedDeviceToAssign && selectedDeviceToAssign.isInfra) {
+      setSelectedTargetPort(1);
+    }
+  }, [selectedDeviceToAssign]);
 
-  // Map of port number -> device (always use integer keys to avoid string/number mismatch)
+  const destCount = selectedDeviceToAssign && selectedDeviceToAssign.isInfra
+    ? (selectedDeviceToAssign.type === 'Fortinet' ? 11 : (selectedDeviceToAssign.ports_count || 24))
+    : 0;
+
+  const targetPorts = useMemo(() => {
+    if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return [];
+    const isDestFortinet = selectedDeviceToAssign.type === 'Fortinet';
+    const destFortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+    const list = [];
+    for (let p = 1; p <= destCount; p++) {
+      const label = isDestFortinet ? destFortinetLabels[p - 1] : `Boca #${p}`;
+      list.push({ value: p, label });
+    }
+    return list;
+  }, [selectedDeviceToAssign, destCount]);
+
+  // Find all connected elements (devices + other infrastructure cascaded here)
+  const connectedElements = useMemo(() => {
+    // 1. Devices connected to this switch
+    const devs = devices.filter(d => d.switch_id === currentActiveSwitch.id)
+      .map(d => ({ ...d, isDevice: true, displayPort: parseInt(d.switch_port, 10) }));
+
+    // 2. Child switches connected to this switch (they point to currentActiveSwitch)
+    const childInfras = infrastructure.filter(i => i.switch_id === currentActiveSwitch.id)
+      .map(i => ({ ...i, isInfra: true, isChild: true, displayPort: parseInt(i.switch_port, 10) }));
+
+    // 3. Parent switch that this currentActiveSwitch is connected to (currentActiveSwitch points to it)
+    const parentInfras = [];
+    if (currentActiveSwitch.switch_id) {
+      const parent = infrastructure.find(i => i.id === currentActiveSwitch.switch_id);
+      if (parent) {
+        parentInfras.push({
+          ...parent,
+          isInfra: true,
+          isParent: true,
+          displayPort: parseInt(currentActiveSwitch.local_port, 10) || 1
+        });
+      }
+    }
+
+    return [...devs, ...childInfras, ...parentInfras];
+  }, [devices, infrastructure, currentActiveSwitch.id, currentActiveSwitch.switch_id, currentActiveSwitch.local_port]);
+
+  // Map of port number -> connected element (always use integer keys)
   const portDeviceMap = useMemo(() => {
     const map = {};
-    for (const d of connectedDevices) {
-      const portNum = parseInt(d.switch_port, 10);
-      if (!isNaN(portNum) && portNum > 0) {
-        // Last-write-wins: if duplicate, prefer online device
-        if (!map[portNum] || d.status === 'online') {
-          map[portNum] = d;
+    for (const elem of connectedElements) {
+      const p = elem.displayPort;
+      if (p && p > 0) {
+        // Last-write-wins: prefer online or infra elements
+        if (!map[p] || elem.status === 'online' || elem.isInfra) {
+          map[p] = elem;
         }
       }
     }
     return map;
-  }, [connectedDevices]);
+  }, [connectedElements]);
 
+  const isFortinet = currentActiveSwitch.type === 'Fortinet';
+  const fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+  const fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
+  
   // Total ports count
-  const portsCount = activeSwitch.ports_count || 24;
+  const portsCount = isFortinet ? 11 : (currentActiveSwitch.ports_count || 24);
 
-  // Search filtered devices that are eligible for binding
+  // Search filtered devices and infrastructure that are eligible for binding (restricted to the switch's city)
   const eligibleDevices = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
-    return devices.filter(d => {
-      if (d.switch_id === activeSwitch.id && d.switch_port === selectedPort) return false;
+    const switchCity = currentActiveSwitch.city || 'Antofagasta';
+
+    // Search devices in the same city or without a specific city assigned
+    const devs = devices.filter(d => {
+      const devCity = d.city || '';
+      const isDefaultCity = !devCity || devCity.trim().toLowerCase() === 'sin ciudad' || devCity === 'Antofagasta';
+      const matchCity = isDefaultCity || devCity.toLowerCase() === switchCity.toLowerCase();
+      if (!matchCity) return false;
+      if (d.switch_id === currentActiveSwitch.id && parseInt(d.switch_port, 10) === selectedPort) return false;
       
       const hostname = (d.hostname || '').toLowerCase();
       const ip = (d.ip || '').toLowerCase();
@@ -6030,45 +6521,120 @@ function SwitchPortMapModal({
       const location = (d.location || '').toLowerCase();
       
       return hostname.includes(query) || ip.includes(query) || responsible.includes(query) || location.includes(query);
-    });
-  }, [devices, searchQuery, activeSwitch.id, selectedPort]);
+    }).map(d => ({ ...d, isDevice: true, displayName: d.hostname || d.ip || 'Dispositivo' }));
 
-  async function assignDeviceToPort(deviceId) {
+    // Search infrastructure in the same city (excluding currentActiveSwitch itself to avoid circular loops)
+    const infras = infrastructure.filter(i => {
+      if ((i.city || 'Antofagasta') !== switchCity) return false;
+      if (i.id === currentActiveSwitch.id) return false;
+      if (i.switch_id === currentActiveSwitch.id && parseInt(i.switch_port, 10) === selectedPort) return false;
+      
+      const brand = (i.brand || '').toLowerCase();
+      const model = (i.model || '').toLowerCase();
+      const type = (i.type || '').toLowerCase();
+      const ip = (i.ip || '').toLowerCase();
+      const location = (i.location || '').toLowerCase();
+      
+      return brand.includes(query) || model.includes(query) || type.includes(query) || ip.includes(query) || location.includes(query);
+    }).map(i => ({ ...i, isInfra: true, displayName: `${i.type}: ${i.brand} ${i.model}` }));
+
+    return [...devs, ...infras];
+  }, [devices, infrastructure, searchQuery, currentActiveSwitch.id, selectedPort, currentActiveSwitch.city]);
+
+  async function assignDeviceToPort(item, targetPort = null) {
     if (!selectedPort) return;
     try {
-      if (useLocalApi) {
-        const res = await fetch(`${API_URL}/api/devices/${deviceId}`, {
-          method: 'PATCH',
-          headers: {
-            authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            switch_id: activeSwitch.id,
-            switch_port: selectedPort
-          })
-        });
-        if (!res.ok) throw new Error('Error al actualizar el puerto en la API local.');
-      } else {
-        // Desconectar al ocupante anterior del mismo puerto
-        const previousOccupant = devices.find(d => d.switch_id === activeSwitch.id && parseInt(d.switch_port, 10) === selectedPort);
-        if (previousOccupant && previousOccupant.id !== deviceId) {
-          await setDoc(doc(db, 'devices', previousOccupant.id), {
-            ...previousOccupant,
-            switch_id: null,
-            switch_port: null
+      const isDev = item.isDevice;
+
+      if (isDev) {
+        if (useLocalApi) {
+          const res = await fetch(`${API_URL}/api/devices/${item.id}`, {
+            method: 'PATCH',
+            headers: {
+              authorization: `Bearer ${token}`,
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+              switch_id: currentActiveSwitch.id,
+              switch_port: selectedPort,
+              city: currentActiveSwitch.city || 'Antofagasta'
+            })
+          });
+          if (!res.ok) throw new Error('Error al actualizar el puerto en la API local.');
+        } else {
+          // Desconectar al ocupante anterior de dispositivos en ese puerto
+          const previousDeviceOccupant = devices.find(d => d.switch_id === currentActiveSwitch.id && parseInt(d.switch_port, 10) === selectedPort);
+          if (previousDeviceOccupant && previousDeviceOccupant.id !== item.id) {
+            await setDoc(doc(db, 'devices', previousDeviceOccupant.id), {
+              ...previousDeviceOccupant,
+              switch_id: null,
+              switch_port: null
+            });
+          }
+          
+          // Desconectar al ocupante anterior de infraestructura en ese puerto
+          const previousInfraOccupant = infrastructure.find(i => i.switch_id === currentActiveSwitch.id && parseInt(i.switch_port, 10) === selectedPort);
+          if (previousInfraOccupant && previousInfraOccupant.id !== item.id) {
+            await setDoc(doc(db, 'infrastructure', previousInfraOccupant.id), {
+              ...previousInfraOccupant,
+              switch_id: null,
+              switch_port: null,
+              local_port: null
+            });
+          }
+
+          // Guardar nueva asociación en Firebase
+          await setDoc(doc(db, 'devices', item.id), {
+            ...item,
+            switch_id: currentActiveSwitch.id,
+            switch_port: selectedPort,
+            city: currentActiveSwitch.city || 'Antofagasta'
           });
         }
-        // Si el dispositivo ya estaba en otro switch/puerto, limpiarlo primero
-        const deviceToUpdate = devices.find(d => d.id === deviceId);
-        if (deviceToUpdate && deviceToUpdate.switch_id && deviceToUpdate.switch_id !== activeSwitch.id) {
-          // No hace falta limpiar el anterior explícitamente, setDoc lo sobreescribe
+      } else {
+        // Es conexión cascada (infraestructura a infraestructura)
+        // Usar jerarquía para decidir qué registro actualiza switch_id
+        const rank = (s) => {
+          if (s.type === 'Fortinet') return 3;
+          if (s.type === 'Switch') return 2;
+          return 1; // Modem
+        };
+        const activeRank = rank(currentActiveSwitch);
+        const itemRank = rank(item);
+
+        let targetId, updateBody;
+        if (activeRank <= itemRank) {
+          targetId = currentActiveSwitch.id;
+          updateBody = {
+            switch_id: item.id,
+            switch_port: targetPort || 1,
+            local_port: selectedPort
+          };
+        } else {
+          targetId = item.id;
+          updateBody = {
+            switch_id: currentActiveSwitch.id,
+            switch_port: selectedPort,
+            local_port: targetPort || 1
+          };
         }
-        if (deviceToUpdate) {
-          await setDoc(doc(db, 'devices', deviceId), {
-            ...deviceToUpdate,
-            switch_id: activeSwitch.id,
-            switch_port: selectedPort
+
+        if (useLocalApi) {
+          const res = await fetch(`${API_URL}/api/infrastructure/${targetId}`, {
+            method: 'PATCH',
+            headers: {
+              authorization: `Bearer ${token}`,
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify(updateBody)
+          });
+          if (!res.ok) throw new Error('Error al actualizar el puerto en la API local.');
+        } else {
+          // Firebase fallback para infra
+          const targetItem = targetId === currentActiveSwitch.id ? currentActiveSwitch : item;
+          await setDoc(doc(db, 'infrastructure', targetId), {
+            ...targetItem,
+            ...updateBody
           });
         }
       }
@@ -6080,10 +6646,16 @@ function SwitchPortMapModal({
     }
   }
 
-  async function unbindDevice(deviceId) {
+  async function unbindDevice(item) {
     try {
+      const isDev = item.isDevice;
+      const isParent = item.isParent;
+      const endpoint = isDev ? 'devices' : 'infrastructure';
+      const targetId = isParent ? currentActiveSwitch.id : item.id;
+      const targetEndpoint = isParent ? 'infrastructure' : endpoint;
+
       if (useLocalApi) {
-        const res = await fetch(`${API_URL}/api/devices/${deviceId}`, {
+        const res = await fetch(`${API_URL}/api/${targetEndpoint}/${targetId}`, {
           method: 'PATCH',
           headers: {
             authorization: `Bearer ${token}`,
@@ -6091,17 +6663,31 @@ function SwitchPortMapModal({
           },
           body: JSON.stringify({
             switch_id: null,
-            switch_port: null
+            switch_port: null,
+            local_port: null
           })
         });
         if (!res.ok) throw new Error('Error al remover el puerto en la API local.');
       } else {
-        const dev = devices.find(d => d.id === deviceId);
-        if (dev) {
-          await setDoc(doc(db, 'devices', deviceId), {
-            ...dev,
+        if (isParent) {
+          await setDoc(doc(db, 'infrastructure', currentActiveSwitch.id), {
+            ...currentActiveSwitch,
+            switch_id: null,
+            switch_port: null,
+            local_port: null
+          });
+        } else if (isDev) {
+          await setDoc(doc(db, 'devices', item.id), {
+            ...item,
             switch_id: null,
             switch_port: null
+          });
+        } else {
+          await setDoc(doc(db, 'infrastructure', item.id), {
+            ...item,
+            switch_id: null,
+            switch_port: null,
+            local_port: null
           });
         }
       }
@@ -6129,7 +6715,7 @@ function SwitchPortMapModal({
               Mapa de Puertos: {activeSwitch.brand} {activeSwitch.model}
             </h3>
             <p className="text-xs text-zinc-500 dark:text-slate-400 mt-0.5">
-              Ubicación: <strong>{activeSwitch.location}</strong> · N° Serie: <strong>{activeSwitch.serial_number || '—'}</strong> · Capacidad: <strong>{portsCount} puertos</strong>
+              Ubicación: <strong>{activeSwitch.location}</strong> · N° Serie: <strong>{activeSwitch.serial_number || '—'}</strong> · Capacidad: <strong>{isFortinet ? '11 interfaces' : `${portsCount} puertos`}</strong>
             </p>
           </div>
           <button className="text-2xl text-zinc-400 hover:text-zinc-650 dark:hover:text-slate-200 font-bold" onClick={onClose}>×</button>
@@ -6142,7 +6728,9 @@ function SwitchPortMapModal({
           <div className="flex-1 p-6 overflow-y-auto bg-zinc-100 dark:bg-slate-950/40 border-b md:border-b-0 md:border-r border-zinc-250 dark:border-slate-800 flex flex-col gap-6 justify-between flex-shrink-0 md:flex-shrink">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold uppercase text-zinc-450 dark:text-slate-500 tracking-wider">VISTA FRONTAL DEL SWITCH</span>
+                <span className="text-xs font-bold uppercase text-zinc-450 dark:text-slate-500 tracking-wider">
+                  {isFortinet ? 'VISTA POSTERIOR DEL FIREWALL' : 'VISTA FRONTAL DEL SWITCH'}
+                </span>
                 <div className="flex items-center gap-4 text-xs font-semibold">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"></span> Ocupado</span>
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border border-dashed border-zinc-400 dark:border-slate-600"></span> Libre</span>
@@ -6152,7 +6740,7 @@ function SwitchPortMapModal({
               {/* The "Switch Bezel" */}
               <div className="bg-zinc-800 dark:bg-slate-900 border-4 border-zinc-700 dark:border-slate-850 p-4 rounded-xl shadow-inner max-w-4xl mx-auto">
                 <div className="flex justify-between items-center text-[10px] text-zinc-400 font-mono mb-3">
-                  <span>{activeSwitch.brand.toUpperCase()} NETWORKING SYSTEM</span>
+                  <span>{activeSwitch.brand.toUpperCase()} {isFortinet ? 'FIREWALL NETWORKING' : 'NETWORKING SYSTEM'}</span>
                   <span className="flex items-center gap-1">
                     SYS OK <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   </span>
@@ -6163,10 +6751,14 @@ function SwitchPortMapModal({
                     const portNum = i + 1;
                     const dev = portDeviceMap[portNum];
                     const isSelected = selectedPort === portNum;
+                    const label = isFortinet ? fortinetShort[i] : portNum;
+                    const fullName = isFortinet ? fortinetLabels[i] : `Puerto ${portNum}`;
+                    const labelFontSize = isFortinet && label.length > 2 ? 'text-[7.5px]' : 'text-[10px]';
                     return (
                       <div
                         key={portNum}
                         onClick={() => setSelectedPort(portNum)}
+                        title={fullName}
                         className={`relative aspect-square rounded border-2 flex flex-col items-center justify-center transition-all duration-150 ${
                           dev
                             ? 'border-emerald-500 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
@@ -6177,7 +6769,7 @@ function SwitchPortMapModal({
                             : 'hover:border-zinc-500 dark:hover:border-slate-600 hover:scale-105'
                         } cursor-pointer`}
                       >
-                        <span className="text-[10px] font-bold font-mono leading-none mb-1 text-zinc-450 dark:text-slate-500">{portNum}</span>
+                        <span className={`font-bold font-mono leading-none mb-1 text-zinc-450 dark:text-slate-500 ${labelFontSize}`}>{label}</span>
                         {dev ? (
                           <>
                             <Cable size={14} className="text-emerald-500" />
@@ -6196,7 +6788,7 @@ function SwitchPortMapModal({
             <div className="grid grid-cols-3 gap-4 border-t border-zinc-200 dark:border-slate-800 pt-4 text-center">
               <div>
                 <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-slate-500 block">Capacidad</span>
-                <span className="text-lg font-extrabold">{portsCount} bocas</span>
+                <span className="text-lg font-extrabold">{isFortinet ? '11 interfaces' : `${portsCount} bocas`}</span>
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-slate-500 block">Ocupados</span>
@@ -6217,7 +6809,9 @@ function SwitchPortMapModal({
                   <div className="bg-zinc-50 dark:bg-slate-950/40 p-4 rounded-xl border border-zinc-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-zinc-455 dark:text-slate-500">Puerto seleccionado</span>
-                      <h4 className="text-xl font-black text-zinc-900 dark:text-white">BOCA #{selectedPort}</h4>
+                      <h4 className="text-xl font-black text-zinc-900 dark:text-white">
+                        {isFortinet ? `INTERFAZ ${fortinetLabels[selectedPort - 1]}` : `BOCA #${selectedPort}`}
+                      </h4>
                     </div>
                     <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${
                       selectedDevice
@@ -6233,51 +6827,97 @@ function SwitchPortMapModal({
                       <div className="rounded-xl border border-zinc-250 dark:border-slate-800 p-4 space-y-3.5 bg-zinc-50/50 dark:bg-slate-950/20">
                         <div className="flex items-start gap-3">
                           <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500">
-                            <Laptop size={20} />
+                            {selectedDevice.isInfra ? <Server size={20} /> : <Laptop size={20} />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h5 className="font-extrabold text-sm text-zinc-950 dark:text-white truncate">
-                              {selectedDevice.hostname || 'Sin Hostname'}
+                              {selectedDevice.isInfra ? `${selectedDevice.brand} ${selectedDevice.model}` : (selectedDevice.hostname || 'Sin Hostname')}
                             </h5>
-                            <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">{selectedDevice.ip}</p>
+                            <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">{selectedDevice.ip || 'Sin IP'}</p>
                           </div>
                         </div>
 
                         <div className="border-t border-zinc-200 dark:border-slate-850 pt-3 space-y-2.5 text-xs">
-                          {selectedDevice.responsible_user && (
-                            <p className="flex justify-between">
-                              <span className="text-zinc-455 dark:text-slate-550">Responsable:</span>
-                              <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.responsible_user}</span>
-                            </p>
+                          {selectedDevice.isInfra ? (
+                            <>
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">Tipo:</span>
+                                <span className="font-bold text-zinc-800 dark:text-slate-200 capitalize">{selectedDevice.type}</span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">Enlace de Red:</span>
+                                <span className="font-bold text-zinc-900 dark:text-cyan-400 bg-cyan-500/5 px-2 py-0.5 rounded border border-cyan-500/10">
+                                  {selectedDevice.isParent
+                                    ? (selectedDevice.type === 'Fortinet'
+                                      ? `Va a Interfaz ${['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'][activeSwitch.switch_port - 1] || activeSwitch.switch_port} de este ${selectedDevice.type}`
+                                      : `Va a Boca #${activeSwitch.switch_port} de este ${selectedDevice.type}`)
+                                    : `Viene de Boca #${selectedDevice.local_port} de este ${selectedDevice.type}`
+                                  }
+                                </span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">N° Serie:</span>
+                                <span className="font-mono font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.serial_number || '—'}</span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">Dirección MAC:</span>
+                                <span className="font-mono text-zinc-800 dark:text-slate-200">{selectedDevice.mac || '—'}</span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">Observación:</span>
+                                <span className="font-bold text-zinc-850 dark:text-amber-300 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10 max-w-[200px] truncate" title={selectedDevice.notes}>
+                                  {selectedDevice.notes || '—'}
+                                </span>
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              {selectedDevice.responsible_user && (
+                                <p className="flex justify-between">
+                                  <span className="text-zinc-455 dark:text-slate-550">Responsable:</span>
+                                  <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.responsible_user}</span>
+                                </p>
+                              )}
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">Ubicación física:</span>
+                                <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.location || '—'}</span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">Sistema Operativo:</span>
+                                <span className="font-mono text-zinc-800 dark:text-slate-200 truncate max-w-[180px]" title={selectedDevice.os}>
+                                  {selectedDevice.os || '—'}
+                                </span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-zinc-455 dark:text-slate-550">Observación:</span>
+                                <span className="font-bold text-zinc-800 dark:text-slate-200 max-w-[200px] truncate" title={selectedDevice.notes}>
+                                  {selectedDevice.notes || '—'}
+                                </span>
+                              </p>
+                            </>
                           )}
-                          <p className="flex justify-between">
-                            <span className="text-zinc-455 dark:text-slate-550">Ubicación física:</span>
-                            <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedDevice.location || '—'}</span>
-                          </p>
-                          <p className="flex justify-between">
-                            <span className="text-zinc-455 dark:text-slate-550">Sistema Operativo:</span>
-                            <span className="font-mono text-zinc-800 dark:text-slate-200 truncate max-w-[180px]" title={selectedDevice.os}>
-                              {selectedDevice.os || '—'}
-                            </span>
-                          </p>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-2 pt-2">
-                        <button
-                          onClick={() => {
-                            onOpenDeviceDrawer(selectedDevice);
-                            onClose();
-                          }}
-                          className="button secondary py-2.5 text-xs font-bold w-full justify-center"
-                        >
-                          Ver Ficha Completa
-                        </button>
+                        {!selectedDevice.isInfra && (
+                          <button
+                            onClick={() => {
+                              onOpenDeviceDrawer(selectedDevice);
+                              onClose();
+                            }}
+                            className="button secondary py-2.5 text-xs font-bold w-full justify-center"
+                          >
+                            Ver Ficha Completa
+                          </button>
+                        )}
                         {isAdmin && (
                           <button
                             onClick={() => {
-                              if (confirm(`¿Desconectar el equipo ${selectedDevice.hostname || selectedDevice.ip} de la Boca #${selectedPort}?`)) {
-                                unbindDevice(selectedDevice.id);
+                              const displayName = selectedDevice.isInfra ? `${selectedDevice.type} ${selectedDevice.brand} ${selectedDevice.model}` : (selectedDevice.hostname || selectedDevice.ip);
+                              const lblBoca = isFortinet ? fortinetLabels[selectedPort - 1] : `Boca #${selectedPort}`;
+                              if (confirm(`¿Desconectar el elemento "${displayName}" de la ${lblBoca}?`)) {
+                                unbindDevice(selectedDevice);
                               }
                             }}
                             className="button py-2.5 text-xs font-bold text-red-500 border-red-200 dark:border-red-950/40 hover:border-red-500 hover:bg-red-500/5 justify-center w-full"
@@ -6294,18 +6934,36 @@ function SwitchPortMapModal({
                           <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/25 rounded-xl p-4 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
                             <div>
                               <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block tracking-wider mb-1">Confirmar Asociación</span>
-                              <h5 className="font-extrabold text-sm text-zinc-950 dark:text-white truncate" title={selectedDeviceToAssign.hostname}>
-                                {selectedDeviceToAssign.hostname || 'Equipo sin nombre'}
+                              <h5 className="font-extrabold text-sm text-zinc-950 dark:text-white truncate" title={selectedDeviceToAssign.displayName}>
+                                {selectedDeviceToAssign.displayName}
                               </h5>
-                              <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">{selectedDeviceToAssign.ip}</p>
-                              {selectedDeviceToAssign.responsible_user && (
+                              <p className="text-xs text-zinc-500 dark:text-slate-400 font-mono mt-0.5">{selectedDeviceToAssign.ip || 'Sin IP'}</p>
+                              
+                              {selectedDeviceToAssign.isInfra && (
+                                <div className="mt-3.5 space-y-1.5">
+                                  <label className="text-[10px] uppercase font-bold text-zinc-405 dark:text-slate-500 block">
+                                    Conectar al Puerto de {selectedDeviceToAssign.brand} {selectedDeviceToAssign.model}:
+                                  </label>
+                                  <select
+                                    className="input text-xs w-full py-1.5 px-2 bg-zinc-950 border-zinc-800 text-white rounded-lg focus:ring-1 focus:ring-emerald-500"
+                                    value={selectedTargetPort}
+                                    onChange={(e) => setSelectedTargetPort(Number(e.target.value))}
+                                  >
+                                    {targetPorts.map(tp => (
+                                      <option key={tp.value} value={tp.value}>{tp.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+
+                              {!selectedDeviceToAssign.isInfra && selectedDeviceToAssign.responsible_user && (
                                 <p className="text-[11px] text-zinc-450 dark:text-slate-550 mt-1">
                                   Responsable: <strong>{selectedDeviceToAssign.responsible_user}</strong>
                                 </p>
                               )}
                               {selectedDeviceToAssign.switch_id && (
                                 <p className="text-[10px] text-amber-500 font-semibold mt-1">
-                                  ⚠️ Se moverá desde el puerto #{selectedDeviceToAssign.switch_port} del switch actual.
+                                  ⚠️ Se moverá desde su puerto actual.
                                 </p>
                               )}
                             </div>
@@ -6318,12 +6976,12 @@ function SwitchPortMapModal({
                               </button>
                               <button
                                 onClick={async () => {
-                                  await assignDeviceToPort(selectedDeviceToAssign.id);
+                                  await assignDeviceToPort(selectedDeviceToAssign, selectedTargetPort);
                                   setSelectedDeviceToAssign(null);
                                 }}
                                 className="button bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-3 text-xs flex-1 justify-center rounded-lg shadow-sm"
                               >
-                                Asociar a Boca #{selectedPort}
+                                Asociar a {isFortinet ? fortinetLabels[selectedPort - 1] : `Boca #${selectedPort}`}
                               </button>
                             </div>
                           </div>
@@ -6334,7 +6992,7 @@ function SwitchPortMapModal({
                               <div className="relative">
                                 <input
                                   type="text"
-                                  placeholder="Buscar por hostname, IP o usuario..."
+                                  placeholder="Buscar por hostname, IP, marca o modelo..."
                                   className="input text-xs w-full pl-9 pr-4 py-2"
                                   value={searchQuery}
                                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -6352,16 +7010,16 @@ function SwitchPortMapModal({
                                     className="p-3 text-left hover:bg-zinc-50 dark:hover:bg-slate-855/30 cursor-pointer transition-colors duration-155"
                                   >
                                     <div className="flex justify-between items-start">
-                                      <span className="font-bold text-xs truncate max-w-[170px] text-zinc-950 dark:text-white" title={dev.hostname}>
-                                        {dev.hostname || 'Sin Hostname'}
+                                      <span className="font-bold text-xs truncate max-w-[170px] text-zinc-950 dark:text-white" title={dev.displayName}>
+                                        {dev.displayName}
                                       </span>
-                                      <span className="font-mono text-[10px] text-zinc-500 dark:text-slate-400">{dev.ip}</span>
+                                      <span className="font-mono text-[10px] text-zinc-500 dark:text-slate-400">{dev.ip || '—'}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-[10px] text-zinc-450 dark:text-slate-550 mt-1">
-                                      <span>{dev.responsible_user || 'Sin responsable'}</span>
+                                      <span>{dev.isInfra ? `Infraestructura: ${dev.type}` : (dev.responsible_user || 'Sin responsable')}</span>
                                       {dev.switch_id && (
                                         <span className="text-[9px] bg-amber-500/10 text-amber-500 rounded px-1 font-semibold">
-                                          Reubicar (Boca #{dev.switch_port})
+                                          Reubicar
                                         </span>
                                       )}
                                     </div>
@@ -6369,11 +7027,11 @@ function SwitchPortMapModal({
                                 ))
                               ) : searchQuery.trim() ? (
                                 <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-400">
-                                  No se encontraron equipos coincidentes.
+                                  No se encontraron equipos ni módems coincidentes.
                                 </div>
                               ) : (
                                 <div className="p-4 text-center text-xs text-zinc-555 dark:text-slate-400">
-                                  Ingresa un término de búsqueda para ver equipos disponibles en la red.
+                                  Ingresa un término de búsqueda para ver equipos y módems disponibles.
                                 </div>
                               )}
                             </div>
@@ -6415,3 +7073,522 @@ function SwitchPortMapModal({
 }
 
 createRoot(document.getElementById('root')).render(<App />);
+
+// ============================================================
+// EmployeeModalDialog Component
+// ============================================================
+function EmployeeModalDialog({
+  employeeModal,
+  setEmployeeModal,
+  existingCities = [],
+  existingDepartments = [],
+  devices = [],
+  employees = [],
+  token,
+  useLocalApi,
+  saveEmployee,
+  unlinkDevice,
+  linkDevice,
+  setSelected
+}) {
+  const [form, setForm] = useState(employeeModal.form);
+  const [showDeviceLinkSelector, setShowDeviceLinkSelector] = useState(false);
+  const [deviceLinkSearch, setDeviceLinkSearch] = useState('');
+
+  // Custom states for selects + manual entries
+  const [cityType, setCityType] = useState(form.city && !existingCities.includes(form.city) ? 'Otro' : (form.city || ''));
+  const [deptType, setDeptType] = useState(form.department && !existingDepartments.includes(form.department) ? 'Otro' : (form.department || ''));
+
+  return (
+    <div className={`fixed inset-0 ${employeeModal.mode === 'create' ? 'z-[60]' : 'z-50'} flex items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-sm p-0 sm:p-4`}>
+      <div className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-zinc-950 dark:text-slate-100 overflow-hidden flex flex-col transition-all duration-300">
+        {employeeModal.mode === 'view' ? (
+          <div className="flex-1 flex flex-col justify-between overflow-hidden">
+            <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+              {/* Banner Profile */}
+              <div className="relative">
+                <div className="h-16 xs:h-20 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+                <div className="absolute left-4 xs:left-6 -bottom-6">
+                  {form.image_url ? (
+                    <img
+                      src={form.image_url}
+                      alt={form.full_name}
+                      className="w-20 h-20 rounded-full border-4 border-white dark:border-slate-900 object-cover shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full border-4 border-white dark:border-slate-900 bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center font-bold text-2xl shadow-lg">
+                      {getInitials(form.full_name)}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute right-4 top-4">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold shadow-sm ${
+                    form.active
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-500/30'
+                      : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-500/30'
+                  }`}>
+                    <span className={`h-2 w-2 rounded-full ${form.active ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                    {form.active ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Employee Details Grid */}
+              <div className="pt-4 xs:pt-6 px-4 xs:px-6">
+                <div className="mb-4">
+                  <h2 className="text-xl font-bold text-zinc-950 dark:text-white leading-tight">{form.full_name}</h2>
+                  {form.email ? (
+                    <a
+                      href={`mailto:${form.email}`}
+                      className="text-xs text-zinc-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:underline font-medium transition-colors"
+                      title="Enviar correo"
+                    >
+                      {form.email}
+                    </a>
+                  ) : (
+                    <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium">Sin correo registrado</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-zinc-50 dark:bg-slate-950 p-2.5 xs:p-3 rounded-xl border border-zinc-200 dark:border-slate-800">
+                  <div>
+                    <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Teléfono</span>
+                    {form.phone ? (() => {
+                      const digits = form.phone.replace(/\D/g, '');
+                      const waNum = digits.length === 9 && digits.startsWith('9') ? '56' + digits : digits;
+                      return (
+                        <a
+                          href={`whatsapp://send?phone=${waNum}`}
+                          className="text-emerald-500 hover:text-emerald-400 hover:underline text-xs font-semibold block"
+                          title="Escribir o llamar por WhatsApp"
+                        >
+                          {form.phone}
+                        </a>
+                      );
+                    })() : (
+                      <span className="text-xs font-medium text-zinc-500 dark:text-slate-400">—</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Cargo</span>
+                    <span className="text-xs font-medium">{form.job_title || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Lugar de Trabajo</span>
+                    <span className="text-xs font-medium">{form.workplace || form.status || 'Presencial'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Departamento</span>
+                    <span className="text-xs font-medium">{form.department || '—'}</span>
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Ciudad</span>
+                    <span className="text-xs font-medium">{form.city || '—'}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[9px] xs:text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Sistemas Autorizados</span>
+                    <span className="text-xs font-medium">{form.authorized_systems || '—'}</span>
+                  </div>
+                  <div className="sm:col-span-2 flex items-center gap-3 mt-1 pt-2 border-t border-zinc-200/50 dark:border-slate-800/50">
+                    <span className="text-[10px] font-bold text-zinc-400 dark:text-slate-500 uppercase block tracking-wider">Conexión VPN</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        form.vpn_active
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-zinc-200 text-zinc-600 dark:bg-slate-800 dark:text-slate-400'
+                      }`}>
+                        {form.vpn_active ? 'VPN Conectada' : 'Sin VPN'}
+                      </span>
+                      {form.vpn_active && form.vpn_type && (
+                        <span className="text-[11px] text-zinc-500 dark:text-slate-400">({form.vpn_type})</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned Devices */}
+              <div className="px-4 xs:px-6 pb-4 xs:pb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xs font-bold uppercase text-zinc-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
+                    <Laptop size={14} className="text-emerald-500" />
+                    Equipos Asignados ({devices.filter(d => d.employee_id === form.id).length})
+                  </h3>
+                </div>
+                
+                <div className="border border-zinc-200 dark:border-slate-800 rounded-xl overflow-hidden bg-zinc-50/50 dark:bg-slate-950/20">
+                  {devices.filter(d => d.employee_id === form.id).length === 0 ? (
+                    <div className="p-4 text-center text-xs text-zinc-500 dark:text-slate-500 font-medium">
+                      Este empleado no tiene equipos asignados en el inventario.
+                    </div>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto">
+                      <table className="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                          <tr className="bg-zinc-100 dark:bg-slate-900 border-b border-zinc-200 dark:border-slate-800 text-zinc-500 dark:text-slate-400 font-semibold">
+                            <th className="py-2 px-3">Equipo</th>
+                            <th className="py-2 px-3">IP</th>
+                            <th className="py-2 px-3">Estado</th>
+                            <th className="py-2 px-3 text-right">Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {devices.filter(d => d.employee_id === form.id).map(dev => (
+                            <tr key={dev.id} className="border-b border-zinc-100 dark:border-slate-800/40 hover:bg-zinc-100/50 dark:hover:bg-slate-900/30">
+                              <td className="py-2 px-3 font-semibold text-zinc-800 dark:text-slate-200">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelected(dev)}
+                                  className="text-emerald-600 dark:text-emerald-400 hover:underline text-left font-bold"
+                                >
+                                  {dev.hostname || 'Sin nombre'}
+                                </button>
+                              </td>
+                              <td className="py-2 px-3 font-mono text-zinc-500 dark:text-slate-400">{dev.ip}</td>
+                              <td className="py-2 px-3"><StatusPill status={dev.status} /></td>
+                              <td className="py-2 px-3 text-right">
+                                <button
+                                  onClick={() => unlinkDevice(dev.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-500/10 px-2 py-0.5 rounded transition duration-200 font-bold"
+                                >
+                                  Desvincular
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Assign existing device selector */}
+                <div className="mt-3 relative">
+                  {!showDeviceLinkSelector ? (
+                    <button
+                      type="button"
+                      className="input text-left py-2 px-3 text-xs w-full flex justify-between items-center bg-white dark:bg-slate-900 border border-zinc-300 dark:border-slate-800 rounded-lg text-zinc-700 dark:text-slate-355 font-semibold"
+                      onClick={() => {
+                        setShowDeviceLinkSelector(true);
+                        setDeviceLinkSearch('');
+                      }}
+                    >
+                      <span>+ Vincular/Asignar Equipo disponible...</span>
+                      <span className="text-zinc-400 text-[10px]">▼</span>
+                    </button>
+                  ) : (
+                    <div className="border border-zinc-200 dark:border-slate-800 rounded-xl p-2.5 bg-zinc-50 dark:bg-slate-955/40 space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Buscar por IP, hostname, marca..."
+                          className="input py-1 px-2 text-xs flex-1"
+                          value={deviceLinkSearch}
+                          onChange={(e) => setDeviceLinkSearch(e.target.value)}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="button secondary py-1.5 px-2.5 text-xs font-bold"
+                          onClick={() => setShowDeviceLinkSelector(false)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                      <div className="max-h-32 overflow-y-auto divide-y divide-zinc-200/50 dark:divide-slate-800/50 text-[11px] border border-zinc-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
+                        {devices
+                          .filter(d => !d.employee_id)
+                          .filter(d => {
+                            const q = deviceLinkSearch.toLowerCase();
+                            return (
+                              (d.hostname || '').toLowerCase().includes(q) ||
+                              (d.ip || '').toLowerCase().includes(q) ||
+                              (d.brand || '').toLowerCase().includes(q) ||
+                              (d.model || '').toLowerCase().includes(q)
+                            );
+                          })
+                          .map(dev => (
+                            <button
+                              key={dev.id}
+                              type="button"
+                              className="w-full text-left p-2 hover:bg-zinc-50 dark:hover:bg-slate-800/40 font-semibold block text-zinc-900 dark:text-slate-100"
+                              onClick={() => {
+                                linkDevice(dev.id, form.id);
+                                setShowDeviceLinkSelector(false);
+                                setDeviceLinkSearch('');
+                              }}
+                            >
+                              <span className="font-bold">{dev.hostname || 'Sin nombre'}</span> ({dev.ip}) - {dev.brand} {dev.model}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="bg-zinc-50 dark:bg-slate-900/50 px-4 xs:px-6 py-3 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 flex-shrink-0">
+              <button
+                className="button secondary py-1.5 px-3 text-xs"
+                onClick={() => setEmployeeModal(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                className="button primary py-1.5 px-3 text-xs flex items-center gap-1.5"
+                onClick={() => setEmployeeModal({ mode: 'edit', form: employeeModal.form })}
+              >
+                <Users size={14} /> Editar Datos
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col justify-between overflow-hidden">
+            <div className="px-6 py-4 border-b border-zinc-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-bold text-zinc-955 dark:text-white flex items-center gap-2 leading-tight">
+                <User className="text-emerald-500" size={20} />
+                {employeeModal.mode === 'create' ? 'Agregar Nuevo Empleado' : 'Editar Información Empleado'}
+              </h3>
+              <button className="text-2xl text-zinc-400 hover:text-zinc-655 dark:hover:text-slate-200" onClick={() => setEmployeeModal(null)}>×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 xs:p-6 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="label">Nombre Completo *</span>
+                <input
+                  className="input"
+                  value={form.full_name || ''}
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="ej. Juan Pérez"
+                />
+              </label>
+
+              <label className="block">
+                <span className="label">Correo Electrónico</span>
+                <input
+                  className="input"
+                  type="email"
+                  value={form.email || ''}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="ej. jperez@empresa.com"
+                />
+              </label>
+
+              <label className="block bg-zinc-50 dark:bg-slate-955 p-3 rounded-lg border border-dashed border-zinc-300 dark:border-slate-800 sm:col-span-2">
+                <span className="label mb-2 flex items-center gap-1.5">
+                  <Upload size={14} className="text-emerald-500" />
+                  Foto de Perfil (Subir archivo o pegar URL)
+                </span>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  {form.image_url ? (
+                    <div className="relative w-16 h-16 rounded-full overflow-hidden border border-zinc-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex-shrink-0">
+                      <img src={form.image_url} alt="Vista previa" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, image_url: '' })}
+                        className="absolute inset-0 bg-black/60 hover:bg-black/85 text-white flex items-center justify-center text-[10px] font-bold transition duration-150"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-zinc-101 dark:bg-slate-800 border border-zinc-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 text-zinc-400 dark:text-slate-500">
+                      <User size={24} />
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="text-xs text-zinc-650 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 file:cursor-pointer"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setForm({ ...form, image_url: reader.result });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <input
+                      className="input text-xs py-1"
+                      placeholder="O pega una URL directa de imagen..."
+                      value={form.image_url || ''}
+                      onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </label>
+
+              <label className="block">
+                <span className="label">Departamento</span>
+                <select
+                  className="input"
+                  value={deptType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDeptType(val);
+                    if (val !== 'Otro') {
+                      setForm({ ...form, department: val });
+                    }
+                  }}
+                >
+                  <option value="">-- Seleccionar Departamento --</option>
+                  {existingDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                  <option value="Otro">Otro (Escribir manual)...</option>
+                </select>
+                {deptType === 'Otro' && (
+                  <input
+                    className="input mt-2 animate-in fade-in duration-200"
+                    placeholder="Escribe el departamento..."
+                    value={form.department || ''}
+                    onChange={(e) => setForm({ ...form, department: e.target.value })}
+                  />
+                )}
+              </label>
+
+              <label className="block">
+                <span className="label">Ciudad</span>
+                <select
+                  className="input"
+                  value={cityType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCityType(val);
+                    if (val !== 'Otro') {
+                      setForm({ ...form, city: val });
+                    }
+                  }}
+                >
+                  <option value="">-- Seleccionar Ciudad --</option>
+                  {existingCities.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="Otro">Otro (Escribir manual)...</option>
+                </select>
+                {cityType === 'Otro' && (
+                  <input
+                    className="input mt-2 animate-in fade-in duration-200"
+                    placeholder="Escribe la ciudad..."
+                    value={form.city || ''}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  />
+                )}
+              </label>
+
+              <label className="block">
+                <span className="label">Sucursal</span>
+                <input
+                  className="input"
+                  value={form.branch || ''}
+                  onChange={(e) => setForm({ ...form, branch: e.target.value })}
+                  placeholder="ej. Centro / Sucursal Sur"
+                />
+              </label>
+
+              <label className="block">
+                <span className="label">Teléfono</span>
+                <input
+                  className="input"
+                  value={form.phone || ''}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="ej. +56912345678"
+                />
+              </label>
+
+              <label className="block">
+                <span className="label">Lugar de Trabajo</span>
+                <select
+                  className="input"
+                  value={form.workplace || form.status || 'Presencial'}
+                  onChange={(e) => setForm({ ...form, workplace: e.target.value, status: e.target.value })}
+                >
+                  <option value="Presencial">Presencial</option>
+                  <option value="Teletrabajo">Teletrabajo / Remoto</option>
+                  <option value="Hibrido">Híbrido</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Cargo (Responsabilidad)</span>
+                <input
+                  className="input"
+                  value={form.job_title || ''}
+                  onChange={(e) => setForm({ ...form, job_title: e.target.value })}
+                  placeholder="ej. Ejecutivo de Ventas / TI"
+                />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="label">Sistemas Autorizados / Aplicaciones</span>
+                <input
+                  className="input"
+                  value={form.authorized_systems || ''}
+                  onChange={(e) => setForm({ ...form, authorized_systems: e.target.value })}
+                  placeholder="ej. Milenium, CRM Ventas, ERP Contabilidad"
+                />
+              </label>
+
+              <label className="block">
+                <span className="label">Tipo VPN</span>
+                <select
+                  className="input"
+                  value={form.vpn_type || 'Agencia'}
+                  onChange={(e) => setForm({ ...form, vpn_type: e.target.value })}
+                >
+                  <option value="Agencia">Agencia</option>
+                  <option value="RDP">RDP</option>
+                  <option value="Milenium">Milenium</option>
+                </select>
+              </label>
+
+              <div className="flex flex-col gap-2 pt-5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.vpn_active || false}
+                    onChange={(e) => setForm({ ...form, vpn_active: e.target.checked })}
+                    className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
+                  />
+                  <span className="text-sm font-semibold">Tiene VPN Activa</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.active || false}
+                    onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                    className="rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500 dark:border-slate-800 h-4 w-4"
+                  />
+                  <span className="text-sm font-semibold">Empleado Activo</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="bg-zinc-50 dark:bg-slate-900/50 px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 flex-shrink-0">
+              <button
+                className="button secondary py-1.5 px-3.5 text-xs font-bold"
+                onClick={() => {
+                  if (employeeModal.mode === 'edit') {
+                    setEmployeeModal({ mode: 'view', form: employeeModal.form });
+                  } else {
+                    setEmployeeModal(null);
+                  }
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                className="button primary py-1.5 px-3.5 text-xs font-bold"
+                onClick={() => saveEmployee(form)}
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
