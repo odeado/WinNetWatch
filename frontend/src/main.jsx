@@ -6798,24 +6798,25 @@ function TopologyMapModal({
     
     let html = `<html><head><title>Topología de Red - ${selectedCity}</title>`;
     html += `<style>
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000; padding: 30px; }
       h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #1e293b; }
       p { font-size: 11px; color: #64748b; margin-bottom: 25px; font-family: monospace; }
       .tree-container { display: flex; flex-direction: column; gap: 35px; }
       .tree-node { display: flex; align-items: center; }
-      .node-card { width: 220px; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 12px; box-sizing: border-box; background: #f8fafc; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+      .node-card { width: 220px; border: 1.5px solid #94a3b8; border-radius: 12px; padding: 12px; box-sizing: border-box; background: #f8fafc; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
       .node-title { font-size: 11px; font-weight: bold; margin-bottom: 6px; color: #0f172a; display: flex; justify-content: space-between; align-items: center; }
-      .node-badge { font-size: 8px; border: 1px solid #94a3b8; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; font-weight: 800; color: #475569; background: #f1f5f9; }
+      .node-badge { font-size: 8px; border: 1.5px solid #64748b; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; font-weight: 800; color: #334155; background: #f1f5f9; }
       .node-detail { font-size: 10px; font-family: monospace; color: #475569; margin-top: 3px; display: flex; justify-content: space-between; }
       .node-detail span { font-weight: bold; color: #0f172a; }
-      .node-port { margin-top: 6px; font-size: 8px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #334155; display: inline-block; }
-      .children-column { display: flex; flex-direction: column; gap: 15px; margin-left: 24px; border-left: 1.5px solid #e2e8f0; padding-left: 16px; position: relative; }
+      .node-port { margin-top: 6px; font-size: 8px; background: #e2e8f0; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #334155; display: inline-block; }
+      .children-column { display: flex; flex-direction: column; gap: 15px; margin-left: 24px; border-left: 2px solid #94a3b8; padding-left: 16px; position: relative; }
       .child-wrapper { display: flex; align-items: center; position: relative; }
-      .child-line { position: absolute; top: 50%; left: -16px; width: 16px; height: 1.5px; background: #cbd5e1; }
-      .parent-line { position: absolute; top: 50%; right: -24px; width: 24px; height: 1.5px; background: #cbd5e1; }
-      .device-card { width: 180px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; background: #fff; font-size: 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+      .child-line { position: absolute; top: 50%; left: -16px; width: 16px; height: 0; border-top: 2px solid #94a3b8; }
+      .parent-line { position: absolute; top: 50%; right: -24px; width: 24px; height: 0; border-top: 2px solid #94a3b8; }
+      .device-card { width: 180px; border: 1.5px solid #94a3b8; border-radius: 8px; padding: 8px; background: #fff; font-size: 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
       .device-icon { font-size: 12px; background: #f1f5f9; padding: 3px; border-radius: 4px; }
-      .device-port { font-size: 7.5px; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.5px 3.5px; border-radius: 3px; font-family: monospace; font-weight: bold; }
+      .device-port { font-size: 7.5px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 0.5px 3.5px; border-radius: 3px; font-family: monospace; font-weight: bold; }
     </style></head><body>`;
     
     html += `<h1>Win NetWatch — Reporte de Topología de Red</h1>`;
