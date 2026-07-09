@@ -70,8 +70,8 @@ const getInfraGroup = (item) => {
 const getPortName = (type, model, portNum) => {
   if (!portNum) return '—';
   const isFortinet = type === 'Fortinet';
-  const isCisco2901 = type === 'Router' && (model || '').toLowerCase().includes('2901');
-  const isRaisecom = type === 'Conversor' && (model || '').toLowerCase().includes('rc552');
+  const isCisco2901 = type === 'Router';
+  const isRaisecom = type === 'Conversor';
   
   if (isFortinet) {
     const labels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
@@ -2120,8 +2120,8 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
 
     const buildPortsGrid = (item) => {
       const isFortinet = item.type === 'Fortinet';
-      const isCisco2901 = item.type === 'Router' && (item.model || '').toLowerCase().includes('2901');
-      const isRaisecom = item.type === 'Conversor' && (item.model || '').toLowerCase().includes('rc552');
+      const isCisco2901 = item.type === 'Router';
+      const isRaisecom = item.type === 'Conversor';
       
       let fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
       let fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
@@ -6543,8 +6543,8 @@ function SwitchPortMapModal({
   const destCount = useMemo(() => {
     if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return 0;
     const isDestFortinet = selectedDeviceToAssign.type === 'Fortinet';
-    const isDestCisco2901 = selectedDeviceToAssign.type === 'Router' && (selectedDeviceToAssign.model || '').toLowerCase().includes('2901');
-    const isDestRaisecom = selectedDeviceToAssign.type === 'Conversor' && (selectedDeviceToAssign.model || '').toLowerCase().includes('rc552');
+    const isDestCisco2901 = selectedDeviceToAssign.type === 'Router';
+    const isDestRaisecom = selectedDeviceToAssign.type === 'Conversor';
     
     if (isDestFortinet) return 11;
     if (isDestCisco2901) return 4;
@@ -6555,8 +6555,8 @@ function SwitchPortMapModal({
   const targetPorts = useMemo(() => {
     if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return [];
     const isDestFortinet = selectedDeviceToAssign.type === 'Fortinet';
-    const isDestCisco2901 = selectedDeviceToAssign.type === 'Router' && (selectedDeviceToAssign.model || '').toLowerCase().includes('2901');
-    const isDestRaisecom = selectedDeviceToAssign.type === 'Conversor' && (selectedDeviceToAssign.model || '').toLowerCase().includes('rc552');
+    const isDestCisco2901 = selectedDeviceToAssign.type === 'Router';
+    const isDestRaisecom = selectedDeviceToAssign.type === 'Conversor';
     
     let destLabels = [];
     if (isDestFortinet) {
@@ -6618,8 +6618,8 @@ function SwitchPortMapModal({
   }, [connectedElements]);
 
   const isFortinet = currentActiveSwitch.type === 'Fortinet';
-  const isCisco2901 = currentActiveSwitch.type === 'Router' && (currentActiveSwitch.model || '').toLowerCase().includes('2901');
-  const isRaisecom = currentActiveSwitch.type === 'Conversor' && (currentActiveSwitch.model || '').toLowerCase().includes('rc552');
+  const isCisco2901 = currentActiveSwitch.type === 'Router';
+  const isRaisecom = currentActiveSwitch.type === 'Conversor';
 
   let fortinetLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
   let fortinetShort = ['CNS', 'W2', 'W1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
