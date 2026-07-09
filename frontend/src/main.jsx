@@ -6507,11 +6507,23 @@ function SwitchPortMapModal({
     const query = searchQuery.toLowerCase();
     const switchCity = (currentActiveSwitch.city || '').trim().toLowerCase();
 
+    const getCityFromIp = (ip) => {
+      if (!ip) return '';
+      const parts = ip.split('.');
+      if (parts.length !== 4) return '';
+      const thirdOctet = parseInt(parts[2], 10);
+      if (thirdOctet === 100 || thirdOctet === 101 || thirdOctet === 102) return 'antofagasta';
+      if (thirdOctet === 110) return 'arica';
+      if (thirdOctet === 112) return 'iquique';
+      return '';
+    };
+
     // Buscar dispositivos en la misma ciudad (o sin ciudad asignada)
     const devs = devices.filter(d => {
-      const devCity = (d.city || '').trim().toLowerCase();
+      const ipCity = getCityFromIp(d.ip);
+      const devCity = ipCity || (d.city || '').trim().toLowerCase();
       
-      // Si tiene ciudad asignada y no coincide con el switch, se descarta
+      // Si tiene ciudad asignada/detectada y no coincide con el switch, se descarta
       if (devCity && devCity !== 'sin ciudad' && devCity !== 'no asignada') {
         if (devCity !== switchCity) return false;
       }
@@ -6528,7 +6540,8 @@ function SwitchPortMapModal({
 
     // Buscar infraestructura en la misma ciudad (excluyendo el switch activo actual)
     const infras = infrastructure.filter(i => {
-      const infraCity = (i.city || '').trim().toLowerCase();
+      const ipCity = getCityFromIp(i.ip);
+      const infraCity = ipCity || (i.city || '').trim().toLowerCase();
       
       if (infraCity && infraCity !== 'sin ciudad' && infraCity !== 'no asignada') {
         if (infraCity !== switchCity) return false;
