@@ -6501,18 +6501,21 @@ function SwitchPortMapModal({
   // Total ports count
   const portsCount = isFortinet ? 11 : (currentActiveSwitch.ports_count || 24);
 
-  // Search filtered devices and infrastructure that are eligible for binding (restricted to the switch's city)
+  // Search filtered devices and infrastructure that are eligible for binding (restricted strictly to the switch's city)
   const eligibleDevices = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
-    const switchCity = currentActiveSwitch.city || 'Antofagasta';
+    const switchCity = (currentActiveSwitch.city || '').trim().toLowerCase();
 
-    // Search devices in the same city or without a specific city assigned
+    // Buscar dispositivos en la misma ciudad (o sin ciudad asignada)
     const devs = devices.filter(d => {
-      const devCity = d.city || '';
-      const isDefaultCity = !devCity || devCity.trim().toLowerCase() === 'sin ciudad' || devCity === 'Antofagasta';
-      const matchCity = isDefaultCity || devCity.toLowerCase() === switchCity.toLowerCase();
-      if (!matchCity) return false;
+      const devCity = (d.city || '').trim().toLowerCase();
+      
+      // Si tiene ciudad asignada y no coincide con el switch, se descarta
+      if (devCity && devCity !== 'sin ciudad' && devCity !== 'no asignada') {
+        if (devCity !== switchCity) return false;
+      }
+      
       if (d.switch_id === currentActiveSwitch.id && parseInt(d.switch_port, 10) === selectedPort) return false;
       
       const hostname = (d.hostname || '').toLowerCase();
@@ -6523,9 +6526,14 @@ function SwitchPortMapModal({
       return hostname.includes(query) || ip.includes(query) || responsible.includes(query) || location.includes(query);
     }).map(d => ({ ...d, isDevice: true, displayName: d.hostname || d.ip || 'Dispositivo' }));
 
-    // Search infrastructure in the same city (excluding currentActiveSwitch itself to avoid circular loops)
+    // Buscar infraestructura en la misma ciudad (excluyendo el switch activo actual)
     const infras = infrastructure.filter(i => {
-      if ((i.city || 'Antofagasta') !== switchCity) return false;
+      const infraCity = (i.city || '').trim().toLowerCase();
+      
+      if (infraCity && infraCity !== 'sin ciudad' && infraCity !== 'no asignada') {
+        if (infraCity !== switchCity) return false;
+      }
+      
       if (i.id === currentActiveSwitch.id) return false;
       if (i.switch_id === currentActiveSwitch.id && parseInt(i.switch_port, 10) === selectedPort) return false;
       
