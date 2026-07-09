@@ -2139,7 +2139,21 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       
       const connectedDevs = devices.filter(d => d.switch_id === item.id && d.switch_port).map(d => ({ ...d, isDevice: true }));
       const connectedInfras = infrastructure.filter(i => i.switch_id === item.id && i.switch_port).map(i => ({ ...i, isInfra: true }));
-      const connected = [...connectedDevs, ...connectedInfras];
+      
+      const parentInfras = [];
+      if (item.switch_id && item.local_port) {
+        const parent = infrastructure.find(p => p.id === item.switch_id);
+        if (parent) {
+          parentInfras.push({
+            ...parent,
+            isInfra: true,
+            isParent: true,
+            switch_port: parseInt(item.local_port, 10)
+          });
+        }
+      }
+
+      const connected = [...connectedDevs, ...connectedInfras, ...parentInfras];
 
       connected.forEach(elem => {
         if (elem.switch_port) portDeviceMap[elem.switch_port] = elem;
