@@ -431,16 +431,27 @@ async function syncCityFromFirestore(fsData) {
     console.error('Error syncing city from Firestore:', err);
   }
 }
-
 async function syncInfrastructureFromFirestore(fsData) {
   try {
     const uuid = stringToUUID(fsData.id);
+    let switchUuid = stringToUUID(fsData.switch_id);
+
+    // Validar llave foránea de switch (infraestructura)
+    if (switchUuid) {
+      const swExists = (await query('SELECT id FROM network_infrastructure WHERE id = $1', [switchUuid])).rows[0];
+      if (!swExists) {
+        switchUuid = null;
+      }
+    }
+
     const { rows } = await query('SELECT * FROM network_infrastructure WHERE id = $1', [uuid]);
     const local = rows[0];
     if (!local) {
       await query(
-        `INSERT INTO network_infrastructure (id, type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor, ip)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        `INSERT INTO network_infrastructure (
+          id, type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor, ip, city,
+          switch_id, switch_port, local_port
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
         [
           uuid,
           fsData.type,
@@ -454,7 +465,11 @@ async function syncInfrastructureFromFirestore(fsData) {
           fsData.notes || '',
           fsData.mac || '',
           fsData.floor || '',
-          fsData.ip || ''
+          fsData.ip || '',
+          fsData.city || 'Antofagasta',
+          switchUuid,
+          fsData.switch_port || null,
+          fsData.local_port || null
         ]
       );
     } else {
@@ -470,13 +485,18 @@ async function syncInfrastructureFromFirestore(fsData) {
         local.notes !== (fsData.notes || '') ||
         local.mac !== (fsData.mac || '') ||
         local.floor !== (fsData.floor || '') ||
-        local.ip !== (fsData.ip || '');
+        local.ip !== (fsData.ip || '') ||
+        local.city !== (fsData.city || 'Antofagasta') ||
+        local.switch_id !== switchUuid ||
+        local.switch_port !== (fsData.switch_port || null) ||
+        local.local_port !== (fsData.local_port || null);
 
       if (diff) {
         await query(
           `UPDATE network_infrastructure
            SET type = $2, brand = $3, model = $4, serial_number = $5, ports_count = $6,
-               location = $7, status = $8, acquired_at = $9, notes = $10, mac = $11, floor = $12, ip = $13, updated_at = now()
+               location = $7, status = $8, acquired_at = $9, notes = $10, mac = $11, floor = $12, ip = $13, city = $14,
+               switch_id = $15, switch_port = $16, local_port = $17, updated_at = now()
            WHERE id = $1`,
           [
             uuid,
@@ -491,7 +511,11 @@ async function syncInfrastructureFromFirestore(fsData) {
             fsData.notes || '',
             fsData.mac || '',
             fsData.floor || '',
-            fsData.ip || ''
+            fsData.ip || '',
+            fsData.city || 'Antofagasta',
+            switchUuid,
+            fsData.switch_port || null,
+            fsData.local_port || null
           ]
         );
       }
@@ -500,7 +524,6 @@ async function syncInfrastructureFromFirestore(fsData) {
     console.error('Error syncing infrastructure from Firestore:', err);
   }
 }
-
 // ------------------------------------------------------------
 // Action queue worker (Firestore Actions -> Local Execution)
 // ------------------------------------------------------------
@@ -701,7 +724,11 @@ export async function pushInfrastructureToFirebase(item) {
       notes: item.notes || '',
       mac: item.mac || '',
       floor: item.floor || '',
-      ip: item.ip || ''
+      ip: item.ip || '',
+      city: item.city || 'Antofagasta',
+      switch_id: item.switch_id || null,
+      switch_port: item.switch_port || null,
+      local_port: item.local_port || null
     });
   } catch (err) {
     console.error('[FirebaseSync] Error al subir infraestructura a Firebase:', err);
