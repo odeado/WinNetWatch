@@ -7,7 +7,7 @@ echo.
 
 :: 1. Verificar si Docker está corriendo
 echo [+] Verificando estado de Docker...
-powershell -Command "$p = Start-Process docker -ArgumentList info -NoNewWindow -PassThru; if (-not $p.WaitForExit(5000)) { $p.Kill(); exit 1 } else { exit $p.ExitCode }" >nul 2>&1
+docker ps >nul 2>&1
 if %errorlevel% equ 0 goto docker_ok
 
 echo [!] Docker Desktop no esta iniciado. Iniciandolo...
@@ -16,9 +16,9 @@ start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" --minimized
 echo [+] Esperando a que el motor de Docker responda...
 :wait_docker
 ping 127.0.0.1 -n 4 >nul
-powershell -Command "$p = Start-Process docker -ArgumentList info -NoNewWindow -PassThru; if (-not $p.WaitForExit(5000)) { $p.Kill(); exit 1 } else { exit $p.ExitCode }" >nul 2>&1
+docker ps >nul 2>&1
 if %errorlevel% neq 0 (
-    echo     . (aun conectando...)
+    echo     . [aun conectando...]
     goto wait_docker
 )
 
@@ -38,7 +38,7 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8080 ^| findstr LISTENING') 
 :: 3. Levantar la base de datos (Postgres) y el Frontend (sin levantar la API de Docker)
 echo [+] Levantando Base de Datos y Frontend en Docker...
 docker-compose up -d postgres
-docker-compose up -d --no-deps frontend
+docker-compose up -d --no-deps --build frontend
 docker-compose stop api >nul 2>&1
 
 :: 4. Ejecutar el backend local en segundo plano (oculto)
