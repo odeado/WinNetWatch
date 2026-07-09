@@ -33,6 +33,40 @@ function getWsUrl(apiUrl) {
 
 let WS_URL = getWsUrl(API_URL);
 
+const getInfraGroup = (item) => {
+  const city = item.city || 'Antofagasta';
+  const loc = (item.location || '').trim().toLowerCase();
+  const ip = item.ip || '';
+  
+  if (city.toLowerCase() === 'antofagasta') {
+    if (ip.startsWith('172.30.102.')) {
+      return 'Antofagasta Matta';
+    }
+    if (ip.startsWith('172.30.100.') || ip.startsWith('172.30.101.')) {
+      return 'Antofagasta Rendic';
+    }
+    if (loc.includes('matta')) {
+      return 'Antofagasta Matta';
+    }
+    if (loc.includes('rendic') || loc.includes('preprensa')) {
+      return 'Antofagasta Rendic';
+    }
+    return 'Antofagasta Rendic';
+  }
+
+  if (city.toLowerCase() === 'arica') {
+    if (loc.includes('nueva') || loc.includes('nuevo')) {
+      return 'Arica Edificio Nuevo';
+    }
+    if (loc.includes('antigua') || loc.includes('viejo') || loc.includes('vieja')) {
+      return 'Arica Edificio Viejo';
+    }
+    return 'Arica';
+  }
+
+  return city;
+};
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || 'null'));
@@ -1868,16 +1902,16 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         (item.ip || '').toLowerCase().includes(q) ||
         (item.serial_number || '').toLowerCase().includes(q)
       );
-      const matchCity = !cityFilter || (item.city || 'Antofagasta') === cityFilter;
+      const matchCity = !cityFilter || getInfraGroup(item) === cityFilter;
       return matchQuery && matchCity;
     });
 
-    // Sort by City alphabetically, then by Location to keep it clean
+    // Sort by Group alphabetically, then by Location to keep it clean
     base.sort((a, b) => {
-      const cityA = (a.city || 'Antofagasta').toLowerCase();
-      const cityB = (b.city || 'Antofagasta').toLowerCase();
-      if (cityA !== cityB) {
-        return cityA.localeCompare(cityB);
+      const groupA = getInfraGroup(a).toLowerCase();
+      const groupB = getInfraGroup(b).toLowerCase();
+      if (groupA !== groupB) {
+        return groupA.localeCompare(groupB);
       }
       const locA = (a.location || '').toLowerCase();
       const locB = (b.location || '').toLowerCase();
@@ -2049,13 +2083,13 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         (item.ip || '').toLowerCase().includes(q) ||
         (item.serial_number || '').toLowerCase().includes(q)
       );
-      const matchCity = !cityFilter || (item.city || 'Antofagasta') === cityFilter;
+      const matchCity = !cityFilter || getInfraGroup(item) === cityFilter;
       return matchQuery && matchCity;
     });
 
     const grouped = {};
     base.forEach(item => {
-      const c = item.city || 'Antofagasta';
+      const c = getInfraGroup(item);
       if (!grouped[c]) grouped[c] = [];
       grouped[c].push(item);
     });
@@ -3932,10 +3966,10 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                             );
                           }
 
-                          // Group by city
+                          // Group by city using getInfraGroup to separate subnets and locations
                           const grouped = {};
                           filtered.forEach(item => {
-                            const c = item.city || 'Antofagasta';
+                            const c = getInfraGroup(item);
                             if (!grouped[c]) grouped[c] = [];
                             grouped[c].push(item);
                           });
