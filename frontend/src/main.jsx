@@ -2956,6 +2956,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                     onOpen={() => setSelected(device)}
                     onConnectRdp={() => connectRdp(device)}
                     getSubnetLabel={getSubnetLabel}
+                    infrastructure={infrastructure}
                   />
                 ))}
               </div>
@@ -5448,7 +5449,7 @@ function TerminalConsole({ logs, autoScroll, searchTerm = '' }) {
   );
 }
 
-function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
+function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel, infrastructure = [] }) {
   const tone = {
     online: 'border-l-emerald-500',
     offline: 'border-l-red-500',
@@ -5480,7 +5481,22 @@ function DeviceCard({ device, onOpen, onConnectRdp, getSubnetLabel }) {
             Equipo: {device.hostname || 'Equipo sin nombre'}
           </p>
         </button>
-        {device.managed && <span className="rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide border border-sky-500/20 shadow-sm">Admin</span>}
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+          {device.managed && <span className="rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide border border-sky-500/20 shadow-sm">Admin</span>}
+          {(() => {
+            const matchedSwitch = device.switch_id ? infrastructure.find(i => i.id === device.switch_id) : null;
+            if (!matchedSwitch) return null;
+            const portName = getPortName(matchedSwitch.type, matchedSwitch.model, device.switch_port);
+            return (
+              <span 
+                className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider border border-emerald-500/20 shadow-sm cursor-help whitespace-nowrap"
+                title={`Conectado al Switch: ${matchedSwitch.brand} ${matchedSwitch.model} (${matchedSwitch.location})`}
+              >
+                🔌 {portName}
+              </span>
+            );
+          })()}
+        </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-600 dark:text-slate-300 border-t border-b border-zinc-100 dark:border-slate-800 py-2">
         <span className="truncate">{device.department || 'Sin departamento'}</span>
@@ -6776,6 +6792,108 @@ function TopologyMapModal({
     );
   };
 
+  const printTopology = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { alert('Por favor permite los popups para poder imprimir.'); return; }
+    
+    let html = `<html><head><title>Topología de Red - ${selectedCity}</title>`;
+    html += `<style>
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000; padding: 30px; }
+      h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #1e293b; }
+      p { font-size: 11px; color: #64748b; margin-bottom: 25px; font-family: monospace; }
+      .tree-container { display: flex; flex-direction: column; gap: 35px; }
+      .tree-node { display: flex; align-items: center; }
+      .node-card { width: 220px; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 12px; box-sizing: border-box; background: #f8fafc; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+      .node-title { font-size: 11px; font-weight: bold; margin-bottom: 6px; color: #0f172a; display: flex; justify-content: space-between; align-items: center; }
+      .node-badge { font-size: 8px; border: 1px solid #94a3b8; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; font-weight: 800; color: #475569; background: #f1f5f9; }
+      .node-detail { font-size: 10px; font-family: monospace; color: #475569; margin-top: 3px; display: flex; justify-content: space-between; }
+      .node-detail span { font-weight: bold; color: #0f172a; }
+      .node-port { margin-top: 6px; font-size: 8px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #334155; display: inline-block; }
+      .children-column { display: flex; flex-direction: column; gap: 15px; margin-left: 24px; border-left: 1.5px solid #e2e8f0; padding-left: 16px; position: relative; }
+      .child-wrapper { display: flex; align-items: center; position: relative; }
+      .child-line { position: absolute; top: 50%; left: -16px; width: 16px; height: 1.5px; background: #cbd5e1; }
+      .parent-line { position: absolute; top: 50%; right: -24px; width: 24px; height: 1.5px; background: #cbd5e1; }
+      .device-card { width: 180px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; background: #fff; font-size: 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+      .device-icon { font-size: 12px; background: #f1f5f9; padding: 3px; border-radius: 4px; }
+      .device-port { font-size: 7.5px; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.5px 3.5px; border-radius: 3px; font-family: monospace; font-weight: bold; }
+    </style></head><body>`;
+    
+    html += `<h1>Win NetWatch — Reporte de Topología de Red</h1>`;
+    html += `<p>Subred: ${selectedCity.toUpperCase()} | Fecha Reporte: ${new Date().toLocaleString()}</p>`;
+    html += `<div class="tree-container">`;
+    
+    const printNodeHtml = (node) => {
+      const children = childrenMap[node.id] || [];
+      const connDevs = devices.filter(d => d.switch_id === node.id);
+      const hasChildren = children.length > 0 || (showEndDevices && connDevs.length > 0);
+      
+      let nodeHtml = `<div class="tree-node">`;
+      
+      nodeHtml += `<div style="position:relative;">`;
+      nodeHtml += `<div class="node-card">`;
+      nodeHtml += `<div class="node-title">${node.brand} ${node.model} <span class="node-badge">${node.status}</span></div>`;
+      nodeHtml += `<div class="node-detail">Tipo: <span>${node.type.toUpperCase()}</span></div>`;
+      nodeHtml += `<div class="node-detail">IP: <span>${node.ip || '—'}</span></div>`;
+      nodeHtml += `<div class="node-detail">Ubicación: <span>${node.location || '—'}</span></div>`;
+      if (node.switch_id && node.local_port) {
+        nodeHtml += `<div class="node-port">Boca local: ${getPortName(node.type, node.model, node.local_port)}</div>`;
+      }
+      nodeHtml += `</div>`;
+      if (hasChildren) {
+        nodeHtml += `<div class="parent-line"></div>`;
+      }
+      nodeHtml += `</div>`;
+      
+      if (hasChildren) {
+        nodeHtml += `<div class="children-column">`;
+        children.forEach(child => {
+          nodeHtml += `<div class="child-wrapper">`;
+          nodeHtml += `<div class="child-line"></div>`;
+          nodeHtml += printNodeHtml(child);
+          nodeHtml += `</div>`;
+        });
+        
+        if (showEndDevices) {
+          connDevs.forEach(d => {
+            const isPrinter = d.device_type === 'Impresora' || (d.hostname || '').toLowerCase().includes('prn') || (d.hostname || '').toLowerCase().includes('imp');
+            nodeHtml += `<div class="child-wrapper">`;
+            nodeHtml += `<div class="child-line"></div>`;
+            nodeHtml += `<div class="device-card">`;
+            nodeHtml += `<span class="device-icon">${isPrinter ? '🖨️' : '💻'}</span>`;
+            nodeHtml += `<div style="flex:1; min-w:0;">`;
+            nodeHtml += `<div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#1e293b;">${d.hostname || 'Sin hostname'}</div>`;
+            nodeHtml += `<div style="color:#64748b; font-size:8px; margin-top:2px; display:flex; justify-content:space-between; align-items:center;">`;
+            nodeHtml += `<span>${d.ip || 'DHCP'}</span>`;
+            nodeHtml += `<span class="device-port">Boca ${d.switch_port}</span>`;
+            nodeHtml += `</div>`;
+            nodeHtml += `</div>`;
+            nodeHtml += `</div>`;
+            nodeHtml += `</div>`;
+          });
+        }
+        
+        nodeHtml += `</div>`;
+      }
+      
+      nodeHtml += `</div>`;
+      return nodeHtml;
+    };
+    
+    roots.forEach(root => {
+      html += printNodeHtml(root);
+    });
+    
+    html += `</div></body></html>`;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-0 md:p-6 text-slate-100">
       <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-none md:rounded-2xl w-full h-full md:h-[90vh] md:max-w-6xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -6798,16 +6916,25 @@ function TopologyMapModal({
                 type="checkbox"
                 checked={showEndDevices}
                 onChange={(e) => setShowEndDevices(e.target.checked)}
-                className="rounded border-slate-700 text-sky-500 focus:ring-sky-500 bg-slate-950 h-4 w-4"
+                className="rounded border-slate-700 text-sky-500 focus:ring-sky-500 bg-slate-955 h-4 w-4"
               />
               <span className="font-semibold">Mostrar PCs/Impresoras</span>
             </label>
+
+            {/* Print PDF Button */}
+            <button
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20 transition-colors"
+              onClick={printTopology}
+              title="Imprimir diagrama de topología actual"
+            >
+              <Printer size={14} /> PDF
+            </button>
 
             {/* City Selector */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-400 font-bold">Subred:</span>
               <select
-                className="bg-slate-955 border border-slate-850 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
                 value={selectedCity}
                 onChange={(e) => { setSelectedCity(e.target.value); setSelectedNode(null); }}
               >
