@@ -7318,27 +7318,27 @@ function SwitchPortMapModal({
     if (isDestFortinet) return 11;
     if (isDestCisco2901) return 4;
     if (isDestRaisecom) return 3;
-    return selectedDeviceToAssign.ports_count || 24;
+    
+    const raw = selectedDeviceToAssign.ports_count || 24;
+    const { copperCount, sfpCount } = getSwitchPortSchema(
+      selectedDeviceToAssign.type,
+      selectedDeviceToAssign.brand,
+      selectedDeviceToAssign.model,
+      raw
+    );
+    return copperCount + sfpCount;
   }, [selectedDeviceToAssign]);
 
   const targetPorts = useMemo(() => {
     if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return [];
-    const isDestFortinet = selectedDeviceToAssign.type === 'Fortinet';
-    const isDestCisco2901 = selectedDeviceToAssign.type === 'Router';
-    const isDestRaisecom = selectedDeviceToAssign.type === 'Conversor';
     
-    let destLabels = [];
-    if (isDestFortinet) {
-      destLabels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
-    } else if (isDestCisco2901) {
-      destLabels = ['Console', 'Aux', 'GE 0/0', 'GE 0/1'];
-    } else if (isDestRaisecom) {
-      destLabels = ['Optico (Fibra)', 'FastEthernet (LAN)', 'Console'];
-    }
-
     const list = [];
     for (let p = 1; p <= destCount; p++) {
-      const label = (isDestFortinet || isDestCisco2901 || isDestRaisecom) ? destLabels[p - 1] : `Boca #${p}`;
+      const label = getPortName(
+        selectedDeviceToAssign.type,
+        selectedDeviceToAssign.model,
+        p
+      );
       list.push({ value: p, label });
     }
     return list;
