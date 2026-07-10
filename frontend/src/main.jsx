@@ -72,7 +72,8 @@ const getInfraGroup = (item) => {
 };
 
 const getSwitchPortSchema = (type, brand, model, portsCountFromDb) => {
-  const isSwitch = type === 'Switch';
+  const typeLower = (type || '').toLowerCase();
+  const isSwitch = typeLower.includes('switch');
   const brandLower = (brand || '').toLowerCase();
   const modelLower = (model || '').toLowerCase();
   const isCiscoOrJuniper = brandLower.includes('cisco') || 
@@ -107,9 +108,10 @@ const getSwitchPortSchema = (type, brand, model, portsCountFromDb) => {
 
 const getPortName = (type, model, portNum, totalPorts) => {
   if (!portNum) return '—';
-  const isFortinet = type === 'Fortinet';
-  const isCisco2901 = type === 'Router';
-  const isRaisecom = type === 'Conversor';
+  const typeLower = (type || '').toLowerCase();
+  const isFortinet = typeLower === 'fortinet';
+  const isCisco2901 = typeLower === 'router';
+  const isRaisecom = typeLower === 'conversor';
   
   if (isFortinet) {
     const labels = ['Console', 'Wan 2', 'Wan 1', 'DMZ', 'B', 'A', '5', '4', '3', '2', '1'];
@@ -124,10 +126,9 @@ const getPortName = (type, model, portNum, totalPorts) => {
     return labels[portNum - 1] || `Boca #${portNum}`;
   }
 
-  // Identificar puertos de fibra SFP en switches Cisco y Juniper
+  // Identificar puertos de fibra SFP en switches
   const modelLower = (model || '').toLowerCase();
-  const isCiscoOrJuniper = modelLower.includes('cisco') || modelLower.includes('juniper') || modelLower.includes('catalyst') || modelLower.includes('ex2200') || modelLower.includes('sg110') || modelLower.includes('des-1008');
-  if (type === 'Switch' && isCiscoOrJuniper) {
+  if (typeLower.includes('switch')) {
     let finalTotal = totalPorts;
     if (!finalTotal) {
       // Heurística si no viene totalPorts
