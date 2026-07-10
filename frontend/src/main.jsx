@@ -7394,8 +7394,8 @@ function SwitchPortMapModal({
   // Schema for copper and SFP ports count
   const { copperCount, sfpCount } = useMemo(() => {
     const raw = isFortinet ? 11 : (isCisco2901 ? 4 : (isRaisecom ? 3 : (currentActiveSwitch.ports_count || 24)));
-    return getSwitchPortSchema(currentActiveSwitch.type, currentActiveSwitch.model, raw);
-  }, [currentActiveSwitch.type, currentActiveSwitch.model, isFortinet, isCisco2901, isRaisecom, currentActiveSwitch.ports_count]);
+    return getSwitchPortSchema(currentActiveSwitch.type, currentActiveSwitch.brand, currentActiveSwitch.model, raw);
+  }, [currentActiveSwitch.type, currentActiveSwitch.brand, currentActiveSwitch.model, isFortinet, isCisco2901, isRaisecom, currentActiveSwitch.ports_count]);
 
   const portsCount = copperCount + sfpCount;
 
@@ -7675,7 +7675,7 @@ function SwitchPortMapModal({
                       const dev = portDeviceMap[portNum];
                       const isSelected = selectedPort === portNum;
                       const label = (isFortinet || isCisco2901 || isRaisecom) ? fortinetShort[i] : portNum;
-                      const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum);
+                      const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum, activeSwitch.brand);
                       const labelFontSize = (isFortinet || isCisco2901 || isRaisecom) && label.length > 2 ? 'text-[7.5px]' : 'text-[10px]';
                       return (
                         <div
@@ -7717,7 +7717,7 @@ function SwitchPortMapModal({
                           const portNum = copperCount + i + 1;
                           const dev = portDeviceMap[portNum];
                           const isSelected = selectedPort === portNum;
-                          const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum);
+                          const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum, activeSwitch.brand);
                           return (
                             <div
                               key={portNum}
@@ -7777,7 +7777,7 @@ function SwitchPortMapModal({
                     <div>
                       <span className="text-[10px] uppercase font-bold text-zinc-455 dark:text-slate-550">Puerto seleccionado</span>
                       <h4 className="text-xl font-black text-zinc-900 dark:text-white">
-                        {isFortinet || isCisco2901 || isRaisecom ? `INTERFAZ: ${getPortName(activeSwitch.type, activeSwitch.model, selectedPort).toUpperCase()}` : `BOCA #${selectedPort}`}
+                        {isFortinet || isCisco2901 || isRaisecom ? `INTERFAZ: ${getPortName(activeSwitch.type, activeSwitch.model, selectedPort, activeSwitch.brand).toUpperCase()}` : getPortName(activeSwitch.type, activeSwitch.model, selectedPort, activeSwitch.brand).toUpperCase()}
                       </h4>
                     </div>
                     <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${
@@ -7815,8 +7815,8 @@ function SwitchPortMapModal({
                                 <span className="text-zinc-455 dark:text-slate-550">Enlace de Red:</span>
                                 <span className="font-bold text-zinc-900 dark:text-cyan-400 bg-cyan-500/5 px-2 py-0.5 rounded border border-cyan-500/10">
                                   {selectedDevice.isParent
-                                    ? `Va a Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, activeSwitch.switch_port)} de este ${selectedDevice.type}`
-                                    : `Viene de Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, selectedDevice.local_port)} de este ${selectedDevice.type}`
+                                    ? `Va a Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, activeSwitch.switch_port, selectedDevice.brand)} de este ${selectedDevice.type}`
+                                    : `Viene de Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, selectedDevice.local_port, selectedDevice.brand)} de este ${selectedDevice.type}`
                                   }
                                 </span>
                               </p>
