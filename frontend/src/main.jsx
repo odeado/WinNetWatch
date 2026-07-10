@@ -1095,6 +1095,26 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
 
    async function saveEmployee(form) {
     try {
+      // VALIDACIÓN DUPLICADOS: Verificar email o nombre completo
+      const email = (form.email || '').trim().toLowerCase();
+      const fullName = (form.full_name || '').trim().toLowerCase();
+      const isEdit = !!form.id;
+
+      if (email) {
+        const emailDuplicate = employees.some(e => (!isEdit || e.id !== form.id) && (e.email || '').trim().toLowerCase() === email);
+        if (emailDuplicate) {
+          alert(`Ya existe un empleado registrado con el correo: ${form.email}.`);
+          return;
+        }
+      }
+      if (fullName) {
+        const nameDuplicate = employees.some(e => (!isEdit || e.id !== form.id) && (e.full_name || '').trim().toLowerCase() === fullName);
+        if (nameDuplicate) {
+          alert(`Ya existe un empleado registrado con el nombre: ${form.full_name}.`);
+          return;
+        }
+      }
+
       const payload = {
         full_name: form.full_name || '',
         email: form.email || '',
@@ -2337,6 +2357,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   .badges { display:flex; gap:4px; flex-shrink:0; }
   .badge { font-size:8px; font-weight:bold; text-transform:uppercase; padding:2px 6px; border-radius:3px; }
   .badge-switch   { background:#e0f2fe; color:#0369a1; }
+  .badge-switch-generic { background:#fef3c7; color:#b45309; }
   .badge-modem    { background:#ecfdf5; color:#047857; }
   .badge-fortinet { background:#fff7ed; color:#c2410c; }
   .badge-new    { background:#d1fae5; color:#065f46; }
@@ -2367,6 +2388,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         let badgeType = 'badge-modem';
         let badgeLabel = 'MÓDEM';
         if (item.type === 'Switch') { badgeType = 'badge-switch'; badgeLabel = 'SWITCH'; }
+        else if (item.type === 'Switch Genérico') { badgeType = 'badge-switch-generic'; badgeLabel = 'SWITCH GENÉRICO'; }
         else if (item.type === 'Fortinet') { badgeType = 'badge-fortinet'; badgeLabel = 'FORTINET'; }
         else if (item.type === 'Router') { badgeType = 'badge-switch'; badgeLabel = 'ROUTER'; }
         else if (item.type === 'Conversor') { badgeType = 'badge-fortinet'; badgeLabel = 'CONVERSOR'; }
@@ -4074,6 +4096,11 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                           <Network size={13} className="text-sky-500" />
                                           <span>Switch</span>
                                         </div>
+                                      ) : item.type === 'Switch Genérico' ? (
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold shadow-sm">
+                                          <Network size={13} className="text-amber-500" />
+                                          <span>Switch Genérico</span>
+                                        </div>
                                       ) : item.type === 'Fortinet' ? (
                                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-bold shadow-sm">
                                           <Shield size={13} className="text-orange-500" />
@@ -4112,7 +4139,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                   <td className="py-3 px-4">
                                     {item.ports_count !== null && item.ports_count !== undefined
                                       ? `${item.ports_count} ${
-                                          item.type === 'Switch' ? 'Bocas' :
+                                          item.type === 'Switch' || item.type === 'Switch Genérico' ? 'Bocas' :
                                           item.type === 'Fortinet' ? 'Int.' :
                                           item.type === 'Router' ? 'Int.' :
                                           item.type === 'Conversor' ? 'Int.' :
@@ -4147,7 +4174,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                   </td>
                                   <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-end gap-2">
-                                      {(item.type === 'Switch' || item.type === 'Fortinet' || item.type === 'Modem' || item.type === 'Router' || item.type === 'Conversor') && (
+                                      {(item.type === 'Switch' || item.type === 'Switch Genérico' || item.type === 'Fortinet' || item.type === 'Modem' || item.type === 'Router' || item.type === 'Conversor') && (
                                         <button
                                           onClick={(e) => { e.stopPropagation(); setActiveSwitchForPorts(item); }}
                                           className={`button primary py-1 px-2.5 text-xs flex items-center gap-1 border-0 whitespace-nowrap ${
@@ -4159,6 +4186,8 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                                               ? 'bg-gradient-to-r from-violet-600 to-indigo-700 hover:from-violet-500 hover:to-indigo-600'
                                               : item.type === 'Conversor'
                                               ? 'bg-gradient-to-r from-pink-600 to-fuchsia-700 hover:from-pink-500 hover:to-fuchsia-600'
+                                              : item.type === 'Switch Genérico'
+                                              ? 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-extrabold'
                                               : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600'
                                           }`}
                                         >
@@ -4213,7 +4242,8 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                               onChange={(e) => setInfraModal({ ...infraModal, form: { ...infraModal.form, type: e.target.value } })}
                               required
                             >
-                              <option value="Switch">Switch</option>
+                              <option value="Switch">Switch Administrable</option>
+                              <option value="Switch Genérico">Switch Genérico (No Administrable)</option>
                               <option value="Modem">Módem</option>
                               <option value="Fortinet">Fortinet / Firewall</option>
                               <option value="Router">Router</option>
@@ -6668,6 +6698,7 @@ function TopologyMapModal({
       case 'Router': return <Server size={16} className="text-violet-505 dark:text-violet-500" />;
       case 'Conversor': return <Cable size={16} className="text-pink-505 dark:text-pink-500" />;
       case 'Switch': return <Network size={16} className="text-sky-505 dark:text-sky-500" />;
+      case 'Switch Genérico': return <Network size={16} className="text-amber-500 dark:text-amber-400 animate-pulse" />;
       default: return <Router size={16} className="text-emerald-505 dark:text-emerald-500" />;
     }
   };
@@ -6676,6 +6707,11 @@ function TopologyMapModal({
     const status = node.status;
     const isSelected = selectedNode && selectedNode.id === node.id;
     if (isSelected) return 'border-sky-500 shadow-sky-500/10';
+    if (node.type === 'Switch Genérico') {
+      if (status === 'apagado') return 'border-zinc-650/40 hover:border-zinc-500 shadow-zinc-500/5';
+      if (status === 'malo') return 'border-red-500/40 hover:border-red-500 shadow-red-500/5';
+      return 'border-amber-500/50 hover:border-amber-500 shadow-amber-500/10';
+    }
     if (status === 'nuevo' || status === 'online') return 'border-emerald-500/40 hover:border-emerald-500 shadow-emerald-500/5';
     if (status === 'apagado') return 'border-zinc-650/40 hover:border-zinc-500 shadow-zinc-500/5';
     if (status === 'malo') return 'border-red-500/40 hover:border-red-500 shadow-red-500/5';
@@ -7365,6 +7401,7 @@ function SwitchPortMapModal({
           if (s.type === 'Fortinet') return 3;
           if (s.type === 'Router') return 3;
           if (s.type === 'Switch') return 2;
+          if (s.type === 'Switch Genérico') return 1.5;
           return 1; // Modem / Conversor
         };
         const activeRank = rank(currentActiveSwitch);
