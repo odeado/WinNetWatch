@@ -8002,7 +8002,7 @@ function SwitchPortMapModal({
                                     Conectar al Puerto de {selectedDeviceToAssign.brand} {selectedDeviceToAssign.model}:
                                   </label>
                                   <select
-                                    className="input text-xs w-full py-1.5 px-2 bg-zinc-950 border-zinc-800 text-white rounded-lg focus:ring-1 focus:ring-emerald-500"
+                                    className="input text-xs w-full py-1.5 px-2 bg-white dark:bg-slate-950 border border-zinc-300 dark:border-slate-800 text-zinc-900 dark:text-white rounded-lg focus:ring-1 focus:ring-emerald-500"
                                     value={selectedTargetPort}
                                     onChange={(e) => setSelectedTargetPort(Number(e.target.value))}
                                   >
