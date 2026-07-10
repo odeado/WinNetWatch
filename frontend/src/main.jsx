@@ -7418,18 +7418,48 @@ function SwitchPortMapModal({
   const targetPorts = useMemo(() => {
     if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return [];
     
+    // Buscar ocupantes de los puertos del equipo destino
+    const occupiedDevices = devices.filter(d => d.switch_id === selectedDeviceToAssign.id);
+    const occupiedInfras = infrastructure.filter(i => i.switch_id === selectedDeviceToAssign.id);
+    
     const list = [];
     for (let p = 1; p <= destCount; p++) {
-      const label = getPortName(
+      const baseLabel = getPortName(
         selectedDeviceToAssign.type,
         selectedDeviceToAssign.model,
         p,
         destCount
       );
+      
+      let occupant = null;
+      
+      // 1. Verificar si está conectado a su switch padre
+      if (selectedDeviceToAssign.switch_id && selectedDeviceToAssign.local_port === p) {
+        const parent = infrastructure.find(i => i.id === selectedDeviceToAssign.switch_id);
+        occupant = parent ? `Enlace a ${parent.brand} ${parent.model}` : 'Enlace Superior';
+      }
+      
+      // 2. Verificar si hay un switch cascada conectado a este puerto
+      if (!occupant) {
+        const matchedInfra = occupiedInfras.find(i => parseInt(i.switch_port, 10) === p);
+        if (matchedInfra) {
+          occupant = `Cascada: ${matchedInfra.brand} ${matchedInfra.model}`;
+        }
+      }
+      
+      // 3. Verificar si hay un dispositivo conectado a este puerto
+      if (!occupant) {
+        const matchedDev = occupiedDevices.find(d => parseInt(d.switch_port, 10) === p);
+        if (matchedDev) {
+          occupant = matchedDev.hostname || matchedDev.ip || 'Terminal';
+        }
+      }
+      
+      const label = occupant ? `${baseLabel} 🔴 (${occupant})` : `${baseLabel} 🟢 (Libre)`;
       list.push({ value: p, label });
     }
     return list;
-  }, [selectedDeviceToAssign, destCount]);
+  }, [selectedDeviceToAssign, destCount, devices, infrastructure]);
 
   // Find all connected elements (devices + other infrastructure cascaded here)
   const connectedElements = useMemo(() => {
