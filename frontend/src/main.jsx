@@ -3951,30 +3951,30 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                     />
                     <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
                     <button
-                      className="button secondary text-xs flex items-center gap-1.5 px-3.5 py-2.5 font-bold rounded-xl"
+                      className="button secondary text-xs flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 font-bold rounded-xl"
                       onClick={() => downloadInfraExcel()}
                       title="Exportar a Excel"
                     >
                       <FileDown size={15} /> Excel
                     </button>
                     <button
-                      className="button secondary text-xs flex items-center gap-1.5 px-3.5 py-2.5 font-bold rounded-xl"
+                      className="button secondary text-xs flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 font-bold rounded-xl"
                       onClick={() => printInfraPDF()}
                       title="Imprimir reporte en PDF"
                     >
                       <Printer size={15} /> PDF
                     </button>
                     <button
-                      className="button secondary text-xs flex items-center gap-1.5 px-3.5 py-2.5 font-bold rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 hover:bg-violet-500/20"
+                      className="button secondary text-xs flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 font-bold rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 hover:bg-violet-500/20"
                       onClick={() => setShowTopologyMap(true)}
                       title="Ver Diagrama de Flujo / Topología de Red"
                     >
                       <Network size={15} className="text-violet-500" /> Topología
                     </button>
                     <button
-                      className="button primary text-xs flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl"
+                      className="button primary text-xs flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2.5 font-bold rounded-xl"
                       onClick={() => setInfraModal({ mode: 'create', form: { type: 'Switch', brand: '', model: '', serial_number: '', ports_count: 24, location: 'Matta', status: 'nuevo', acquired_at: new Date().toISOString().split('T')[0], notes: '', mac: '', floor: '1', ip: '', city: 'Antofagasta' } })}
                     >
                       <Plus size={16} /> Agregar Infraestructura
@@ -6900,19 +6900,19 @@ function TopologyMapModal({
       <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-none md:rounded-2xl w-full h-full md:h-[90vh] md:max-w-6xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-slate-905 border-b border-slate-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-shrink-0">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 border-b border-slate-800 flex flex-col gap-3 md:flex-row md:items-center md:justify-between flex-shrink-0">
           <div>
-            <h3 className="text-lg font-bold flex items-center gap-2 text-white">
-              <Network className="text-violet-500" size={24} />
+            <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 text-white">
+              <Network className="text-violet-500 flex-shrink-0" size={20} />
               Diagrama de Flujo / Topología de Red
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 font-medium">
               Mapa jerárquico interactivo de los switches, routers, conversores y módems configurados.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-start md:justify-end">
             {/* Show End Devices Checkbox */}
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-350 dark:text-slate-300 select-none mr-2 bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-1.5">
+            <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs text-slate-350 dark:text-slate-300 select-none bg-slate-950/50 border border-slate-800 rounded-lg px-2.5 py-1.5 flex-shrink-0">
               <input
                 type="checkbox"
                 checked={showEndDevices}
@@ -6924,18 +6924,18 @@ function TopologyMapModal({
 
             {/* Print PDF Button */}
             <button
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20 transition-colors flex-shrink-0"
               onClick={printTopology}
               title="Imprimir diagrama de topología actual"
             >
-              <Printer size={14} /> PDF
+              <Printer size={13} /> PDF
             </button>
 
             {/* City Selector */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400 font-bold">Subred:</span>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[11px] sm:text-xs text-slate-400 font-bold">Subred:</span>
               <select
-                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] sm:text-xs text-slate-200 focus:outline-none focus:border-sky-500"
                 value={selectedCity}
                 onChange={(e) => { setSelectedCity(e.target.value); setSelectedNode(null); }}
               >
@@ -6946,7 +6946,7 @@ function TopologyMapModal({
             </div>
             
             <button 
-              className="text-2xl text-slate-400 hover:text-white font-bold ml-2 leading-none" 
+              className="text-2xl text-slate-400 hover:text-white font-bold ml-auto md:ml-2 leading-none p-1 flex-shrink-0" 
               onClick={onClose}
             >
               ×
