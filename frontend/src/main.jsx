@@ -89,6 +89,16 @@ const getPortName = (type, model, portNum) => {
     const labels = ['Optico (Fibra)', 'FastEthernet (LAN)', 'Console'];
     return labels[portNum - 1] || `Boca #${portNum}`;
   }
+
+  // Identificar puertos de fibra SFP en switches Cisco y Juniper
+  const modelLower = (model || '').toLowerCase();
+  const isCiscoOrJuniper = modelLower.includes('cisco') || modelLower.includes('juniper') || modelLower.includes('catalyst') || modelLower.includes('ex2200') || modelLower.includes('sg110') || modelLower.includes('des-1008');
+  if (type === 'Switch' && isCiscoOrJuniper) {
+    if (portNum === 9 || portNum === 10 || (portNum >= 25 && portNum <= 28) || (portNum >= 49 && portNum <= 52)) {
+      return `Boca #${portNum} (SFP Fibra)`;
+    }
+  }
+
   return `Boca #${portNum}`;
 };
 
