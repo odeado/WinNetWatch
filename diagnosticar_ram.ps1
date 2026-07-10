@@ -1,7 +1,8 @@
-# Script de diagnostico de memoria RAM para Win NetWatch
+# Script de diagnostico de memoria RAM para Win NetWatch (Bucle Continuo)
 # Registra estadisticas de memoria fisica y virtual, pools de kernel y procesos principales.
 
 $logFile = Join-Path $PSScriptRoot "registro_uso_ram.txt"
+$intervalSeconds = 300 # 5 minutos entre lecturas
 
 function Obtener-LogInfo {
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -72,8 +73,18 @@ function Obtener-LogInfo {
     return $out -join "`r`n"
 }
 
-# Ejecucion
-$info = Obtener-LogInfo
-Write-Output $info
-$info | Add-Content -Path $logFile
-Write-Host "[+] Diagnostico completado. Registrado en: $logFile" -ForegroundColor Green
+# Bucle infinito de diagnostico
+Write-Host "Iniciando bucle de diagnostico continuo de RAM..." -ForegroundColor Cyan
+Write-Host "Se realizara una lectura cada $intervalSeconds segundos." -ForegroundColor Cyan
+Write-Host "El registro se guarda en: $logFile" -ForegroundColor Cyan
+Write-Host "Puedes minimizar esta ventana. Para detener, cierra la consola o presiona Ctrl+C.`n" -ForegroundColor Yellow
+
+while ($true) {
+    $info = Obtener-LogInfo
+    Write-Output $info
+    $info | Add-Content -Path $logFile
+    
+    Write-Host "[+] Registro guardado a las $(Get-Date -Format 'HH:mm:ss'). Esperando $intervalSeconds segundos para la siguiente lectura..." -ForegroundColor Green
+    Start-Sleep -Seconds $intervalSeconds
+    Write-Host "`n------------------------------------------------------------`n"
+}
