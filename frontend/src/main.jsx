@@ -1948,7 +1948,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         (item.ip || '').toLowerCase().includes(q) ||
         (item.serial_number || '').toLowerCase().includes(q)
       );
-      const matchCity = !cityFilter || getInfraGroup(item) === cityFilter;
+      const matchCity = !cityFilter || getInfraGroup(item) === cityFilter || getInfraGroup(item).startsWith(cityFilter + ' - ');
       return matchQuery && matchCity;
     });
 
@@ -2129,7 +2129,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         (item.ip || '').toLowerCase().includes(q) ||
         (item.serial_number || '').toLowerCase().includes(q)
       );
-      const matchCity = !cityFilter || getInfraGroup(item) === cityFilter;
+      const matchCity = !cityFilter || getInfraGroup(item) === cityFilter || getInfraGroup(item).startsWith(cityFilter + ' - ');
       return matchQuery && matchCity;
     });
 
@@ -6637,7 +6637,12 @@ function TopologyMapModal({
   // 1. Filter infrastructure by selected city/group
   const filteredInfra = useMemo(() => {
     if (selectedCity === 'Todos') return infrastructure;
-    return infrastructure.filter(item => getInfraGroup(item) === selectedCity);
+    return infrastructure.filter(item => {
+      const itemGroup = getInfraGroup(item);
+      if (itemGroup === selectedCity) return true;
+      if (itemGroup.startsWith(selectedCity + ' - ')) return true;
+      return false;
+    });
   }, [infrastructure, selectedCity]);
 
   // 2. Build tree structure: children map & unique roots
