@@ -6705,11 +6705,30 @@ function TopologyMapModal({
     });
   }, [infrastructure, selectedCity]);
 
-  // 2. Build tree structure: children map & unique roots
+  // 2. Build tree structure: children map & unique roots (sorted by sub-location: no-badge first, then alphabetical sub-locations)
   const { roots, childrenMap } = useMemo(() => {
     const childrenMap = {};
     const roots = [];
     const itemIds = new Set(filteredInfra.map(i => i.id));
+
+    const sortInfraItems = (items) => {
+      return [...items].sort((a, b) => {
+        const subA = getSubLocation(a.location);
+        const subB = getSubLocation(b.location);
+
+        if (!subA && subB) return -1;
+        if (subA && !subB) return 1;
+
+        if (subA && subB) {
+          const comp = subA.localeCompare(subB);
+          if (comp !== 0) return comp;
+        }
+
+        const nameA = `${a.brand || ''} ${a.model || ''} ${a.ip || ''}`;
+        const nameB = `${b.brand || ''} ${b.model || ''} ${b.ip || ''}`;
+        return nameA.localeCompare(nameB);
+      });
+    };
 
     filteredInfra.forEach(item => {
       // If it points to a parent that exists in our current filtered list, it's a child
@@ -6732,7 +6751,14 @@ function TopologyMapModal({
     });
 
     const uniqueRoots = Array.from(new Set(roots));
-    return { roots: uniqueRoots, childrenMap };
+    const sortedRoots = sortInfraItems(uniqueRoots);
+
+    // Sort children list for each switch/node
+    Object.keys(childrenMap).forEach(key => {
+      childrenMap[key] = sortInfraItems(childrenMap[key]);
+    });
+
+    return { roots: sortedRoots, childrenMap };
   }, [filteredInfra]);
 
   // Get list of existing city groups for filtering
