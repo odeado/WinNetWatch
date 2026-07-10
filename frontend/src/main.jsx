@@ -6681,6 +6681,7 @@ function TopologyMapModal({
   const [selectedNode, setSelectedNode] = useState(null);
   const [showEndDevices, setShowEndDevices] = useState(false);
   const [printZoom, setPrintZoom] = useState(80);
+  const [canvasZoom, setCanvasZoom] = useState(100);
 
   if (!isOpen) return null;
 
@@ -6804,29 +6805,29 @@ function TopologyMapModal({
         <div className="relative py-2 flex-shrink-0">
           <div 
             onClick={() => setSelectedNode(node)}
-            className={`w-60 p-3.5 bg-slate-950/70 dark:bg-slate-900/90 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${getBorderColor(node)} ${
+            className={`w-60 p-3.5 bg-white dark:bg-slate-900/90 rounded-2xl border-2 transition-all duration-200 cursor-pointer shadow-md ${getBorderColor(node)} ${
               isSelected ? 'ring-2 ring-sky-500 scale-[1.03] border-sky-500 z-10' : ''
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5 min-w-0">
                 {renderIcon(node.type)}
-                <span className="text-xs font-bold truncate text-slate-100">{node.brand} {node.model}</span>
+                <span className="text-xs font-bold truncate text-zinc-900 dark:text-slate-100">{node.brand} {node.model}</span>
               </div>
               <span className={getStatusBadge(node.status)}>{node.status}</span>
             </div>
 
-            <div className="text-[10px] space-y-1 font-mono text-slate-400">
+            <div className="text-[10px] space-y-1 font-mono text-zinc-500 dark:text-slate-400">
               <div className="flex justify-between">
                 <span>IP:</span>
-                <span className="text-slate-200 font-bold">{node.ip || '—'}</span>
+                <span className="text-zinc-800 dark:text-slate-200 font-bold">{node.ip || '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Ubic.:</span>
-                <span className="text-slate-300 max-w-[120px] truncate" title={node.location}>{node.location || '—'}</span>
+                <span className="text-zinc-700 dark:text-slate-300 max-w-[120px] truncate" title={node.location}>{node.location || '—'}</span>
               </div>
               {connDevs.length > 0 && (
-                <div className="flex justify-between text-sky-400 text-[9px] font-sans pt-1 border-t border-slate-800/60 mt-1">
+                <div className="flex justify-between text-sky-600 dark:text-sky-400 text-[9px] font-sans pt-1 border-t border-zinc-200 dark:border-slate-800/60 mt-1">
                   <span>Conexiones:</span>
                   <span className="font-bold">🖥️ {connDevs.length} activos</span>
                 </div>
@@ -6835,7 +6836,7 @@ function TopologyMapModal({
 
             {/* Display connection label inside card if it's connected to parent */}
             {node.switch_id && node.local_port && (
-              <div className="mt-2 text-[9px] bg-sky-500/5 text-cyan-405 border border-cyan-500/10 rounded px-1.5 py-0.5 text-center font-mono flex items-center justify-between">
+              <div className="mt-2 text-[9px] bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/30 rounded px-1.5 py-0.5 text-center font-mono flex items-center justify-between">
                 <span>Boca: {getPortName(node.type, node.model, node.local_port)}</span>
                 <span>➜</span>
               </div>
@@ -6844,19 +6845,19 @@ function TopologyMapModal({
 
           {/* Right horizontal connector line leading to children vertical line */}
           {hasChildren && (
-            <div className="absolute top-1/2 -right-6 w-6 h-0.5 bg-slate-700/60"></div>
+            <div className="absolute top-1/2 -right-6 w-6 h-0.5 bg-zinc-300 dark:bg-slate-700/60"></div>
           )}
         </div>
 
         {/* Children Render Column */}
         {hasChildren && (
-          <div className="flex flex-col gap-4 ml-6 relative pl-4 border-l-2 border-slate-700/50 py-3">
+          <div className="flex flex-col gap-4 ml-6 relative pl-4 border-l-2 border-zinc-300 dark:border-slate-700/50 py-3">
             {/* Render Switch/Router children first */}
             {children.map(child => {
               return (
                 <div key={child.id} className="relative flex items-center">
                   {/* Left horizontal line connecting child to vertical parent line */}
-                  <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-slate-700/50"></div>
+                  <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-zinc-300 dark:bg-slate-700/50"></div>
                   {renderTreeNode(child)}
                 </div>
               );
@@ -6868,20 +6869,24 @@ function TopologyMapModal({
               const isOffline = d.status === 'offline';
               return (
                 <div key={d.id} className="relative flex items-center">
-                  <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-slate-700/50"></div>
+                  <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-zinc-300 dark:bg-slate-700/50"></div>
                   
-                  <div className={`w-48 p-2.5 bg-slate-950/50 dark:bg-slate-900/65 rounded-xl border transition duration-150 flex items-center gap-2 shadow-sm ${
-                    isOffline ? 'border-slate-800/80 opacity-60' : 'border-emerald-500/30 hover:border-emerald-500/70 shadow-emerald-500/5'
+                  <div className={`w-48 p-2.5 bg-zinc-50 dark:bg-slate-900/65 rounded-xl border transition duration-150 flex items-center gap-2 shadow-sm ${
+                    isOffline ? 'border-zinc-200 dark:border-slate-800/80 opacity-60' : 'border-emerald-500/20 hover:border-emerald-500/70 shadow-emerald-500/5'
                   }`}>
-                    <div className={`p-1.5 rounded flex-shrink-0 relative ${isOffline ? 'bg-slate-900 text-slate-500' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                    <div className={`p-1.5 rounded flex-shrink-0 relative ${
+                      isOffline 
+                        ? 'bg-zinc-200 dark:bg-slate-900 text-zinc-500 dark:text-slate-500' 
+                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    }`}>
                       {isPrinter ? <Printer size={12} /> : <Laptop size={12} />}
-                      <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-slate-950 ${isOffline ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_4px_#10b981]'}`}></span>
+                      <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-slate-955 ${isOffline ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_4px_#10b981]'}`}></span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-[10px] font-bold text-slate-200 truncate" title={d.hostname}>{d.hostname || 'Sin hostname'}</div>
-                      <div className="text-[9px] font-mono text-slate-500 mt-0.5 flex justify-between items-center">
+                      <div className="text-[10px] font-bold text-zinc-800 dark:text-slate-200 truncate" title={d.hostname}>{d.hostname || 'Sin hostname'}</div>
+                      <div className="text-[9px] font-mono text-zinc-500 mt-0.5 flex justify-between items-center">
                         <span>{d.ip || 'DHCP'}</span>
-                        <span className="bg-slate-800 text-slate-400 px-1 rounded text-[8px] font-semibold">Boca {d.switch_port}</span>
+                        <span className="bg-zinc-200 dark:bg-slate-800 text-zinc-650 dark:text-slate-400 px-1 rounded text-[8px] font-semibold">Boca {d.switch_port}</span>
                       </div>
                     </div>
                   </div>
@@ -7036,37 +7041,37 @@ function TopologyMapModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-0 md:p-6 text-slate-100">
-      <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-none md:rounded-2xl w-full h-full md:h-[90vh] md:max-w-6xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[9999] bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-0 md:p-6 text-zinc-900 dark:text-slate-100">
+      <div className="bg-white dark:bg-slate-900 border-0 md:border border-zinc-200 dark:border-slate-800 shadow-2xl rounded-none md:rounded-2xl w-full h-full md:h-[90vh] md:max-w-6xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
-        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 border-b border-slate-800 flex flex-col gap-3 md:flex-row md:items-center md:justify-between flex-shrink-0">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-zinc-50 dark:bg-slate-900/50 border-b border-zinc-200 dark:border-slate-800 flex flex-col gap-3 md:flex-row md:items-center md:justify-between flex-shrink-0">
           <div>
-            <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 text-white">
+            <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 text-zinc-950 dark:text-white">
               <Network className="text-violet-500 flex-shrink-0" size={20} />
               Diagrama de Flujo / Topología de Red
             </h3>
-            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 font-medium">
+            <p className="text-[10px] sm:text-xs text-zinc-500 dark:text-slate-400 mt-0.5 font-medium">
               Mapa jerárquico interactivo de los switches, routers, conversores y módems configurados.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-start md:justify-end">
             {/* Show End Devices Checkbox */}
-            <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs text-slate-350 dark:text-slate-300 select-none bg-slate-950/50 border border-slate-800 rounded-lg px-2.5 py-1.5 flex-shrink-0">
+            <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs text-zinc-700 dark:text-slate-350 select-none bg-white dark:bg-slate-950/50 border border-zinc-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 flex-shrink-0">
               <input
                 type="checkbox"
                 checked={showEndDevices}
                 onChange={(e) => setShowEndDevices(e.target.checked)}
-                className="rounded border-slate-700 text-sky-500 focus:ring-sky-500 bg-slate-955 h-4 w-4"
+                className="rounded border-zinc-300 dark:border-slate-700 text-sky-500 focus:ring-sky-500 bg-white dark:bg-slate-950 h-4 w-4"
               />
               <span className="font-semibold">Mostrar PCs/Impresoras</span>
             </label>
 
             {/* Print Zoom Selector */}
-            <div className="flex items-center gap-1.5 flex-shrink-0 bg-slate-950/50 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs">
-              <span className="text-slate-400 font-bold">Escala PDF:</span>
+            <div className="flex items-center gap-1.5 flex-shrink-0 bg-white dark:bg-slate-950/50 border border-zinc-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs text-zinc-600 dark:text-slate-400">
+              <span className="font-bold">Escala PDF:</span>
               <select
-                className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-[11px] sm:text-xs text-slate-200 focus:outline-none focus:border-sky-500 font-bold"
+                className="bg-white dark:bg-slate-900 border border-zinc-200 dark:border-slate-800 rounded px-1.5 py-0.5 text-[11px] sm:text-xs text-zinc-800 dark:text-slate-200 focus:outline-none focus:border-sky-500 font-bold"
                 value={printZoom}
                 onChange={(e) => setPrintZoom(parseInt(e.target.value, 10))}
               >
@@ -7089,10 +7094,10 @@ function TopologyMapModal({
             </button>
 
             {/* City Selector */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-[11px] sm:text-xs text-slate-400 font-bold">Subred:</span>
+            <div className="flex items-center gap-1.5 flex-shrink-0 text-zinc-600 dark:text-slate-400">
+              <span className="text-[11px] sm:text-xs font-bold">Subred:</span>
               <select
-                className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] sm:text-xs text-slate-200 focus:outline-none focus:border-sky-500"
+                className="bg-white dark:bg-slate-900 border border-zinc-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] sm:text-xs text-zinc-800 dark:text-slate-200 focus:outline-none focus:border-sky-500"
                 value={selectedCity}
                 onChange={(e) => { setSelectedCity(e.target.value); setSelectedNode(null); }}
               >
@@ -7103,7 +7108,7 @@ function TopologyMapModal({
             </div>
             
             <button 
-              className="text-2xl text-slate-400 hover:text-white font-bold ml-auto md:ml-2 leading-none p-1 flex-shrink-0" 
+              className="text-2xl text-zinc-400 hover:text-zinc-700 dark:hover:text-white font-bold ml-auto md:ml-2 leading-none p-1 flex-shrink-0" 
               onClick={onClose}
             >
               ×
@@ -7115,11 +7120,40 @@ function TopologyMapModal({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           
           {/* Left Area: Tree Diagram Canvas */}
-          <div className="flex-1 overflow-auto p-8 bg-slate-950/60 flex items-start justify-start select-none relative">
+          <div className="flex-1 overflow-auto p-8 bg-zinc-100 dark:bg-slate-950/60 flex items-start justify-start select-none relative min-h-0">
             {/* Grid dot background effect */}
-            <div className="absolute inset-0 bg-[radial-gradient(#334155_1.5px,transparent_1.5px)] [background-size:24px_24px] opacity-25 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(#334155_1.5px,transparent_1.5px)] [background-size:24px_24px] opacity-25 dark:opacity-20 pointer-events-none"></div>
 
-            <div className="min-w-max flex flex-col gap-12 py-4 relative z-10">
+            {/* Floating Zoom Controls */}
+            <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 border border-zinc-250 dark:border-slate-800 shadow-lg px-2.5 py-1.5 rounded-xl text-xs font-bold text-zinc-700 dark:text-slate-350">
+              <button 
+                onClick={() => setCanvasZoom(Math.max(50, canvasZoom - 10))} 
+                className="w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-slate-800 flex items-center justify-center border border-zinc-200 dark:border-slate-700/80 active:scale-95 transition"
+                title="Alejar Zoom"
+              >
+                -
+              </button>
+              <span className="min-w-[40px] text-center font-mono">{canvasZoom}%</span>
+              <button 
+                onClick={() => setCanvasZoom(Math.min(150, canvasZoom + 10))} 
+                className="w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-slate-800 flex items-center justify-center border border-zinc-200 dark:border-slate-700/80 active:scale-95 transition"
+                title="Acercar Zoom"
+              >
+                +
+              </button>
+              <button 
+                onClick={() => setCanvasZoom(100)} 
+                className="ml-1 px-2 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-slate-800 text-[10px] uppercase border border-zinc-200 dark:border-slate-700/80 active:scale-95 transition"
+                title="Restablecer a 100%"
+              >
+                100%
+              </button>
+            </div>
+
+            <div 
+              style={{ transform: `scale(${canvasZoom / 100})`, transformOrigin: 'top left' }}
+              className="min-w-max flex flex-col gap-12 py-4 relative z-10 transition-transform duration-150 ease-out"
+            >
               {roots.length > 0 ? (
                 roots.map(root => (
                   <div key={root.id} className="flex items-start">
@@ -7127,97 +7161,97 @@ function TopologyMapModal({
                   </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 font-medium">
-                  <Network size={40} className="text-slate-700 mb-3 animate-pulse" />
+                <div className="flex flex-col items-center justify-center text-center p-12 text-zinc-500 font-medium">
+                  <Network size={40} className="text-zinc-300 dark:text-slate-700 mb-3 animate-pulse" />
                   <p className="text-sm">No se encontraron dispositivos de red principales para mostrar.</p>
-                  <p className="text-xs text-slate-600 mt-1">Asegúrate de agregar switches o conversores en esta subred.</p>
+                  <p className="text-xs text-zinc-400 dark:text-slate-600 mt-1">Asegúrate de agregar switches o conversores en esta subred.</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Right Area: Selected Node Inspector Panel */}
-          <div className="w-full md:w-[350px] flex-shrink-0 p-6 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col overflow-y-auto min-h-0">
+          <div className="w-full md:w-[350px] flex-shrink-0 p-6 bg-white dark:bg-slate-900 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-slate-800 flex flex-col overflow-y-auto min-h-0">
             {selectedNode ? (
               <div className="space-y-5">
                 {/* Node Summary Card */}
-                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div className="bg-zinc-50 dark:bg-slate-950/50 border border-zinc-200 dark:border-slate-800 rounded-xl p-4 space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-slate-800 rounded-lg text-slate-300">
+                    <div className="p-2 bg-zinc-200 dark:bg-slate-850 rounded-lg text-zinc-700 dark:text-slate-350">
                       {renderIcon(selectedNode.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-extrabold text-sm text-white truncate">
+                      <h4 className="font-extrabold text-sm text-zinc-950 dark:text-white truncate">
                         {selectedNode.brand} {selectedNode.model}
                       </h4>
-                      <span className="text-[10px] text-slate-400 capitalize block mt-0.5 font-semibold">{selectedNode.type}</span>
+                      <span className="text-[10px] text-zinc-500 dark:text-slate-400 capitalize block mt-0.5 font-semibold">{selectedNode.type}</span>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/60 pt-2.5 space-y-2 text-xs font-mono">
+                  <div className="border-t border-zinc-200 dark:border-slate-800/65 pt-2.5 space-y-2 text-xs font-mono">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Dirección IP:</span>
-                      <span className="font-bold text-slate-200">{selectedNode.ip || '—'}</span>
+                      <span className="text-zinc-500">Dirección IP:</span>
+                      <span className="font-bold text-zinc-800 dark:text-slate-200">{selectedNode.ip || '—'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Dirección MAC:</span>
-                      <span className="text-slate-200">{selectedNode.mac || '—'}</span>
+                      <span className="text-zinc-500">Dirección MAC:</span>
+                      <span className="text-zinc-800 dark:text-slate-200">{selectedNode.mac || '—'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Ubicación:</span>
-                      <span className="text-slate-200">{selectedNode.location || '—'}</span>
+                      <span className="text-zinc-500">Ubicación:</span>
+                      <span className="text-zinc-800 dark:text-slate-200">{selectedNode.location || '—'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">N° Serie:</span>
-                      <span className="text-slate-200">{selectedNode.serial_number || '—'}</span>
+                      <span className="text-zinc-500">N° Serie:</span>
+                      <span className="text-zinc-800 dark:text-slate-200">{selectedNode.serial_number || '—'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Observaciones:</span>
-                      <span className="text-slate-300 text-right truncate max-w-[150px]" title={selectedNode.notes}>{selectedNode.notes || '—'}</span>
+                      <span className="text-zinc-500">Observaciones:</span>
+                      <span className="text-zinc-700 dark:text-slate-300 text-right truncate max-w-[150px]" title={selectedNode.notes}>{selectedNode.notes || '—'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Connection Path details */}
                 {selectedNodeDetails.parentInfo && (
-                  <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3.5 space-y-2 text-xs">
-                    <h5 className="font-bold text-cyan-400 flex items-center gap-1.5">
+                  <div className="bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800/30 rounded-xl p-3.5 space-y-2 text-xs">
+                    <h5 className="font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
                       <Network size={14} /> Conexión Superior (Padre)
                     </h5>
-                    <p className="text-slate-300">
-                      Este equipo se conecta desde su puerto <strong className="text-white">{getPortName(selectedNode.type, selectedNode.model, selectedNodeDetails.parentInfo.localPort)}</strong> hacia:
+                    <p className="text-zinc-650 dark:text-slate-300">
+                      Este equipo se conecta desde su puerto <strong className="text-zinc-950 dark:text-white">{getPortName(selectedNode.type, selectedNode.model, selectedNodeDetails.parentInfo.localPort)}</strong> hacia:
                     </p>
-                    <div className="bg-slate-955 p-2 rounded border border-slate-800 font-mono text-[10px] space-y-1">
-                      <div>Equipo: <strong className="text-cyan-400">{selectedNodeDetails.parentInfo.parent.brand} {selectedNodeDetails.parentInfo.parent.model}</strong></div>
-                      <div>Puerto Padre: <strong className="text-cyan-400">{getPortName(selectedNodeDetails.parentInfo.parent.type, selectedNodeDetails.parentInfo.parent.model, selectedNodeDetails.parentInfo.parentPort)}</strong></div>
+                    <div className="bg-white dark:bg-slate-950 p-2 rounded border border-zinc-200 dark:border-slate-800 font-mono text-[10px] space-y-1">
+                      <div>Equipo: <strong className="text-cyan-600 dark:text-cyan-400">{selectedNodeDetails.parentInfo.parent.brand} {selectedNodeDetails.parentInfo.parent.model}</strong></div>
+                      <div>Puerto Padre: <strong className="text-cyan-600 dark:text-cyan-400">{getPortName(selectedNodeDetails.parentInfo.parent.type, selectedNodeDetails.parentInfo.parent.model, selectedNodeDetails.parentInfo.parentPort)}</strong></div>
                     </div>
                   </div>
                 )}
 
                 {/* Connected Infrastructure Downstream (Cascades) */}
                 <div className="space-y-2.5">
-                  <h5 className="font-extrabold text-xs uppercase tracking-wider text-slate-400">
+                  <h5 className="font-extrabold text-xs uppercase tracking-wider text-zinc-550 dark:text-slate-400">
                     🔌 Enlaces de Red / Cascadas ({selectedNodeDetails.connectedInfras.length})
                   </h5>
-                  <div className="max-h-[180px] overflow-y-auto border border-slate-800/80 rounded-xl divide-y divide-slate-800/80">
+                  <div className="max-h-[180px] overflow-y-auto border border-zinc-200 dark:border-slate-800/80 rounded-xl divide-y divide-zinc-200 dark:divide-slate-800/80">
                     {selectedNodeDetails.connectedInfras.length > 0 ? (
                       selectedNodeDetails.connectedInfras.map(infra => {
                         const portName = getPortName(selectedNode.type, selectedNode.model, infra.switch_port);
                         return (
-                          <div key={infra.id} className="p-3 bg-slate-950/20 flex flex-col gap-1 hover:bg-slate-850/20 cursor-pointer transition-colors" onClick={() => setSelectedNode(infra)}>
-                            <div className="flex justify-between text-xs font-bold text-slate-200">
+                          <div key={infra.id} className="p-3 bg-zinc-50/50 dark:bg-slate-950/20 flex flex-col gap-1 hover:bg-zinc-100 dark:hover:bg-slate-800/20 cursor-pointer transition-colors" onClick={() => setSelectedNode(infra)}>
+                            <div className="flex justify-between text-xs font-bold text-zinc-850 dark:text-slate-200">
                               <span className="truncate max-w-[160px]">{infra.brand} {infra.model}</span>
-                              <span className="text-[10px] bg-slate-800 text-sky-400 px-1.5 py-0.5 rounded font-mono">Boca {portName}</span>
+                              <span className="text-[10px] bg-zinc-200 dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded font-mono">Boca {portName}</span>
                             </div>
-                            <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                            <div className="flex justify-between text-[10px] font-mono text-zinc-500 dark:text-slate-400">
                               <span>IP: {infra.ip || '—'}</span>
-                              <span className="capitalize text-slate-300 font-semibold">{infra.type}</span>
+                              <span className="capitalize text-zinc-600 dark:text-slate-350 font-semibold">{infra.type}</span>
                             </div>
                           </div>
                         );
                       })
                     ) : (
-                      <div className="p-4 text-center text-slate-500 text-xs italic">
+                      <div className="p-4 text-center text-zinc-400 dark:text-slate-500 text-xs italic">
                         No hay switches o routers secundarios conectados a este puerto.
                       </div>
                     )}
@@ -7226,25 +7260,25 @@ function TopologyMapModal({
 
                 {/* Connected End Devices list */}
                 <div className="space-y-2.5">
-                  <h5 className="font-extrabold text-xs uppercase tracking-wider text-slate-400">
+                  <h5 className="font-extrabold text-xs uppercase tracking-wider text-zinc-550 dark:text-slate-400">
                     🖥️ Activos Conectados ({selectedNodeDetails.connectedDevs.length})
                   </h5>
-                  <div className="max-h-[220px] overflow-y-auto border border-slate-800/80 rounded-xl divide-y divide-slate-800/80">
+                  <div className="max-h-[220px] overflow-y-auto border border-zinc-200 dark:border-slate-800/80 rounded-xl divide-y divide-zinc-200 dark:divide-slate-800/80">
                     {selectedNodeDetails.connectedDevs.length > 0 ? (
                       selectedNodeDetails.connectedDevs.map(d => (
-                        <div key={d.id} className="p-3 bg-slate-950/20 flex flex-col gap-1">
-                          <div className="flex justify-between text-xs font-bold text-slate-200">
+                        <div key={d.id} className="p-3 bg-zinc-50/50 dark:bg-slate-950/20 flex flex-col gap-1">
+                          <div className="flex justify-between text-xs font-bold text-zinc-850 dark:text-slate-200">
                             <span className="truncate max-w-[160px]" title={d.hostname}>{d.hostname || 'Sin hostname'}</span>
-                            <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">Boca #{d.switch_port}</span>
+                            <span className="text-[10px] bg-zinc-200 dark:bg-slate-800 text-zinc-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">Boca #{d.switch_port}</span>
                           </div>
-                          <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                          <div className="flex justify-between text-[10px] font-mono text-zinc-500 dark:text-slate-400">
                             <span>IP: {d.ip || '—'}</span>
                             <span className="truncate max-w-[120px]" title={d.responsible_user}>{d.responsible_user || 'Sin resp.'}</span>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="p-4 text-center text-slate-500 text-xs italic">
+                      <div className="p-4 text-center text-zinc-400 dark:text-slate-500 text-xs italic">
                         No hay equipos terminales (PCs, impresoras) conectados a este puerto.
                       </div>
                     )}
@@ -7252,7 +7286,7 @@ function TopologyMapModal({
                 </div>
 
                 {/* Actions Bar */}
-                <div className="pt-4 border-t border-slate-800 space-y-2">
+                <div className="pt-4 border-t border-zinc-200 dark:border-slate-800 space-y-2">
                   <button
                     onClick={() => {
                       setActiveSwitchForPorts(selectedNode);
@@ -7265,8 +7299,8 @@ function TopologyMapModal({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
-                <Info size={30} className="text-slate-700 mb-2" />
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-zinc-400 dark:text-slate-500">
+                <Info size={30} className="text-zinc-300 dark:text-slate-700 mb-2" />
                 <p className="text-xs">Selecciona cualquier tarjeta en el diagrama de flujo para ver sus conexiones y administrar sus bocas.</p>
               </div>
             )}
