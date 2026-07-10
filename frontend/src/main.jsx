@@ -3312,17 +3312,20 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                   ))}
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-3 flex-1">
-                    <div className="relative flex-1 max-w-md">
-                      <input
-                        className="input pr-10"
-                        placeholder="Buscar equipo por hostname, IP, marca, modelo, ubicación..."
-                        value={deviceFilter}
-                        onChange={(e) => setDeviceFilter(e.target.value)}
-                      />
-                      <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
-                    </div>
+                <div className="flex flex-col gap-3">
+                  {/* Row 1: Search Input (Full width on mobile) */}
+                  <div className="relative w-full sm:max-w-md">
+                    <input
+                      className="input w-full pr-10"
+                      placeholder="Buscar equipo por hostname, IP, marca, modelo, ubicación..."
+                      value={deviceFilter}
+                      onChange={(e) => setDeviceFilter(e.target.value)}
+                    />
+                    <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
+                  </div>
+
+                  {/* Row 2: Sorting Options & Bulk Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 w-full">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-zinc-500 dark:text-slate-400">Ordenar por:</span>
                       <select
@@ -3347,7 +3350,9 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                       </button>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+
+                  {/* Row 3: Action Buttons (Stacked on mobile, side-by-side on desktop) */}
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full">
                     <input
                       type="file"
                       id="importExcelInput"
@@ -3365,7 +3370,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                     />
                     <button
                       onClick={() => document.getElementById('importExcelInput').click()}
-                      className="button secondary text-xs flex items-center gap-1.5 font-bold"
+                      className="button secondary text-xs flex flex-1 sm:flex-initial items-center justify-center gap-1.5 font-bold"
                       title="Importar inventario desde archivo Excel estructurado o CSV"
                     >
                       <Upload size={16} className="text-emerald-500" />
@@ -3373,7 +3378,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                     </button>
                     <button
                       onClick={() => document.getElementById('importJsonInput').click()}
-                      className="button secondary text-xs flex items-center gap-1.5 font-bold"
+                      className="button secondary text-xs flex flex-1 sm:flex-initial items-center justify-center gap-1.5 font-bold"
                       title="Importar fichas JSON de hardware de equipos"
                     >
                       <Download size={16} className="text-emerald-500" />
@@ -3381,7 +3386,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                     </button>
                     <button
                       onClick={() => setDeviceModal({ mode: 'create', form: { ip: '', hostname: '', mac: '', os: '', city: '', branch: '', department: '', responsible_user: '', job_title: '', phone: '', email: '', notes: '', brand: '', model: '', serial_number: '', asset_status: 'active', critical: false, managed: false, tags: [], cpu: '', ram: '', storage: '', gpu: '', motherboard: '', image_url: '', device_type: 'PC', location: 'Matta', employee_id: null } })}
-                      className="button primary text-xs flex items-center gap-1.5 font-bold rounded-xl"
+                      className="button primary text-xs flex w-full sm:w-auto items-center justify-center gap-1.5 font-bold rounded-xl"
                     >
                       <Plus size={16} /> Registrar Equipo Manual
                     </button>
@@ -6621,6 +6626,7 @@ function TopologyMapModal({
   const [selectedCity, setSelectedCity] = useState('Todos');
   const [selectedNode, setSelectedNode] = useState(null);
   const [showEndDevices, setShowEndDevices] = useState(false);
+  const [printZoom, setPrintZoom] = useState(80);
 
   if (!isOpen) return null;
 
@@ -6835,11 +6841,11 @@ function TopologyMapModal({
     let html = `<html><head><title>Topología de Red - ${selectedCity}</title>`;
     html += `<style>
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000; padding: 30px; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000; padding: 30px; zoom: ${printZoom}%; }
       h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #1e293b; }
       p { font-size: 11px; color: #64748b; margin-bottom: 25px; font-family: monospace; }
       .tree-container { display: flex; flex-direction: column; gap: 35px; }
-      .tree-node { display: flex; align-items: center; page-break-inside: avoid; break-inside: avoid; }
+      .tree-node { display: flex; align-items: center; }
       .node-card { width: 220px; border: 1.5px solid #94a3b8; border-radius: 12px; padding: 12px; box-sizing: border-box; background: #f8fafc; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); page-break-inside: avoid; break-inside: avoid; }
       .node-title { font-size: 11px; font-weight: bold; margin-bottom: 6px; color: #0f172a; display: flex; justify-content: space-between; align-items: center; }
       .node-badge { font-size: 8px; border: 1.5px solid #64748b; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; font-weight: 800; color: #334155; background: #f1f5f9; }
@@ -6957,6 +6963,23 @@ function TopologyMapModal({
               />
               <span className="font-semibold">Mostrar PCs/Impresoras</span>
             </label>
+
+            {/* Print Zoom Selector */}
+            <div className="flex items-center gap-1.5 flex-shrink-0 bg-slate-950/50 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs">
+              <span className="text-slate-400 font-bold">Escala PDF:</span>
+              <select
+                className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-[11px] sm:text-xs text-slate-200 focus:outline-none focus:border-sky-500 font-bold"
+                value={printZoom}
+                onChange={(e) => setPrintZoom(parseInt(e.target.value, 10))}
+              >
+                <option value="100">100%</option>
+                <option value="90">90%</option>
+                <option value="80">80%</option>
+                <option value="70">70%</option>
+                <option value="60">60%</option>
+                <option value="50">50%</option>
+              </select>
+            </div>
 
             {/* Print PDF Button */}
             <button
