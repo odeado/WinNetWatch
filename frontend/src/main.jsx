@@ -2383,7 +2383,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
     Object.keys(grouped).sort().forEach(city => {
       content += `<div class="city-block"><div class="city-title">📍 Ciudad: ${city}</div><div class="cards-grid">`;
       grouped[city].forEach(item => {
-        const isSwitch = item.type === 'Switch' || item.type === 'Fortinet' || item.type === 'Router' || item.type === 'Conversor';
+        const isSwitch = item.type === 'Switch' || item.type === 'Switch Genérico' || item.type === 'Fortinet' || item.type === 'Router' || item.type === 'Conversor';
         
         let badgeType = 'badge-modem';
         let badgeLabel = 'MÓDEM';
