@@ -6851,7 +6851,7 @@ function TopologyMapModal({
         body > *:not(#print-topology-area) {
           display: none !important;
         }
-        body {
+        html, body {
           background: #ffffff !important;
           color: #000000 !important;
         }
