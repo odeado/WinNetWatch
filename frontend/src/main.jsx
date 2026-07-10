@@ -7037,6 +7037,36 @@ function TopologyMapModal({
                   </div>
                 )}
 
+                {/* Connected Infrastructure Downstream (Cascades) */}
+                <div className="space-y-2.5">
+                  <h5 className="font-extrabold text-xs uppercase tracking-wider text-slate-400">
+                    🔌 Enlaces de Red / Cascadas ({selectedNodeDetails.connectedInfras.length})
+                  </h5>
+                  <div className="max-h-[180px] overflow-y-auto border border-slate-800/80 rounded-xl divide-y divide-slate-800/80">
+                    {selectedNodeDetails.connectedInfras.length > 0 ? (
+                      selectedNodeDetails.connectedInfras.map(infra => {
+                        const portName = getPortName(selectedNode.type, selectedNode.model, infra.switch_port);
+                        return (
+                          <div key={infra.id} className="p-3 bg-slate-950/20 flex flex-col gap-1 hover:bg-slate-850/20 cursor-pointer transition-colors" onClick={() => setSelectedNode(infra)}>
+                            <div className="flex justify-between text-xs font-bold text-slate-200">
+                              <span className="truncate max-w-[160px]">{infra.brand} {infra.model}</span>
+                              <span className="text-[10px] bg-slate-800 text-sky-400 px-1.5 py-0.5 rounded font-mono">Boca {portName}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                              <span>IP: {infra.ip || '—'}</span>
+                              <span className="capitalize text-slate-300 font-semibold">{infra.type}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-slate-500 text-xs italic">
+                        No hay switches o routers secundarios conectados a este puerto.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Connected End Devices list */}
                 <div className="space-y-2.5">
                   <h5 className="font-extrabold text-xs uppercase tracking-wider text-slate-400">
