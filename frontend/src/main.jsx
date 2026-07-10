@@ -6812,10 +6812,11 @@ function TopologyMapModal({
                   <div className="absolute top-1/2 -left-4 w-4 h-0.5 bg-slate-700/50"></div>
                   
                   <div className={`w-48 p-2.5 bg-slate-950/50 dark:bg-slate-900/65 rounded-xl border transition duration-150 flex items-center gap-2 shadow-sm ${
-                    isOffline ? 'border-slate-800/80 opacity-60' : 'border-slate-800 hover:border-sky-500/40'
+                    isOffline ? 'border-slate-800/80 opacity-60' : 'border-emerald-500/30 hover:border-emerald-500/70 shadow-emerald-500/5'
                   }`}>
-                    <div className={`p-1.5 rounded flex-shrink-0 ${isOffline ? 'bg-slate-900 text-slate-500' : 'bg-slate-800 text-slate-300'}`}>
+                    <div className={`p-1.5 rounded flex-shrink-0 relative ${isOffline ? 'bg-slate-900 text-slate-500' : 'bg-emerald-500/10 text-emerald-400'}`}>
                       {isPrinter ? <Printer size={12} /> : <Laptop size={12} />}
+                      <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-slate-950 ${isOffline ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_4px_#10b981]'}`}></span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-[10px] font-bold text-slate-200 truncate" title={d.hostname}>{d.hostname || 'Sin hostname'}</div>
@@ -6925,12 +6926,21 @@ function TopologyMapModal({
         if (showEndDevices && connDevs.length > 0) {
           connDevs.forEach(d => {
             const isPrinter = d.device_type === 'Impresora' || (d.hostname || '').toLowerCase().includes('prn') || (d.hostname || '').toLowerCase().includes('imp');
-            nodeHtml += `<div class="child-wrapper">`;
+            const isOffline = d.status === 'offline';
+            const statusLabel = isOffline ? 'OFFLINE' : 'ONLINE';
+            const statusColor = isOffline ? '#ef4444' : '#10b981';
+            const cardBg = isOffline ? '#f8fafc' : '#f0fdf4';
+            const cardBorder = isOffline ? '#e2e8f0' : '#bbf7d0';
+            
+            nodeHtml += `<div class="child-wrapper" style="${isOffline ? 'opacity: 0.65;' : ''}">`;
             nodeHtml += `<div class="child-line"></div>`;
-            nodeHtml += `<div class="device-card">`;
-            nodeHtml += `<span class="device-icon">${isPrinter ? '🖨️' : '💻'}</span>`;
+            nodeHtml += `<div class="device-card" style="background: ${cardBg}; border-color: ${cardBorder};">`;
+            nodeHtml += `<span class="device-icon" style="color: ${statusColor}; border: 1px solid ${isOffline ? '#cbd5e1' : '#86efac'};">${isPrinter ? '🖨️' : '💻'}</span>`;
             nodeHtml += `<div style="flex:1; min-w:0;">`;
-            nodeHtml += `<div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#1e293b; font-family:sans-serif;">${d.hostname || 'Sin hostname'}</div>`;
+            nodeHtml += `<div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#1e293b; font-family:sans-serif; display:flex; justify-content:space-between; align-items:center;">`;
+            nodeHtml += `<span>${d.hostname || 'Sin hostname'}</span>`;
+            nodeHtml += `<span style="font-size:7px; color:${statusColor}; font-weight:800; padding:1px 4px; border-radius:3px; background:${isOffline ? '#fee2e2' : '#d1fae5'};">${statusLabel}</span>`;
+            nodeHtml += `</div>`;
             nodeHtml += `<div style="color:#64748b; font-size:8px; margin-top:2px; display:flex; justify-content:space-between; align-items:center;">`;
             nodeHtml += `<span>${d.ip || 'DHCP'}</span>`;
             nodeHtml += `<span class="device-port">Boca ${d.switch_port}</span>`;
