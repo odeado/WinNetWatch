@@ -71,6 +71,30 @@ const getInfraGroup = (item) => {
   return city;
 };
 
+const getSwitchPortSchema = (type, model, portsCountFromDb) => {
+  const isSwitch = type === 'Switch';
+  const modelLower = (model || '').toLowerCase();
+  const isCiscoOrJuniper = modelLower.includes('cisco') || modelLower.includes('juniper') || modelLower.includes('catalyst') || modelLower.includes('ex2200') || modelLower.includes('sg110') || modelLower.includes('des-1008');
+  
+  let copperCount = portsCountFromDb || 24;
+  let sfpCount = 0;
+  
+  if (isSwitch && isCiscoOrJuniper) {
+    if (copperCount === 8 || copperCount === 10) {
+      return { copperCount: 8, sfpCount: 2 };
+    }
+    if (copperCount === 24 || copperCount === 26 || copperCount === 28) {
+      const isJuniper = modelLower.includes('juniper') || modelLower.includes('ex2200');
+      return { copperCount: 24, sfpCount: isJuniper ? 4 : 2 };
+    }
+    if (copperCount === 48 || copperCount === 50 || copperCount === 52) {
+      return { copperCount: 48, sfpCount: 4 };
+    }
+  }
+  
+  return { copperCount, sfpCount: 0 };
+};
+
 const getPortName = (type, model, portNum) => {
   if (!portNum) return '—';
   const isFortinet = type === 'Fortinet';
@@ -94,8 +118,14 @@ const getPortName = (type, model, portNum) => {
   const modelLower = (model || '').toLowerCase();
   const isCiscoOrJuniper = modelLower.includes('cisco') || modelLower.includes('juniper') || modelLower.includes('catalyst') || modelLower.includes('ex2200') || modelLower.includes('sg110') || modelLower.includes('des-1008');
   if (type === 'Switch' && isCiscoOrJuniper) {
-    if (portNum === 9 || portNum === 10 || (portNum >= 25 && portNum <= 28) || (portNum >= 49 && portNum <= 52)) {
-      return `Boca #${portNum} (SFP Fibra)`;
+    if (portNum === 9 || portNum === 10) {
+      return `Puerto SFP #${portNum - 8} (Fibra)`;
+    }
+    if (portNum >= 25 && portNum <= 28) {
+      return `Puerto SFP #${portNum - 24} (Fibra)`;
+    }
+    if (portNum >= 49 && portNum <= 52) {
+      return `Puerto SFP #${portNum - 48} (Fibra)`;
     }
   }
 
@@ -7361,8 +7391,13 @@ function SwitchPortMapModal({
     fortinetShort = ['OPT', 'FE', 'CNS'];
   }
   
-  // Total ports count
-  const portsCount = isFortinet ? 11 : (isCisco2901 ? 4 : (isRaisecom ? 3 : (currentActiveSwitch.ports_count || 24)));
+  // Schema for copper and SFP ports count
+  const { copperCount, sfpCount } = useMemo(() => {
+    const raw = isFortinet ? 11 : (isCisco2901 ? 4 : (isRaisecom ? 3 : (currentActiveSwitch.ports_count || 24)));
+    return getSwitchPortSchema(currentActiveSwitch.type, currentActiveSwitch.model, raw);
+  }, [currentActiveSwitch.type, currentActiveSwitch.model, isFortinet, isCisco2901, isRaisecom, currentActiveSwitch.ports_count]);
+
+  const portsCount = copperCount + sfpCount;
 
   // Search filtered devices and infrastructure that are eligible for binding (restricted strictly to the switch's city)
   const eligibleDevices = useMemo(() => {
@@ -7632,41 +7667,87 @@ function SwitchPortMapModal({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-3.5">
-                  {Array.from({ length: portsCount }, (_, i) => {
-                    const portNum = i + 1;
-                    const dev = portDeviceMap[portNum];
-                    const isSelected = selectedPort === portNum;
-                    const label = (isFortinet || isCisco2901 || isRaisecom) ? fortinetShort[i] : portNum;
-                    const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum);
-                    const labelFontSize = (isFortinet || isCisco2901 || isRaisecom) && label.length > 2 ? 'text-[7.5px]' : 'text-[10px]';
-                    return (
-                      <div
-                        key={portNum}
-                        onClick={() => setSelectedPort(portNum)}
-                        title={fullName}
-                        className={`relative aspect-square rounded border-2 flex flex-col items-center justify-center transition-all duration-150 ${
-                          dev
-                            ? 'border-emerald-500 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
-                            : 'border-zinc-650 dark:border-slate-800 border-dashed text-zinc-400 dark:text-slate-650 bg-zinc-900/30'
-                        } ${
-                          isSelected
-                            ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-zinc-800 border-sky-500 scale-[1.08] z-10'
-                            : 'hover:border-zinc-500 dark:hover:border-slate-600 hover:scale-105'
-                        } cursor-pointer`}
-                      >
-                        <span className={`font-bold font-mono leading-none mb-1 text-zinc-450 dark:text-slate-500 ${labelFontSize}`}>{label}</span>
-                        {dev ? (
-                          <>
-                            <Cable size={14} className="text-emerald-500" />
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] absolute top-1 right-1"></span>
-                          </>
-                        ) : (
-                          isAdmin ? <Plus size={10} className="text-zinc-600 dark:text-slate-700" /> : <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-slate-700 block mx-auto mt-0.5"></span>
-                        )}
+                <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+                  {/* Grilla de Puertos de Cobre */}
+                  <div className="flex-1 grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-3">
+                    {Array.from({ length: copperCount }, (_, i) => {
+                      const portNum = i + 1;
+                      const dev = portDeviceMap[portNum];
+                      const isSelected = selectedPort === portNum;
+                      const label = (isFortinet || isCisco2901 || isRaisecom) ? fortinetShort[i] : portNum;
+                      const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum);
+                      const labelFontSize = (isFortinet || isCisco2901 || isRaisecom) && label.length > 2 ? 'text-[7.5px]' : 'text-[10px]';
+                      return (
+                        <div
+                          key={portNum}
+                          onClick={() => setSelectedPort(portNum)}
+                          title={fullName}
+                          className={`relative aspect-square rounded border-2 flex flex-col items-center justify-center transition-all duration-150 ${
+                            dev
+                              ? 'border-emerald-500 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
+                              : 'border-zinc-650 dark:border-slate-800 border-dashed text-zinc-400 dark:text-slate-650 bg-zinc-900/30'
+                          } ${
+                            isSelected
+                              ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-zinc-800 border-sky-500 scale-[1.08] z-10'
+                              : 'hover:border-zinc-500 dark:hover:border-slate-600 hover:scale-105'
+                          } cursor-pointer`}
+                        >
+                          <span className={`font-bold font-mono leading-none mb-1 text-zinc-450 dark:text-slate-500 ${labelFontSize}`}>{label}</span>
+                          {dev ? (
+                            <>
+                              <Cable size={14} className="text-emerald-500" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] absolute top-1 right-1"></span>
+                            </>
+                          ) : (
+                            isAdmin ? <Plus size={10} className="text-zinc-600 dark:text-slate-700" /> : <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-slate-700 block mx-auto mt-0.5"></span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Panel de Puertos de Fibra SFP */}
+                  {sfpCount > 0 && (
+                    <div className="flex flex-row lg:flex-col justify-center items-center gap-3 pl-0 lg:pl-6 border-t-2 lg:border-t-0 lg:border-l-2 border-zinc-700/50 dark:border-slate-800/60 pt-4 lg:pt-0">
+                      <div className="text-[9px] font-extrabold text-zinc-500 dark:text-slate-500 uppercase tracking-widest lg:-rotate-90 lg:my-2 select-none">
+                        SFP FIBRA
                       </div>
-                    );
-                  })}
+                      <div className="flex flex-row lg:flex-col gap-2">
+                        {Array.from({ length: sfpCount }, (_, i) => {
+                          const portNum = copperCount + i + 1;
+                          const dev = portDeviceMap[portNum];
+                          const isSelected = selectedPort === portNum;
+                          const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum);
+                          return (
+                            <div
+                              key={portNum}
+                              onClick={() => setSelectedPort(portNum)}
+                              title={fullName}
+                              className={`relative w-10 h-14 rounded-lg border-2 flex flex-col items-center justify-between p-1 transition-all duration-150 cursor-pointer ${
+                                dev
+                                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                                  : 'border-zinc-700 bg-zinc-800/60 text-zinc-500 hover:border-zinc-500 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-600'
+                              } ${
+                                isSelected
+                                  ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-zinc-800 border-sky-500 scale-105 z-10'
+                                  : ''
+                              }`}
+                            >
+                              <span className="text-[8px] font-bold text-zinc-400 leading-none">SFP {i + 1}</span>
+                              <div className="w-full flex-1 border border-dashed border-current/25 rounded flex items-center justify-center my-0.5 text-xs">
+                                🔌
+                              </div>
+                              {dev ? (
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
+                              ) : (
+                                <span className="w-1.5 h-1.5 rounded-full bg-zinc-750 dark:bg-slate-800"></span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
