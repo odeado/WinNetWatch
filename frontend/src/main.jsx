@@ -39,6 +39,10 @@ const getInfraGroup = (item) => {
   const ip = item.ip || '';
   
   if (city.toLowerCase() === 'antofagasta') {
+    // Si la ubicación tiene un guion, separamos en sub-redes locales (ej: "Matta - RRHH")
+    if (item.location && item.location.includes('-')) {
+      return `Antofagasta ${item.location.trim()}`;
+    }
     if (ip.startsWith('172.30.102.')) {
       return 'Antofagasta Matta';
     }
