@@ -71,12 +71,22 @@ const getInfraGroup = (item) => {
   return city;
 };
 
-const getSwitchPortSchema = (type, model, portsCountFromDb) => {
+const getSwitchPortSchema = (type, brand, model, portsCountFromDb) => {
   const isSwitch = type === 'Switch';
+  const brandLower = (brand || '').toLowerCase();
   const modelLower = (model || '').toLowerCase();
-  const isCiscoOrJuniper = modelLower.includes('cisco') || modelLower.includes('juniper') || modelLower.includes('catalyst') || modelLower.includes('ex2200') || modelLower.includes('sg110') || modelLower.includes('des-1008');
+  const isCiscoOrJuniper = brandLower.includes('cisco') || 
+                           brandLower.includes('juniper') || 
+                           modelLower.includes('cisco') || 
+                           modelLower.includes('juniper') || 
+                           modelLower.includes('catalyst') || 
+                           modelLower.includes('ex2200') || 
+                           modelLower.includes('sg110') || 
+                           modelLower.includes('3560') ||
+                           modelLower.includes('2960') ||
+                           modelLower.includes('ex');
   
-  let copperCount = portsCountFromDb || 24;
+  let copperCount = parseInt(portsCountFromDb, 10) || 24;
   let sfpCount = 0;
   
   if (isSwitch && isCiscoOrJuniper) {
