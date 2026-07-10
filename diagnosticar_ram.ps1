@@ -1,5 +1,5 @@
-# Script de diagnóstico de memoria RAM para Win NetWatch
-# Registra estadísticas de memoria física y virtual, pools de kernel y procesos principales.
+# Script de diagnostico de memoria RAM para Win NetWatch
+# Registra estadisticas de memoria fisica y virtual, pools de kernel y procesos principales.
 
 $logFile = Join-Path $PSScriptRoot "registro_uso_ram.txt"
 
@@ -32,21 +32,21 @@ function Obtener-LogInfo {
 
     $out = @()
     $out += "=========================================================================="
-    $out += "REGISTRO DE DIAGNÓSTICO DE MEMORIA - $now"
+    $out += "REGISTRO DE DIAGNOSTICO DE MEMORIA - $now"
     $out += "=========================================================================="
-    $out += "ESTADÍSTICAS GENERALES DE RAM:"
-    $out += "  - RAM Física Total:           $totalRAM GB"
-    $out += "  - RAM Física Libre (Complet): $freeRAM GB"
-    $out += "  - RAM Física en Uso:          $usedPhysRAM GB ($pctUsed%)"
+    $out += "ESTADISTICAS GENERALES DE RAM:"
+    $out += "  - RAM Fisica Total:           $totalRAM GB"
+    $out += "  - RAM Fisica Libre (Complet): $freeRAM GB"
+    $out += "  - RAM Fisica en Uso:          $usedPhysRAM GB ($pctUsed" + "%)"
     $out += "  - RAM Disponible (OS):        $availableGB GB (incluye cache en espera)"
-    $out += "  - Caché en Espera (Standby):  $standbyGB GB"
+    $out += "  - Cache en Espera (Standby):  $standbyGB GB"
     $out += "  - Pool No Paginado (Drivers): $nonPagedGB GB"
     $out += "  - Pool Paginado:              $pagedGB GB"
     $out += "  - Memoria Confirmada (Virtual):$committedGB GB / $limitGB GB"
     $out += ""
     
-    # 3. Procesos principales por RAM física (Working Set)
-    $out += "TOP 15 PROCESOS POR USO DE RAM FÍSICA (Working Set):"
+    # 3. Procesos principales por RAM fisica (Working Set)
+    $out += "TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):"
     $out += "  PID    ProcessName          WorkingSet_MB  Private_MB"
     $out += "  ---    -----------          -------------  ----------"
     $procRAM = Get-Process | Sort-Object -Property WorkingSet -Descending | Select-Object -First 15
@@ -67,13 +67,13 @@ function Obtener-LogInfo {
         $priv = [math]::Round($p.PrivateMemorySize64 / 1MB, 1)
         $out += "  {0,-6} {1,-20} {2,-14} {3,-10}" -f $p.Id, $p.ProcessName, $priv, $ws
     }
-    $out += "==========================================================================`n`n"
+    $out += "==========================================================================" + "`r`n`r`n"
     
     return $out -join "`r`n"
 }
 
-# Ejecución
+# Ejecucion
 $info = Obtener-LogInfo
 Write-Output $info
 $info | Add-Content -Path $logFile
-Write-Host "[+] Diagnóstico completado. Registrado en: $logFile" -ForegroundColor Green
+Write-Host "[+] Diagnostico completado. Registrado en: $logFile" -ForegroundColor Green
