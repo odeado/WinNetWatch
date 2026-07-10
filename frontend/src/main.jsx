@@ -6683,6 +6683,15 @@ function TopologyMapModal({
   const [printZoom, setPrintZoom] = useState(80);
   const [canvasZoom, setCanvasZoom] = useState(100);
 
+  const getSubLocation = (loc) => {
+    if (!loc) return null;
+    const parts = loc.split('-').map(s => s.trim());
+    if (parts.length > 1) {
+      return parts.slice(1).join(' - ');
+    }
+    return null;
+  };
+
   if (!isOpen) return null;
 
   // 1. Filter infrastructure by selected city/group
@@ -6798,6 +6807,7 @@ function TopologyMapModal({
     const connDevs = devices.filter(d => d.switch_id === node.id);
     const hasChildren = children.length > 0 || (showEndDevices && connDevs.length > 0);
     const isSelected = selectedNode && selectedNode.id === node.id;
+    const subLoc = getSubLocation(node.location);
 
     return (
       <div key={node.id} className="flex items-center">
@@ -6816,6 +6826,14 @@ function TopologyMapModal({
               </div>
               <span className={getStatusBadge(node.status)}>{node.status}</span>
             </div>
+
+            {subLoc && (
+              <div className="mb-2">
+                <span className="inline-flex items-center gap-1 text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-150 dark:border-sky-800/30">
+                  📍 {subLoc}
+                </span>
+              </div>
+            )}
 
             <div className="text-[10px] space-y-1 font-mono text-zinc-500 dark:text-slate-400">
               <div className="flex justify-between">
@@ -6959,12 +6977,16 @@ function TopologyMapModal({
       const children = childrenMap[node.id] || [];
       const connDevs = devices.filter(d => d.switch_id === node.id);
       const hasChildren = children.length > 0 || (showEndDevices && connDevs.length > 0);
+      const subLoc = getSubLocation(node.location);
       
       let nodeHtml = `<div class="tree-node">`;
       
       nodeHtml += `<div style="position:relative;">`;
       nodeHtml += `<div class="node-card">`;
       nodeHtml += `<div class="node-title">${node.brand} ${node.model} <span class="node-badge">${node.status}</span></div>`;
+      if (subLoc) {
+        nodeHtml += `<div style="margin-bottom: 8px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #0284c7; background: #f0f9ff; border: 1.5px solid #bae6fd; padding: 2px 6px; border-radius: 6px; display: inline-block; font-family: sans-serif;">📍 ${subLoc}</div>`;
+      }
       nodeHtml += `<div class="node-detail">Tipo: <span>${node.type.toUpperCase()}</span></div>`;
       nodeHtml += `<div class="node-detail">IP: <span>${node.ip || '—'}</span></div>`;
       nodeHtml += `<div class="node-detail">Ubicación: <span>${node.location || '—'}</span></div>`;
