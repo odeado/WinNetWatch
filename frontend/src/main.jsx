@@ -105,7 +105,7 @@ const getSwitchPortSchema = (type, brand, model, portsCountFromDb) => {
   return { copperCount, sfpCount: 0 };
 };
 
-const getPortName = (type, model, portNum) => {
+const getPortName = (type, model, portNum, totalPorts) => {
   if (!portNum) return '—';
   const isFortinet = type === 'Fortinet';
   const isCisco2901 = type === 'Router';
@@ -128,14 +128,17 @@ const getPortName = (type, model, portNum) => {
   const modelLower = (model || '').toLowerCase();
   const isCiscoOrJuniper = modelLower.includes('cisco') || modelLower.includes('juniper') || modelLower.includes('catalyst') || modelLower.includes('ex2200') || modelLower.includes('sg110') || modelLower.includes('des-1008');
   if (type === 'Switch' && isCiscoOrJuniper) {
-    if (portNum === 9 || portNum === 10) {
-      return `Puerto SFP #${portNum - 8} (Fibra)`;
+    let finalTotal = totalPorts;
+    if (!finalTotal) {
+      // Heurística si no viene totalPorts
+      const rawCount = (modelLower.includes('48') || modelLower.includes('52') || modelLower.includes('poe0') || modelLower.includes('3560g') || modelLower.includes('3560 poe')) ? 48 : 24;
+      const { copperCount, sfpCount } = getSwitchPortSchema(type, '', model, rawCount);
+      finalTotal = copperCount + sfpCount;
     }
-    if (portNum >= 25 && portNum <= 28) {
-      return `Puerto SFP #${portNum - 24} (Fibra)`;
-    }
-    if (portNum >= 49 && portNum <= 52) {
-      return `Puerto SFP #${portNum - 48} (Fibra)`;
+
+    const copperCount = finalTotal <= 10 ? 8 : (finalTotal <= 28 ? 24 : 48);
+    if (portNum > copperCount) {
+      return `Puerto SFP #${portNum - copperCount} (Fibra)`;
     }
   }
 
@@ -7419,7 +7422,8 @@ function SwitchPortMapModal({
       const label = getPortName(
         selectedDeviceToAssign.type,
         selectedDeviceToAssign.model,
-        p
+        p,
+        destCount
       );
       list.push({ value: p, label });
     }
@@ -7767,7 +7771,7 @@ function SwitchPortMapModal({
                       const dev = portDeviceMap[portNum];
                       const isSelected = selectedPort === portNum;
                       const label = (isFortinet || isCisco2901 || isRaisecom) ? fortinetShort[i] : portNum;
-                      const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum, activeSwitch.brand);
+                      const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum, portsCount);
                       const labelFontSize = (isFortinet || isCisco2901 || isRaisecom) && label.length > 2 ? 'text-[7.5px]' : 'text-[10px]';
                       return (
                         <div
@@ -7809,7 +7813,7 @@ function SwitchPortMapModal({
                           const portNum = copperCount + i + 1;
                           const dev = portDeviceMap[portNum];
                           const isSelected = selectedPort === portNum;
-                          const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum, activeSwitch.brand);
+                          const fullName = getPortName(activeSwitch.type, activeSwitch.model, portNum, portsCount);
                           return (
                             <div
                               key={portNum}
@@ -7869,7 +7873,7 @@ function SwitchPortMapModal({
                     <div>
                       <span className="text-[10px] uppercase font-bold text-zinc-455 dark:text-slate-550">Puerto seleccionado</span>
                       <h4 className="text-xl font-black text-zinc-900 dark:text-white">
-                        {isFortinet || isCisco2901 || isRaisecom ? `INTERFAZ: ${getPortName(activeSwitch.type, activeSwitch.model, selectedPort, activeSwitch.brand).toUpperCase()}` : getPortName(activeSwitch.type, activeSwitch.model, selectedPort, activeSwitch.brand).toUpperCase()}
+                        {isFortinet || isCisco2901 || isRaisecom ? `INTERFAZ: ${getPortName(activeSwitch.type, activeSwitch.model, selectedPort, portsCount).toUpperCase()}` : getPortName(activeSwitch.type, activeSwitch.model, selectedPort, portsCount).toUpperCase()}
                       </h4>
                     </div>
                     <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${
