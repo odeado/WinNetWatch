@@ -7412,7 +7412,7 @@ function SwitchPortMapModal({
   // Search filtered devices and infrastructure that are eligible for binding (restricted strictly to the switch's city)
   const eligibleDevices = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
     const switchCity = (currentActiveSwitch.city || '').trim().toLowerCase();
 
     const getCityFromIp = (ip) => {
@@ -7639,13 +7639,13 @@ function SwitchPortMapModal({
       <div className="bg-white dark:bg-slate-900 border-0 md:border border-zinc-200 dark:border-slate-800 shadow-2xl md:rounded-2xl rounded-none w-full h-full md:h-[85vh] md:max-w-5xl flex flex-col overflow-hidden text-zinc-950 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-200 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/50 flex items-center justify-between flex-shrink-0">
+        <div className="px-4 py-3 md:px-6 md:py-4 border-b border-zinc-200 dark:border-slate-800 bg-zinc-50 dark:bg-slate-900/50 flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2">
-              <Network className="text-emerald-500" size={22} />
+            <h3 className="text-base md:text-lg font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+              <Network className="text-emerald-500" size={20} />
               Mapa de Puertos: {activeSwitch.brand} {activeSwitch.model}
             </h3>
-            <p className="text-xs text-zinc-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[10px] md:text-xs text-zinc-500 dark:text-slate-400 mt-0.5">
               Ubicación: <strong>{activeSwitch.location}</strong> · N° Serie: <strong>{activeSwitch.serial_number || '—'}</strong> · Capacidad: <strong>{isFortinet ? '11 interfaces' : isCisco2901 ? '4 interfaces' : isRaisecom ? '3 interfaces' : `${portsCount} puertos`}</strong>
             </p>
           </div>
@@ -7656,7 +7656,7 @@ function SwitchPortMapModal({
         <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-0">
           
           {/* Left Panel: Port Grid representing physical switch */}
-          <div className="flex-1 p-6 overflow-y-auto bg-zinc-100 dark:bg-slate-950/40 border-b md:border-b-0 md:border-r border-zinc-250 dark:border-slate-800 flex flex-col gap-6 justify-between flex-shrink-0 md:flex-shrink">
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-zinc-100 dark:bg-slate-950/40 border-b md:border-b-0 md:border-r border-zinc-250 dark:border-slate-800 flex flex-col gap-4 md:gap-6 justify-between flex-shrink-0 md:flex-shrink">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-bold uppercase text-zinc-450 dark:text-slate-500 tracking-wider">
@@ -7779,7 +7779,7 @@ function SwitchPortMapModal({
           </div>
 
           {/* Right Panel: Selected Port Details & Search */}
-          <div className="w-full md:w-[380px] flex-shrink-0 p-6 overflow-y-auto bg-white dark:bg-slate-900 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-slate-800 flex flex-col min-h-0">
+          <div className="w-full md:w-[380px] flex-shrink-0 p-4 md:p-6 overflow-y-auto bg-white dark:bg-slate-900 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-slate-800 flex flex-col min-h-0">
             {selectedPort ? (
               <div className="flex-1 flex flex-col justify-between min-h-0">
                 <div className="space-y-5">
@@ -7963,16 +7963,16 @@ function SwitchPortMapModal({
                         ) : (
                           <>
                             <div>
-                              <label className="text-xs font-bold text-zinc-405 dark:text-slate-555 block mb-1">ASOCIAR EQUIPO A ESTE PUERTO</label>
-                              <div className="relative">
+                              <label className="text-[10px] md:text-xs font-bold text-zinc-405 dark:text-slate-555 block mb-1">ASOCIAR EQUIPO A ESTE PUERTO</label>
+                              <div className="flex items-center bg-white dark:bg-slate-950 border border-zinc-300 dark:border-slate-700 rounded-lg px-3 py-2 focus-within:ring-1 focus-within:ring-emerald-500 focus-within:border-emerald-500 transition duration-150">
+                                <Search className="text-zinc-400 dark:text-slate-500 mr-2 flex-shrink-0" size={14} />
                                 <input
                                   type="text"
-                                  placeholder="Buscar por hostname, IP, marca o modelo..."
-                                  className="input text-xs w-full pl-9 pr-4 py-2"
+                                  placeholder="Buscar por hostname, IP, marca..."
+                                  className="bg-transparent border-0 p-0 text-xs text-zinc-900 dark:text-slate-100 w-full outline-none focus:ring-0 focus:outline-none"
                                   value={searchQuery}
                                   onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                <Search className="absolute left-3 top-2.5 text-zinc-455 dark:text-slate-550" size={14} />
                               </div>
                             </div>
 
