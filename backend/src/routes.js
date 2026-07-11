@@ -258,8 +258,8 @@ router.patch('/devices/:id', requirePermission('devices:write'), async (req, res
     const before = (await query('SELECT * FROM devices WHERE id = $1', [req.params.id])).rows[0];
     if (!before) return res.status(404).json({ error: 'Equipo no encontrado' });
 
-    // Sync employee details if employee_id is changing
-    if (Object.hasOwn(req.body, 'employee_id')) {
+    // Sync employee details only if employee_id has actually changed
+    if (Object.hasOwn(req.body, 'employee_id') && req.body.employee_id !== before.employee_id) {
       const empId = req.body.employee_id;
       if (!empId || empId === 'null') {
         req.body.employee_id = null;
