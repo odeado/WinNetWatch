@@ -164,17 +164,22 @@ async function runMigrations() {
         mac TEXT,
         floor TEXT,
         ip TEXT,
+        city TEXT DEFAULT 'Antofagasta',
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
 
-    // Ensure columns mac, floor, and ip exist on existing database
+    // Ensure columns mac, floor, ip, city, switch_id, switch_port, and local_port exist on existing database
     await query(`
       ALTER TABLE network_infrastructure
       ADD COLUMN IF NOT EXISTS mac TEXT,
       ADD COLUMN IF NOT EXISTS floor TEXT,
-      ADD COLUMN IF NOT EXISTS ip TEXT
+      ADD COLUMN IF NOT EXISTS ip TEXT,
+      ADD COLUMN IF NOT EXISTS city TEXT DEFAULT 'Antofagasta',
+      ADD COLUMN IF NOT EXISTS switch_id UUID REFERENCES network_infrastructure(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS switch_port INTEGER,
+      ADD COLUMN IF NOT EXISTS local_port INTEGER
     `);
 
     // 8. Add switch_id and switch_port columns to devices table

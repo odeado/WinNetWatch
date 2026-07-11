@@ -1,0 +1,3604 @@
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:00:18
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 48.41 GB
+  - RAM Fisica en Uso:          15.41 GB (24.1%)
+  - RAM Disponible (OS):        48.39 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  5.37 GB
+  - Pool No Paginado (Drivers): 0.74 GB
+  - Pool Paginado:              0.59 GB
+  - Memoria Confirmada (Virtual):17.73 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  5924   MsMpEng              729,7          707,4     
+  12160  iCUE                 556,8          392,1     
+  21984  steamwebhelper       413,8          422,9     
+  11212  language_server      403,5          394,2     
+  11920  explorer             351,4          247,1     
+  22244  msedge               269,3          117       
+  25896  WhatsApp.Root        236,5          167,3     
+  24168  Antigravity          235,6          158,8     
+  27512  msedge               228,6          173,3     
+  20048  Everything           213,3          198       
+  16520  NVIDIA Overlay       205,5          161       
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             191,4          119,5     
+  11008  steamwebhelper       176            95,9      
+  9952   StartMenuExperienceHost 176            113,9     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             2279,9         -1877,8   
+  5924   MsMpEng              707,4          729,7     
+  21984  steamwebhelper       422,9          413,8     
+  11212  language_server      394,2          403,5     
+  12160  iCUE                 392,1          556,8     
+  2328   dwm                  259,2          111,6     
+  27172  msedgewebview2       248,6          8,9       
+  11920  explorer             247,1          351,4     
+  23744  msedge               207,1          121,3     
+  20048  Everything           198            213,3     
+  27512  msedge               173,3          228,6     
+  25896  WhatsApp.Root        167,3          236,5     
+  27564  Antigravity          163,2          147,3     
+  25988  com.docker.backend   162,1          166,3     
+  16520  NVIDIA Overlay       161            205,5     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:01:21
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 48.6 GB
+  - RAM Fisica en Uso:          15.22 GB (23.8%)
+  - RAM Disponible (OS):        48.6 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  5.66 GB
+  - Pool No Paginado (Drivers): 0.75 GB
+  - Pool Paginado:              0.61 GB
+  - Memoria Confirmada (Virtual):17.74 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  5924   MsMpEng              703,9          678,7     
+  12160  iCUE                 556,9          392       
+  11212  language_server      489,4          478,7     
+  21984  steamwebhelper       413,4          422,9     
+  11920  explorer             381,3          288,8     
+  22244  msedge               270            116,2     
+  25896  WhatsApp.Root        236,2          166,8     
+  24168  Antigravity          226,3          152,1     
+  20048  Everything           213,3          197,9     
+  16520  NVIDIA Overlay       203,4          161       
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             191,4          119,5     
+  11008  steamwebhelper       176,1          95,8      
+  9952   StartMenuExperienceHost 174,9          114,2     
+  7244   NVDisplay.Container  173,5          148,6     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             2296,9         -1858     
+  5924   MsMpEng              678,7          703,9     
+  11212  language_server      478,7          489,4     
+  21984  steamwebhelper       422,9          413,4     
+  12160  iCUE                 392            556,9     
+  11920  explorer             288,8          381,3     
+  2328   dwm                  260            112,5     
+  27172  msedgewebview2       248,6          9         
+  20048  Everything           197,9          213,3     
+  25896  WhatsApp.Root        166,8          236,2     
+  23744  msedge               161,2          122,7     
+  16520  NVIDIA Overlay       161            203,4     
+  22760  electron             159,7          114,4     
+  25988  com.docker.backend   158            162       
+  24168  Antigravity          152,1          226,3     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:02:59
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 48.51 GB
+  - RAM Fisica en Uso:          15.31 GB (24%)
+  - RAM Disponible (OS):        48.52 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  5.79 GB
+  - Pool No Paginado (Drivers): 0.77 GB
+  - Pool Paginado:              0.63 GB
+  - Memoria Confirmada (Virtual):17.85 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  5924   MsMpEng              671,5          670,2     
+  12160  iCUE                 557,3          392,1     
+  11212  language_server      454,8          443,9     
+  21984  steamwebhelper       413,4          422,9     
+  11920  explorer             378,2          286,6     
+  22244  msedge               267,8          113,7     
+  24168  Antigravity          248,3          175,3     
+  25896  WhatsApp.Root        236            166,7     
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       203,5          160,9     
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             192,9          119,9     
+  11008  steamwebhelper       175,9          95,8      
+  9952   StartMenuExperienceHost 174,8          114       
+  7244   NVDisplay.Container  173,6          148,6     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             2295,5         -1857,8   
+  5924   MsMpEng              670,2          671,5     
+  11212  language_server      443,9          454,8     
+  21984  steamwebhelper       422,9          413,4     
+  12160  iCUE                 392,1          557,3     
+  11920  explorer             286,6          378,2     
+  2328   dwm                  271            112,8     
+  27172  msedgewebview2       218            129,1     
+  20048  Everything           198            213,6     
+  24168  Antigravity          175,3          248,3     
+  25896  WhatsApp.Root        166,7          236       
+  16520  NVIDIA Overlay       160,9          203,5     
+  25988  com.docker.backend   154,9          159       
+  22760  electron             152,8          114,5     
+  7244   NVDisplay.Container  148,6          173,6     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:08:00
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 45.49 GB
+  - RAM Fisica en Uso:          18.33 GB (28.7%)
+  - RAM Disponible (OS):        45.48 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  8.61 GB
+  - Pool No Paginado (Drivers): 0.82 GB
+  - Pool Paginado:              0.72 GB
+  - Memoria Confirmada (Virtual):25.64 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  5924   MsMpEng              713,5          703       
+  12160  iCUE                 558            392,8     
+  21984  steamwebhelper       548,1          538,8     
+  11920  explorer             381,5          285,9     
+  20752  steamwebhelper       313,5          594,7     
+  22244  msedge               276,2          117,4     
+  11008  steamwebhelper       266,9          101,1     
+  25896  WhatsApp.Root        236,5          166,8     
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       208,1          169,1     
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             193,2          121,1     
+  9952   StartMenuExperienceHost 174,6          114       
+  7244   NVDisplay.Container  174            148,9     
+  26032  electron             159,7          101,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  56936  Brothers-Win64-Shipping 6360,6         -1823,2   
+  28864  vmmemWSL             2248,7         -1904,8   
+  5924   MsMpEng              703,3          713,8     
+  20752  steamwebhelper       594,7          313,5     
+  21984  steamwebhelper       538,8          548,1     
+  12160  iCUE                 392,8          558       
+  2328   dwm                  355,2          130,6     
+  11920  explorer             285,9          381,5     
+  27172  msedgewebview2       218,3          130,7     
+  22760  electron             211,8          118,4     
+  20048  Everything           198            213,6     
+  16520  NVIDIA Overlay       169,1          208,1     
+  25896  WhatsApp.Root        166,8          236,5     
+  21260  steamwebhelper       158,7          157,4     
+  23744  msedge               155,8          121,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:13:00
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 48.68 GB
+  - RAM Fisica en Uso:          15.14 GB (23.7%)
+  - RAM Disponible (OS):        48.72 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.01 GB
+  - Pool No Paginado (Drivers): 0.8 GB
+  - Pool Paginado:              0.73 GB
+  - Memoria Confirmada (Virtual):18.59 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1352,9         1409,6    
+  12160  iCUE                 573,9          413,2     
+  21984  steamwebhelper       549,6          540,1     
+  5924   MsMpEng              501,4          502,6     
+  11920  explorer             381,8          285,4     
+  20752  steamwebhelper       322,6          660,9     
+  22244  msedge               276,5          117,4     
+  76376  steamwebhelper       261,4          203,7     
+  25896  WhatsApp.Root        245,9          168,4     
+  11008  steamwebhelper       229,9          96,8      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       208,5          171,3     
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             190,4          121       
+  9952   StartMenuExperienceHost 176,7          114,8     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1409,6         1352,9    
+  20752  steamwebhelper       619,4          318,5     
+  21984  steamwebhelper       540,1          549,6     
+  5924   MsMpEng              503,5          501,9     
+  12160  iCUE                 413,2          573,9     
+  2328   dwm                  379,5          131,3     
+  11920  explorer             285,4          381,8     
+  27172  msedgewebview2       218,4          131,1     
+  76376  steamwebhelper       203,7          261,4     
+  20048  Everything           198            213,6     
+  16520  NVIDIA Overlay       171,3          208,5     
+  25896  WhatsApp.Root        168,4          245,9     
+  22760  electron             164,1          119,4     
+  21260  steamwebhelper       158,7          157,5     
+  23744  msedge               155,6          121,1     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:18:01
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 48.21 GB
+  - RAM Fisica en Uso:          15.61 GB (24.5%)
+  - RAM Disponible (OS):        48.21 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.17 GB
+  - Pool No Paginado (Drivers): 0.89 GB
+  - Pool Paginado:              0.76 GB
+  - Memoria Confirmada (Virtual):19 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1407,8         1463,5    
+  12160  iCUE                 573,4          398,2     
+  21984  steamwebhelper       461,9          477,9     
+  5924   MsMpEng              438            512,2     
+  11920  explorer             381,4          284,8     
+  76376  steamwebhelper       327,4          294,6     
+  20752  steamwebhelper       317,5          437,9     
+  22244  msedge               272,2          117,1     
+  25896  WhatsApp.Root        240,9          167,9     
+  11008  steamwebhelper       232,5          98,4      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       208,4          169,2     
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             190,6          121,1     
+  9952   StartMenuExperienceHost 175,9          114,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1463,5         1407,8    
+  5924   MsMpEng              512,2          438       
+  21984  steamwebhelper       477,9          461,9     
+  20752  steamwebhelper       437,9          317,5     
+  12160  iCUE                 398,2          573,4     
+  2328   dwm                  378,5          128,3     
+  76376  steamwebhelper       294,6          327,4     
+  11920  explorer             284,8          381,4     
+  27172  msedgewebview2       218,4          131,4     
+  20048  Everything           198            213,6     
+  16520  NVIDIA Overlay       169,2          208,4     
+  25896  WhatsApp.Root        167,9          240,9     
+  22760  electron             163,8          119,7     
+  25988  com.docker.backend   155,9          159,5     
+  23744  msedge               155,6          121,1     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:23:02
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 46.8 GB
+  - RAM Fisica en Uso:          17.02 GB (26.7%)
+  - RAM Disponible (OS):        46.8 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  9.99 GB
+  - Pool No Paginado (Drivers): 0.9 GB
+  - Pool Paginado:              0.8 GB
+  - Memoria Confirmada (Virtual):20.62 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1414,1         1469,8    
+  5924   MsMpEng              623,1          674,5     
+  12160  iCUE                 573,2          398,3     
+  21984  steamwebhelper       465,1          479,2     
+  11920  explorer             385,8          288,9     
+  110872 language_server      375            363,9     
+  20752  steamwebhelper       298,3          475,7     
+  76376  steamwebhelper       295,4          268,8     
+  22244  msedge               277            119,2     
+  111076 Antigravity          247,3          170,6     
+  25896  WhatsApp.Root        241,2          168,1     
+  11008  steamwebhelper       232            98,3      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       208,3          169,2     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1469,8         1414,1    
+  5924   MsMpEng              674,5          623,1     
+  21984  steamwebhelper       479,2          465,1     
+  20752  steamwebhelper       475,7          298,3     
+  12160  iCUE                 398,3          573,2     
+  2328   dwm                  388,9          129       
+  110872 language_server      363,9          375       
+  11920  explorer             288,9          385,8     
+  76376  steamwebhelper       268,8          295,4     
+  27172  msedgewebview2       218,4          131,4     
+  23744  msedge               217,9          126,5     
+  20048  Everything           198            213,6     
+  111076 Antigravity          170,6          247,3     
+  16520  NVIDIA Overlay       169,2          208,3     
+  25896  WhatsApp.Root        168,1          241,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:28:02
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 46.33 GB
+  - RAM Fisica en Uso:          17.49 GB (27.4%)
+  - RAM Disponible (OS):        46.3 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.11 GB
+  - Pool No Paginado (Drivers): 0.94 GB
+  - Pool Paginado:              0.85 GB
+  - Memoria Confirmada (Virtual):21.49 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1418,8         1474,8    
+  12160  iCUE                 573,2          398,3     
+  5924   MsMpEng              532,2          597,2     
+  21984  steamwebhelper       466,8          479,7     
+  110872 language_server      386,7          374,6     
+  11920  explorer             384,9          287,3     
+  136676 node                 303,8          703,1     
+  111076 Antigravity          302,6          221,8     
+  22244  msedge               278            119,4     
+  20752  steamwebhelper       264,2          448,1     
+  25896  WhatsApp.Root        240,5          168,1     
+  11008  steamwebhelper       231,2          98,2      
+  27512  msedge               213,8          198       
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       208,9          169,7     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1474,8         1418,8    
+  136676 node                 705,2          305,4     
+  5924   MsMpEng              597,4          532,4     
+  21984  steamwebhelper       479,7          466,8     
+  20752  steamwebhelper       448,1          264,2     
+  12160  iCUE                 398,3          573,2     
+  2328   dwm                  388,9          129       
+  110872 language_server      374,6          386,7     
+  11920  explorer             287,3          384,9     
+  111076 Antigravity          221,8          302,6     
+  27172  msedgewebview2       218,4          131,4     
+  76376  steamwebhelper       212,9          191,7     
+  27512  msedge               198            213,8     
+  20048  Everything           198            213,6     
+  23744  msedge               179,2          131,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:33:03
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 45.61 GB
+  - RAM Fisica en Uso:          18.21 GB (28.5%)
+  - RAM Disponible (OS):        45.62 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.17 GB
+  - Pool No Paginado (Drivers): 1 GB
+  - Pool Paginado:              0.86 GB
+  - Memoria Confirmada (Virtual):21.78 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1812,7         1870,3    
+  110872 language_server      639,7          628       
+  12160  iCUE                 573,3          398,3     
+  5924   MsMpEng              500,7          569,9     
+  21984  steamwebhelper       468,2          480,5     
+  11920  explorer             385,4          288,3     
+  111076 Antigravity          321,7          242,7     
+  22244  msedge               296,6          125,7     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        244,5          169,5     
+  11008  steamwebhelper       231,6          98,8      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209            169,7     
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             193,4          122,7     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1870,3         1812,7    
+  110872 language_server      628            639,7     
+  5924   MsMpEng              569,9          500,7     
+  21984  steamwebhelper       480,5          468,2     
+  20752  steamwebhelper       446,1          263,6     
+  12160  iCUE                 398,3          573,3     
+  2328   dwm                  389,1          129       
+  11920  explorer             288,3          385,4     
+  23744  msedge               243,3          150,4     
+  111076 Antigravity          242,7          321,7     
+  27172  msedgewebview2       218,4          131,4     
+  76376  steamwebhelper       212,6          191,1     
+  20048  Everything           198            213,6     
+  16520  NVIDIA Overlay       169,7          209       
+  25896  WhatsApp.Root        169,5          244,5     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:38:04
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 45.33 GB
+  - RAM Fisica en Uso:          18.49 GB (29%)
+  - RAM Disponible (OS):        45.36 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.19 GB
+  - Pool No Paginado (Drivers): 1 GB
+  - Pool Paginado:              0.87 GB
+  - Memoria Confirmada (Virtual):22.47 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1879,1         1936      
+  12160  iCUE                 573,3          398,3     
+  5924   MsMpEng              498,3          587,2     
+  21984  steamwebhelper       470,6          481,7     
+  11920  explorer             385,6          288,4     
+  110872 language_server      350,9          339,9     
+  111076 Antigravity          307,2          225,1     
+  22244  msedge               298            126,1     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        244,7          169,8     
+  11008  steamwebhelper       231,5          98,5      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209            169,7     
+  27512  msedge               200,2          162,6     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1936           1879,1    
+  5924   MsMpEng              587,2          498,3     
+  23744  msedge               555,9          164,2     
+  21984  steamwebhelper       481,7          470,6     
+  20752  steamwebhelper       446,1          263,6     
+  12160  iCUE                 399,5          573,4     
+  2328   dwm                  389,4          129       
+  110872 language_server      339,9          350,9     
+  11920  explorer             288,4          385,6     
+  111076 Antigravity          225,1          307,2     
+  27172  msedgewebview2       218,4          131,4     
+  76376  steamwebhelper       212,6          191,1     
+  20048  Everything           198            213,6     
+  25896  WhatsApp.Root        169,8          244,7     
+  16520  NVIDIA Overlay       169,7          209       
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:43:04
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 45.14 GB
+  - RAM Fisica en Uso:          18.68 GB (29.3%)
+  - RAM Disponible (OS):        45.13 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.21 GB
+  - Pool No Paginado (Drivers): 1.07 GB
+  - Pool Paginado:              0.89 GB
+  - Memoria Confirmada (Virtual):22.39 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1605,6         1663,2    
+  12160  iCUE                 573,7          398,9     
+  110872 language_server      558,2          547       
+  5924   MsMpEng              509,9          599,6     
+  21984  steamwebhelper       471,1          480,9     
+  11920  explorer             385,5          288,3     
+  111076 Antigravity          380,6          301,9     
+  22244  msedge               297,9          126,8     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        245            170,1     
+  11008  steamwebhelper       231,4          98,5      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209            169,7     
+  332    Secure System        196,8          0,2       
+  20772  OneDrive             193,6          122,9     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1663,2         1605,6    
+  5924   MsMpEng              594,7          505       
+  110872 language_server      547            558,2     
+  21984  steamwebhelper       480,9          471,1     
+  20752  steamwebhelper       446,1          263,6     
+  12160  iCUE                 398,9          573,7     
+  2328   dwm                  389,6          129,1     
+  111076 Antigravity          301,9          380,6     
+  11920  explorer             288,3          385,5     
+  23744  msedge               247,8          152,8     
+  27172  msedgewebview2       218,4          131,5     
+  76376  steamwebhelper       212,6          191,2     
+  20048  Everything           198            213,6     
+  25896  WhatsApp.Root        170,1          245       
+  16520  NVIDIA Overlay       169,7          209       
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:48:05
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 44.99 GB
+  - RAM Fisica en Uso:          18.83 GB (29.5%)
+  - RAM Disponible (OS):        44.99 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.21 GB
+  - Pool No Paginado (Drivers): 1.1 GB
+  - Pool Paginado:              0.91 GB
+  - Memoria Confirmada (Virtual):22.53 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1604,2         1671,2    
+  12160  iCUE                 573,7          398,9     
+  5924   MsMpEng              520,3          602,6     
+  21984  steamwebhelper       471,5          481,2     
+  110872 language_server      402,3          389,9     
+  11920  explorer             385,2          287,7     
+  111076 Antigravity          307,9          228,6     
+  22244  msedge               296,2          125,8     
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        245,5          170,6     
+  11008  steamwebhelper       231,6          98,6      
+  20048  Everything           213,6          197,9     
+  27512  msedge               210,1          170,3     
+  16520  NVIDIA Overlay       209            169,7     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1671,2         1604,2    
+  5924   MsMpEng              602,6          520,3     
+  21984  steamwebhelper       481,2          471,5     
+  20752  steamwebhelper       448,2          263,7     
+  12160  iCUE                 398,9          573,7     
+  110872 language_server      389,9          402,3     
+  2328   dwm                  389,6          129,1     
+  11920  explorer             287,7          385,2     
+  111076 Antigravity          228,6          307,9     
+  27172  msedgewebview2       218,3          131,4     
+  76376  steamwebhelper       212,5          191,2     
+  23744  msedge               203,4          145,7     
+  20048  Everything           197,9          213,6     
+  25896  WhatsApp.Root        170,6          245,5     
+  27512  msedge               170,3          210,1     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:53:06
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 43.85 GB
+  - RAM Fisica en Uso:          19.97 GB (31.3%)
+  - RAM Disponible (OS):        43.85 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.48 GB
+  - Pool No Paginado (Drivers): 1.14 GB
+  - Pool Paginado:              0.94 GB
+  - Memoria Confirmada (Virtual):23.9 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1924,6         1982,3    
+  110872 language_server      603,4          590,8     
+  12160  iCUE                 573,9          399,1     
+  5924   MsMpEng              490,4          558,9     
+  21984  steamwebhelper       471,7          481,5     
+  11920  explorer             433,4          332,8     
+  22244  msedge               328,7          144       
+  111076 Antigravity          312,8          234,1     
+  20752  steamwebhelper       263,6          446,2     
+  25896  WhatsApp.Root        246            171,1     
+  11008  steamwebhelper       231,6          98,6      
+  20048  Everything           213,6          197,9     
+  16520  NVIDIA Overlay       209            169,7     
+  23744  msedge               199,5          289,5     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1982,3         1924,6    
+  110872 language_server      590,8          603,4     
+  5924   MsMpEng              559            490,6     
+  21984  steamwebhelper       481,5          471,7     
+  20752  steamwebhelper       446,2          263,6     
+  2328   dwm                  426,2          130,3     
+  12160  iCUE                 399,1          573,9     
+  11920  explorer             333,2          433,6     
+  23744  msedge               289,5          199,5     
+  111076 Antigravity          234,1          312,8     
+  27172  msedgewebview2       218,3          131,4     
+  76376  steamwebhelper       212,5          191,3     
+  20048  Everything           197,9          213,6     
+  25896  WhatsApp.Root        171,1          246       
+  16520  NVIDIA Overlay       169,7          209       
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 17:58:06
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 43.25 GB
+  - RAM Fisica en Uso:          20.57 GB (32.2%)
+  - RAM Disponible (OS):        43.23 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.51 GB
+  - Pool No Paginado (Drivers): 1.18 GB
+  - Pool Paginado:              0.96 GB
+  - Memoria Confirmada (Virtual):24.74 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1807,2         2018,6    
+  5924   MsMpEng              574,4          623,5     
+  12160  iCUE                 574,1          399,2     
+  110872 language_server      543,2          531,3     
+  21984  steamwebhelper       472,2          481,9     
+  11920  explorer             432,3          332       
+  111076 Antigravity          395,4          315,7     
+  22244  msedge               325,7          141,2     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        246,4          171,5     
+  11008  steamwebhelper       231,9          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,1          169,7     
+  23744  msedge               197,8          290,9     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             2018,6         1807,2    
+  5924   MsMpEng              618,2          569,1     
+  110872 language_server      531,3          543,2     
+  21984  steamwebhelper       481,9          472,2     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  430,3          130,4     
+  12160  iCUE                 399,2          574,1     
+  11920  explorer             332            432,3     
+  111076 Antigravity          315,7          395,4     
+  23744  msedge               290,9          197,8     
+  109028 Antigravity          268            188,3     
+  27172  msedgewebview2       218,4          131,4     
+  76376  steamwebhelper       212,6          191,5     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        171,5          246,4     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:03:07
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 42.42 GB
+  - RAM Fisica en Uso:          21.4 GB (33.5%)
+  - RAM Disponible (OS):        42.45 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.76 GB
+  - Pool No Paginado (Drivers): 1.17 GB
+  - Pool Paginado:              0.99 GB
+  - Memoria Confirmada (Virtual):25.64 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1654,7         1711,4    
+  12160  iCUE                 574,7          399,8     
+  5924   MsMpEng              539,8          602,8     
+  264832 claude               538,2          449,3     
+  21984  steamwebhelper       472,5          482,2     
+  111076 Antigravity          434,8          354,7     
+  11920  explorer             432,8          332,5     
+  110872 language_server      423,3          411,8     
+  22244  msedge               327,4          141,9     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        249,2          173,9     
+  252484 claude               247,7          269,2     
+  11008  steamwebhelper       231,9          98,5      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,3          169,8     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1711,4         1654,7    
+  5924   MsMpEng              604            540,9     
+  21984  steamwebhelper       482,2          472,5     
+  264832 claude               449,3          538,2     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  435,4          130,5     
+  110872 language_server      411,8          423,3     
+  12160  iCUE                 399,8          574,7     
+  111076 Antigravity          359,6          439,1     
+  11920  explorer             332,5          432,8     
+  23744  msedge               271,4          198,7     
+  252484 claude               269,2          247,7     
+  109028 Antigravity          247,3          201,9     
+  27172  msedgewebview2       218,4          131,5     
+  76376  steamwebhelper       212,6          191,5     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:08:08
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 43.71 GB
+  - RAM Fisica en Uso:          20.11 GB (31.5%)
+  - RAM Disponible (OS):        43.65 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.96 GB
+  - Pool No Paginado (Drivers): 1.23 GB
+  - Pool Paginado:              0.99 GB
+  - Memoria Confirmada (Virtual):24.12 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1638,9         1695,3    
+  12160  iCUE                 574,6          399,7     
+  5924   MsMpEng              531,1          596,8     
+  21984  steamwebhelper       472,8          482,5     
+  11920  explorer             407,7          281,2     
+  22244  msedge               322,4          140,6     
+  264832 claude               320,2          236,9     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        250            174,7     
+  11008  steamwebhelper       231,9          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,2          169,7     
+  252484 claude               207,7          228,1     
+  23744  msedge               199,6          262,4     
+  20772  OneDrive             198,7          127,1     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1695,3         1638,9    
+  5924   MsMpEng              596,8          531,1     
+  21984  steamwebhelper       482,5          472,8     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 399,7          574,6     
+  11920  explorer             281,2          407,7     
+  23744  msedge               262,4          199,6     
+  264832 claude               236,9          320,2     
+  252484 claude               228,1          207,7     
+  27172  msedgewebview2       218,4          131,5     
+  76376  steamwebhelper       212,6          191,6     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        174,7          250       
+  265500 claude               174,7          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:13:09
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 43.28 GB
+  - RAM Fisica en Uso:          20.54 GB (32.2%)
+  - RAM Disponible (OS):        43.28 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.98 GB
+  - Pool No Paginado (Drivers): 1.22 GB
+  - Pool Paginado:              1 GB
+  - Memoria Confirmada (Virtual):24.56 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1638,2         1695,3    
+  5924   MsMpEng              595,7          664,6     
+  12160  iCUE                 574,8          399,7     
+  21984  steamwebhelper       473,3          482,9     
+  11920  explorer             407,6          280,9     
+  22244  msedge               322,6          140,6     
+  264832 claude               317,7          237,6     
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        248,4          172,1     
+  11008  steamwebhelper       232            98,5      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209,3          169,7     
+  252484 claude               208            228,5     
+  23744  msedge               199,7          262,4     
+  27512  msedge               199,3          158,6     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1695,3         1638,2    
+  5924   MsMpEng              664,8          596       
+  21984  steamwebhelper       482,9          473,3     
+  20752  steamwebhelper       448,2          263,7     
+  2328   dwm                  436,6          130,2     
+  12160  iCUE                 399,7          574,8     
+  11920  explorer             280,9          407,6     
+  23744  msedge               262,4          199,7     
+  264832 claude               237,6          317,7     
+  252484 claude               228,5          208       
+  27172  msedgewebview2       218,4          131,5     
+  76376  steamwebhelper       212,6          191,8     
+  20048  Everything           198            213,6     
+  265500 claude               174,7          135       
+  25896  WhatsApp.Root        172,1          248,4     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:18:10
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 42.91 GB
+  - RAM Fisica en Uso:          20.91 GB (32.8%)
+  - RAM Disponible (OS):        42.92 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  10.98 GB
+  - Pool No Paginado (Drivers): 1.3 GB
+  - Pool Paginado:              1.02 GB
+  - Memoria Confirmada (Virtual):24.99 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1646,9         1705      
+  12160  iCUE                 574,8          399,8     
+  5924   MsMpEng              522,8          592,7     
+  21984  steamwebhelper       473,7          483,3     
+  11920  explorer             407,7          281,1     
+  22244  msedge               322,5          140,5     
+  264832 claude               317,6          237,5     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        248,2          172       
+  11008  steamwebhelper       232,1          98,6      
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209,3          169,7     
+  252484 claude               207,3          227,9     
+  23744  msedge               199,6          262,2     
+  27512  msedge               199,6          158,6     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1705           1646,9    
+  5924   MsMpEng              592,7          522,8     
+  21984  steamwebhelper       483,3          473,7     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 399,8          574,8     
+  11920  explorer             281,1          407,7     
+  23744  msedge               262,2          199,6     
+  264832 claude               237,5          317,6     
+  252484 claude               227,9          207,3     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       212,7          191,9     
+  20048  Everything           198            213,6     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        172            248,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:23:10
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 42.62 GB
+  - RAM Fisica en Uso:          21.2 GB (33.2%)
+  - RAM Disponible (OS):        42.63 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.1 GB
+  - Pool No Paginado (Drivers): 1.32 GB
+  - Pool Paginado:              1.03 GB
+  - Memoria Confirmada (Virtual):25.3 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1639,1         1695,7    
+  12160  iCUE                 574,8          399,7     
+  5924   MsMpEng              530,8          598,8     
+  21984  steamwebhelper       474,7          483,7     
+  11920  explorer             407,9          281,5     
+  22244  msedge               321,5          141,3     
+  264832 claude               317,7          237,7     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        248,3          172,1     
+  11008  steamwebhelper       231,2          98,4      
+  20048  Everything           213,6          197,9     
+  27512  msedge               210,8          172,4     
+  16520  NVIDIA Overlay       209,2          169,7     
+  252484 claude               207,5          228,2     
+  20772  OneDrive             198,1          127       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1695,7         1639,1    
+  5924   MsMpEng              598,9          531       
+  21984  steamwebhelper       483,7          474,7     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 399,7          574,8     
+  11920  explorer             281,5          407,9     
+  23744  msedge               239            196       
+  264832 claude               237,7          317,7     
+  252484 claude               228,2          207,5     
+  27172  msedgewebview2       218,3          131,5     
+  76376  steamwebhelper       213,4          192,6     
+  20048  Everything           197,9          213,6     
+  265500 claude               174,6          134,9     
+  27512  msedge               172,4          210,8     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:28:11
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 42.15 GB
+  - RAM Fisica en Uso:          21.67 GB (34%)
+  - RAM Disponible (OS):        42.23 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.1 GB
+  - Pool No Paginado (Drivers): 1.35 GB
+  - Pool Paginado:              1.04 GB
+  - Memoria Confirmada (Virtual):25.75 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1636,7         1694,8    
+  12160  iCUE                 574,9          399,9     
+  5924   MsMpEng              532,7          585,8     
+  21984  steamwebhelper       472,3          480,8     
+  11920  explorer             407,9          281,3     
+  22244  msedge               321,6          141,3     
+  264832 claude               317,8          237,7     
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        247,7          172,2     
+  11008  steamwebhelper       231,4          98,5      
+  20048  Everything           213,6          197,9     
+  27512  msedge               213,2          174,4     
+  16520  NVIDIA Overlay       209,2          169,7     
+  252484 claude               207,4          228,2     
+  20772  OneDrive             199,1          127,8     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1694,8         1636,7    
+  5924   MsMpEng              586            532,9     
+  21984  steamwebhelper       480,8          472,3     
+  20752  steamwebhelper       448,2          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 399,9          574,9     
+  11920  explorer             281,3          407,9     
+  23744  msedge               239,1          196,1     
+  264832 claude               237,7          317,8     
+  252484 claude               228,2          207,4     
+  27172  msedgewebview2       218,3          131,5     
+  76376  steamwebhelper       213,4          192,7     
+  20048  Everything           197,9          213,6     
+  265500 claude               174,6          134,9     
+  27512  msedge               174,4          213,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:33:12
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 41.97 GB
+  - RAM Fisica en Uso:          21.85 GB (34.2%)
+  - RAM Disponible (OS):        41.96 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.3 GB
+  - Pool No Paginado (Drivers): 1.35 GB
+  - Pool Paginado:              1.1 GB
+  - Memoria Confirmada (Virtual):26.26 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1638,2         1694,6    
+  12160  iCUE                 575            400       
+  5924   MsMpEng              525,6          589,8     
+  21984  steamwebhelper       472,4          480,9     
+  11920  explorer             409,7          283       
+  22244  msedge               328,8          142,7     
+  264832 claude               317,9          237,8     
+  20752  steamwebhelper       263,7          446,3     
+  25896  WhatsApp.Root        248,3          172,6     
+  11008  steamwebhelper       231,6          98,6      
+  27512  msedge               215,7          177,1     
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209,2          169,7     
+  252484 claude               207,6          228,4     
+  20772  OneDrive             199,1          127,7     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1694,6         1638,2    
+  5924   MsMpEng              589,8          525,6     
+  21984  steamwebhelper       480,9          472,4     
+  20752  steamwebhelper       446,3          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400            575       
+  11920  explorer             283            409,7     
+  23744  msedge               250,4          196,5     
+  264832 claude               237,8          317,9     
+  252484 claude               228,4          207,6     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,5          192,9     
+  20048  Everything           198            213,6     
+  27512  msedge               177,1          215,7     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:38:13
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 41.61 GB
+  - RAM Fisica en Uso:          22.21 GB (34.8%)
+  - RAM Disponible (OS):        41.63 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.31 GB
+  - Pool No Paginado (Drivers): 1.43 GB
+  - Pool Paginado:              1.11 GB
+  - Memoria Confirmada (Virtual):26.63 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1644,2         1700,6    
+  12160  iCUE                 575            400       
+  5924   MsMpEng              553,3          618,9     
+  21984  steamwebhelper       472,7          481,2     
+  11920  explorer             408,1          281,2     
+  22244  msedge               329            142,8     
+  264832 claude               317,9          238       
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        248,6          172,9     
+  11008  steamwebhelper       231,5          98,5      
+  20048  Everything           213,6          198       
+  27512  msedge               209,9          170,8     
+  16520  NVIDIA Overlay       209,3          171,8     
+  252484 claude               207,6          228,2     
+  20772  OneDrive             198,5          127,6     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1700,6         1644,2    
+  5924   MsMpEng              619,4          553,9     
+  21984  steamwebhelper       481,2          472,7     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400            575       
+  11920  explorer             281,2          408,1     
+  23744  msedge               250,2          196,4     
+  264832 claude               238            317,9     
+  252484 claude               228,2          207,6     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,5          193       
+  20048  Everything           198            213,6     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        172,9          248,6     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:43:14
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 41.3 GB
+  - RAM Fisica en Uso:          22.52 GB (35.3%)
+  - RAM Disponible (OS):        41.3 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.31 GB
+  - Pool No Paginado (Drivers): 1.46 GB
+  - Pool Paginado:              1.12 GB
+  - Memoria Confirmada (Virtual):27.02 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1643,6         1705,6    
+  12160  iCUE                 575,1          400       
+  5924   MsMpEng              524,2          587,6     
+  21984  steamwebhelper       472,9          481,4     
+  11920  explorer             408,2          281,3     
+  22244  msedge               328,9          142,6     
+  264832 claude               328,2          247,6     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        248,7          173       
+  11008  steamwebhelper       231,5          98,4      
+  20048  Everything           213,6          197,9     
+  16520  NVIDIA Overlay       209,2          169,7     
+  27512  msedge               209            169,4     
+  252484 claude               202,4          222,9     
+  20772  OneDrive             198,4          127,6     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1705,6         1643,6    
+  5924   MsMpEng              587,6          524,2     
+  21984  steamwebhelper       481,4          472,9     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400            575,1     
+  11920  explorer             281,3          408,2     
+  23744  msedge               250,2          196,3     
+  264832 claude               247,6          328,2     
+  252484 claude               222,9          202,4     
+  27172  msedgewebview2       218,3          131,5     
+  76376  steamwebhelper       213,5          193,1     
+  20048  Everything           197,9          213,6     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        173            248,7     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:48:14
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 40.78 GB
+  - RAM Fisica en Uso:          23.04 GB (36.1%)
+  - RAM Disponible (OS):        40.78 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.31 GB
+  - Pool No Paginado (Drivers): 1.45 GB
+  - Pool Paginado:              1.14 GB
+  - Memoria Confirmada (Virtual):27.62 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1643,4         1702      
+  5924   MsMpEng              580,7          646,2     
+  12160  iCUE                 575,2          400,1     
+  21984  steamwebhelper       473,4          481,9     
+  11920  explorer             408,3          281,5     
+  22244  msedge               328,4          142,7     
+  264832 claude               325,3          244,5     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        248,8          173,2     
+  11008  steamwebhelper       232            98,9      
+  27512  msedge               216,5          177,2     
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209,4          169,8     
+  252484 claude               208,1          228,8     
+  20772  OneDrive             198,5          127,7     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1702           1643,4    
+  5924   MsMpEng              646,2          580,7     
+  21984  steamwebhelper       481,9          473,4     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,1          575,2     
+  11920  explorer             281,5          408,3     
+  23744  msedge               250,2          196,7     
+  264832 claude               244,5          325,3     
+  252484 claude               228,8          208,1     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,6          193,2     
+  20048  Everything           198            213,6     
+  27512  msedge               177,2          216,5     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:53:15
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 40.36 GB
+  - RAM Fisica en Uso:          23.46 GB (36.8%)
+  - RAM Disponible (OS):        40.36 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.22 GB
+  - Pool No Paginado (Drivers): 1.53 GB
+  - Pool Paginado:              1.15 GB
+  - Memoria Confirmada (Virtual):27.94 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1636,4         1693,8    
+  12160  iCUE                 575,1          400       
+  5924   MsMpEng              539,9          602,8     
+  21984  steamwebhelper       473,6          482,1     
+  11920  explorer             408,1          281,3     
+  22244  msedge               327,1          142,5     
+  264832 claude               325,4          244,6     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        248,9          173,2     
+  11008  steamwebhelper       231,5          98,5      
+  27512  msedge               215            175,5     
+  20048  Everything           213,6          198       
+  16520  NVIDIA Overlay       209,2          169,7     
+  252484 claude               207,4          227,9     
+  20772  OneDrive             198,4          127,6     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1693,8         1636,4    
+  5924   MsMpEng              602,8          539,9     
+  21984  steamwebhelper       482,1          473,6     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400            575,1     
+  11920  explorer             281,3          408,1     
+  23744  msedge               254            196,7     
+  264832 claude               244,6          325,4     
+  252484 claude               227,9          207,4     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,6          193,3     
+  20048  Everything           198            213,6     
+  27512  msedge               175,5          215       
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 18:58:16
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 39.87 GB
+  - RAM Fisica en Uso:          23.95 GB (37.5%)
+  - RAM Disponible (OS):        39.88 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.23 GB
+  - Pool No Paginado (Drivers): 1.52 GB
+  - Pool Paginado:              1.17 GB
+  - Memoria Confirmada (Virtual):28.52 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1643,1         1704,7    
+  12160  iCUE                 575,2          400,2     
+  5924   MsMpEng              537,2          600,1     
+  21984  steamwebhelper       473,9          482,4     
+  11920  explorer             407,8          281,1     
+  22244  msedge               330,3          144,9     
+  264832 claude               325,4          244,6     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        249            173,4     
+  11008  steamwebhelper       231,7          98,8      
+  20048  Everything           213,7          198       
+  27512  msedge               209,8          170,2     
+  16520  NVIDIA Overlay       209,2          169,7     
+  252484 claude               207,4          227,7     
+  20772  OneDrive             200,3          129,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1704,7         1643,1    
+  5924   MsMpEng              600,1          537,2     
+  21984  steamwebhelper       482,4          473,9     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,2          575,2     
+  11920  explorer             281,1          407,8     
+  23744  msedge               254,1          196,7     
+  264832 claude               244,6          325,4     
+  252484 claude               227,7          207,4     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,6          193,5     
+  20048  Everything           198            213,7     
+  265500 claude               174,6          134,9     
+  22760  electron             174,5          127,3     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:03:17
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 39.61 GB
+  - RAM Fisica en Uso:          24.21 GB (37.9%)
+  - RAM Disponible (OS):        39.58 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.24 GB
+  - Pool No Paginado (Drivers): 1.59 GB
+  - Pool Paginado:              1.18 GB
+  - Memoria Confirmada (Virtual):28.85 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1648,8         1708,1    
+  5924   MsMpEng              589,2          651,8     
+  12160  iCUE                 575,1          400,1     
+  21984  steamwebhelper       474,3          482,8     
+  11920  explorer             407,8          281,1     
+  22244  msedge               330            143,3     
+  264832 claude               318            237,4     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        255            175,1     
+  11008  steamwebhelper       231,7          98,6      
+  27512  msedge               215,8          176,6     
+  20048  Everything           213,7          198       
+  252484 claude               210,4          230,1     
+  16520  NVIDIA Overlay       209,2          169,7     
+  20772  OneDrive             200,2          129,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1708,1         1648,8    
+  5924   MsMpEng              651,9          589,4     
+  21984  steamwebhelper       482,8          474,3     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,1          575,1     
+  11920  explorer             281,1          407,8     
+  23744  msedge               254            196,8     
+  264832 claude               237,4          318       
+  252484 claude               230,1          210,4     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,7          193,6     
+  20048  Everything           198            213,7     
+  27512  msedge               176,6          215,8     
+  25896  WhatsApp.Root        175,1          255       
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:08:18
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 39.28 GB
+  - RAM Fisica en Uso:          24.54 GB (38.5%)
+  - RAM Disponible (OS):        39.27 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.25 GB
+  - Pool No Paginado (Drivers): 1.62 GB
+  - Pool Paginado:              1.2 GB
+  - Memoria Confirmada (Virtual):29.19 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1640,7         1697,1    
+  5924   MsMpEng              583,3          638,3     
+  12160  iCUE                 575,1          400,1     
+  21984  steamwebhelper       474,6          483,1     
+  11920  explorer             407,7          280,9     
+  22244  msedge               329,6          142,8     
+  264832 claude               318,1          237,3     
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        254,9          175       
+  11008  steamwebhelper       231,7          98,6      
+  20048  Everything           213,6          197,9     
+  252484 claude               209,4          229       
+  16520  NVIDIA Overlay       209,2          169,7     
+  20772  OneDrive             200,2          129,3     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1697,1         1640,7    
+  5924   MsMpEng              638,3          583,3     
+  21984  steamwebhelper       483,1          474,6     
+  20752  steamwebhelper       448,2          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,1          575,1     
+  11920  explorer             280,9          407,7     
+  23744  msedge               250,2          196,7     
+  264832 claude               237,3          318,1     
+  252484 claude               229            209,4     
+  27172  msedgewebview2       218,3          131,5     
+  76376  steamwebhelper       213,6          193,6     
+  20048  Everything           197,9          213,6     
+  25896  WhatsApp.Root        175            254,9     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:13:19
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 39.04 GB
+  - RAM Fisica en Uso:          24.78 GB (38.8%)
+  - RAM Disponible (OS):        39.03 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.25 GB
+  - Pool No Paginado (Drivers): 1.61 GB
+  - Pool Paginado:              1.22 GB
+  - Memoria Confirmada (Virtual):29.44 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1639,1         1695,7    
+  12160  iCUE                 575,1          400       
+  5924   MsMpEng              547,1          610,5     
+  21984  steamwebhelper       475            483,5     
+  11920  explorer             407,8          281       
+  22244  msedge               329            142,9     
+  264832 claude               318,2          237,4     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        255,6          175,4     
+  11008  steamwebhelper       231,7          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,8     
+  252484 claude               208,8          228,5     
+  20772  OneDrive             200,2          129,3     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1695,7         1639,1    
+  5924   MsMpEng              610,5          547,1     
+  21984  steamwebhelper       483,5          475       
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400            575,1     
+  11920  explorer             281            407,8     
+  23744  msedge               250,2          196,7     
+  264832 claude               237,4          318,2     
+  252484 claude               228,5          208,8     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,7          193,8     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,4          255,6     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:18:20
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 38.75 GB
+  - RAM Fisica en Uso:          25.07 GB (39.3%)
+  - RAM Disponible (OS):        38.77 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.28 GB
+  - Pool No Paginado (Drivers): 1.69 GB
+  - Pool Paginado:              1.23 GB
+  - Memoria Confirmada (Virtual):29.72 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1649,6         1708,1    
+  12160  iCUE                 575,4          400,2     
+  5924   MsMpEng              476,7          538,2     
+  21984  steamwebhelper       475,5          484,1     
+  11920  explorer             407,9          281,1     
+  22244  msedge               330            143       
+  264832 claude               318,3          237,6     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        253,4          173,4     
+  11008  steamwebhelper       231,7          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          171,8     
+  252484 claude               208            228,2     
+  20772  OneDrive             200,2          129,3     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1708,1         1649,6    
+  5924   MsMpEng              538,2          476,7     
+  21984  steamwebhelper       484,1          475,5     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,2          575,4     
+  11920  explorer             281,1          407,9     
+  23744  msedge               243,3          196,8     
+  264832 claude               237,6          318,3     
+  252484 claude               228,2          208       
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,8          193,9     
+  20048  Everything           198            213,7     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        173,4          253,4     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:23:21
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 38.23 GB
+  - RAM Fisica en Uso:          25.59 GB (40.1%)
+  - RAM Disponible (OS):        38.21 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.29 GB
+  - Pool No Paginado (Drivers): 1.73 GB
+  - Pool Paginado:              1.25 GB
+  - Memoria Confirmada (Virtual):30.36 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1638,6         1696,2    
+  5924   MsMpEng              614,6          669,9     
+  12160  iCUE                 575,5          400,4     
+  21984  steamwebhelper       472,4          480,9     
+  11920  explorer             407,6          280,8     
+  22244  msedge               329,9          142,9     
+  264832 claude               318,3          237,6     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        253,2          173,3     
+  11008  steamwebhelper       231,6          98,4      
+  20048  Everything           213,6          197,9     
+  16520  NVIDIA Overlay       209,3          169,7     
+  252484 claude               208,1          228,5     
+  20772  OneDrive             200,2          129,3     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1696,2         1638,6    
+  5924   MsMpEng              669,9          614,6     
+  21984  steamwebhelper       480,9          472,4     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,4          575,5     
+  11920  explorer             280,8          407,6     
+  23744  msedge               243,4          196,8     
+  264832 claude               237,6          318,3     
+  252484 claude               228,5          208,1     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,7          193,9     
+  20048  Everything           197,9          213,6     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        173,3          253,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:28:22
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 37.87 GB
+  - RAM Fisica en Uso:          25.95 GB (40.7%)
+  - RAM Disponible (OS):        37.9 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.29 GB
+  - Pool No Paginado (Drivers): 1.76 GB
+  - Pool Paginado:              1.27 GB
+  - Memoria Confirmada (Virtual):30.71 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1635,1         1693,6    
+  12160  iCUE                 575,8          400,8     
+  5924   MsMpEng              542,3          600,6     
+  21984  steamwebhelper       472,7          481,2     
+  11920  explorer             408            281,4     
+  22244  msedge               329,4          143       
+  264832 claude               318,4          237,6     
+  20752  steamwebhelper       263,6          446,1     
+  25896  WhatsApp.Root        255,4          175,7     
+  11008  steamwebhelper       231,6          98,4      
+  20048  Everything           213,6          197,9     
+  16520  NVIDIA Overlay       209,4          171,8     
+  252484 claude               207,9          228,2     
+  20772  OneDrive             200,5          129,6     
+  23744  msedge               197,8          244,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1693,6         1635,1    
+  5924   MsMpEng              600,6          542,3     
+  21984  steamwebhelper       481,2          472,7     
+  20752  steamwebhelper       446,1          263,6     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,8          575,8     
+  11920  explorer             281,4          408       
+  23744  msedge               244,4          197,8     
+  264832 claude               237,6          318,4     
+  252484 claude               228,2          207,9     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,7          194       
+  20048  Everything           197,9          213,6     
+  25896  WhatsApp.Root        175,7          255,4     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:33:24
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 37.52 GB
+  - RAM Fisica en Uso:          26.3 GB (41.2%)
+  - RAM Disponible (OS):        37.53 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.29 GB
+  - Pool No Paginado (Drivers): 1.76 GB
+  - Pool Paginado:              1.29 GB
+  - Memoria Confirmada (Virtual):31.17 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1646,1         1705      
+  12160  iCUE                 575,9          400,9     
+  5924   MsMpEng              532,3          591,2     
+  21984  steamwebhelper       473            481,6     
+  11920  explorer             408,1          281,7     
+  22244  msedge               330,4          143,9     
+  264832 claude               318,5          237,7     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        254            174,2     
+  11008  steamwebhelper       231,7          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          171,8     
+  252484 claude               208            228,3     
+  20772  OneDrive             200,5          129,7     
+  23744  msedge               197,8          244,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1705           1646,1    
+  5924   MsMpEng              591,3          532,4     
+  21984  steamwebhelper       481,6          473       
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,9          575,9     
+  11920  explorer             281,7          408,1     
+  23744  msedge               244,3          197,8     
+  264832 claude               237,7          318,5     
+  252484 claude               228,3          208       
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,8          194,1     
+  20048  Everything           198            213,7     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        174,2          254       
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:38:25
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 37.22 GB
+  - RAM Fisica en Uso:          26.6 GB (41.7%)
+  - RAM Disponible (OS):        37.22 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.28 GB
+  - Pool No Paginado (Drivers): 1.82 GB
+  - Pool Paginado:              1.3 GB
+  - Memoria Confirmada (Virtual):31.5 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1646,1         1703,3    
+  12160  iCUE                 575,9          400,9     
+  5924   MsMpEng              558,5          618,3     
+  21984  steamwebhelper       473,4          481,9     
+  11920  explorer             407,9          281,4     
+  22244  msedge               330,4          144       
+  264832 claude               318,6          237,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        254,2          174,3     
+  11008  steamwebhelper       231,7          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               208,6          228,8     
+  20772  OneDrive             200,5          129,7     
+  23744  msedge               197,8          244,2     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1703,3         1646,1    
+  5924   MsMpEng              618,3          558,6     
+  21984  steamwebhelper       481,9          473,4     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,9          575,9     
+  11920  explorer             281,4          407,9     
+  23744  msedge               244,2          197,8     
+  264832 claude               237,9          318,6     
+  252484 claude               228,8          208,6     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,9          194,2     
+  20048  Everything           198            213,7     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        174,3          254,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:43:26
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 36.79 GB
+  - RAM Fisica en Uso:          27.03 GB (42.4%)
+  - RAM Disponible (OS):        36.81 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.29 GB
+  - Pool No Paginado (Drivers): 1.82 GB
+  - Pool Paginado:              1.32 GB
+  - Memoria Confirmada (Virtual):31.97 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1639,9         1696,6    
+  12160  iCUE                 575,9          400,9     
+  5924   MsMpEng              563,6          623,8     
+  21984  steamwebhelper       473,7          482,2     
+  11920  explorer             408,2          281,4     
+  22244  msedge               330,4          144       
+  264832 claude               318,7          237,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        254,2          174,4     
+  11008  steamwebhelper       231,7          100,6     
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               208,6          229       
+  20772  OneDrive             200,5          129,7     
+  23744  msedge               197,8          244,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1696,6         1639,9    
+  5924   MsMpEng              623,8          563,6     
+  21984  steamwebhelper       482,2          473,7     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,9          575,9     
+  11920  explorer             281,4          408,2     
+  23744  msedge               244,3          197,8     
+  264832 claude               237,9          318,7     
+  252484 claude               229            208,6     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       213,9          194,3     
+  20048  Everything           198            213,7     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        174,4          254,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:48:27
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 36.4 GB
+  - RAM Fisica en Uso:          27.42 GB (43%)
+  - RAM Disponible (OS):        36.41 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.34 GB
+  - Pool No Paginado (Drivers): 1.89 GB
+  - Pool Paginado:              1.34 GB
+  - Memoria Confirmada (Virtual):32.46 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1642,4         1699,6    
+  12160  iCUE                 575,9          400,9     
+  5924   MsMpEng              565,9          623,9     
+  21984  steamwebhelper       474            482,5     
+  11920  explorer             408,4          281,7     
+  22244  msedge               329,7          143,3     
+  264832 claude               318,7          237,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        254,3          174,5     
+  11008  steamwebhelper       231,8          100,8     
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               208,6          228,8     
+  20772  OneDrive             200,6          129,7     
+  23744  msedge               197,8          244,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1699,6         1642,4    
+  5924   MsMpEng              624            566       
+  21984  steamwebhelper       482,5          474       
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,9          575,9     
+  11920  explorer             281,7          408,4     
+  23744  msedge               244,3          197,8     
+  264832 claude               237,9          318,7     
+  252484 claude               228,8          208,6     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214            194,4     
+  20048  Everything           198            213,7     
+  265500 claude               174,6          134,9     
+  25896  WhatsApp.Root        174,5          254,3     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:53:28
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 36.12 GB
+  - RAM Fisica en Uso:          27.7 GB (43.4%)
+  - RAM Disponible (OS):        36.09 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.37 GB
+  - Pool No Paginado (Drivers): 1.88 GB
+  - Pool Paginado:              1.35 GB
+  - Memoria Confirmada (Virtual):32.82 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1643,2         1699,8    
+  12160  iCUE                 575,9          400,9     
+  5924   MsMpEng              521,6          578,9     
+  21984  steamwebhelper       474,4          482,9     
+  11920  explorer             408,2          281,3     
+  22244  msedge               330            143,6     
+  264832 claude               318,9          238,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        254,5          174,6     
+  11008  steamwebhelper       231,7          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               208,7          229       
+  20772  OneDrive             200,6          129,7     
+  23744  msedge               197,8          244,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1699,8         1643,2    
+  5924   MsMpEng              578,9          521,6     
+  21984  steamwebhelper       482,9          474,4     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,9          575,9     
+  11920  explorer             281,3          408,2     
+  23744  msedge               244,4          197,8     
+  264832 claude               238,9          318,9     
+  252484 claude               229            208,7     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214            194,5     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        174,6          254,5     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 19:58:29
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 35.73 GB
+  - RAM Fisica en Uso:          28.09 GB (44%)
+  - RAM Disponible (OS):        35.74 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.38 GB
+  - Pool No Paginado (Drivers): 1.92 GB
+  - Pool Paginado:              1.37 GB
+  - Memoria Confirmada (Virtual):33.2 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1646,4         1703,3    
+  5924   MsMpEng              585,7          640,8     
+  12160  iCUE                 575,9          400,9     
+  21984  steamwebhelper       474,6          483,1     
+  11920  explorer             408,2          281,2     
+  22244  msedge               330,3          143,8     
+  264832 claude               318,9          238,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        256,1          176,1     
+  11008  steamwebhelper       231,8          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               208,5          229       
+  20772  OneDrive             202,3          130,3     
+  23744  msedge               196,9          241,7     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1703,3         1646,4    
+  5924   MsMpEng              641            585,8     
+  21984  steamwebhelper       483,1          474,6     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,9          575,9     
+  11920  explorer             281,2          408,2     
+  23744  msedge               241,7          196,9     
+  264832 claude               238,9          318,9     
+  252484 claude               229            208,5     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214            194,6     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        176,1          256,1     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:03:31
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 35.32 GB
+  - RAM Fisica en Uso:          28.5 GB (44.7%)
+  - RAM Disponible (OS):        35.32 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.46 GB
+  - Pool No Paginado (Drivers): 1.98 GB
+  - Pool Paginado:              1.39 GB
+  - Memoria Confirmada (Virtual):33.68 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1651,1         1707,5    
+  12160  iCUE                 576            400,9     
+  5924   MsMpEng              536,6          592,1     
+  21984  steamwebhelper       474,9          483,5     
+  11920  explorer             408,3          281,4     
+  22244  msedge               330,8          144,3     
+  264832 claude               324,4          245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        255,3          175,4     
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          198       
+  252484 claude               210,9          230,6     
+  16520  NVIDIA Overlay       209,4          169,8     
+  20772  OneDrive             202,2          130,2     
+  23744  msedge               196,9          241,7     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1707,5         1651,1    
+  5924   MsMpEng              592,7          537       
+  21984  steamwebhelper       483,5          474,9     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 400,9          576       
+  11920  explorer             281,4          408,3     
+  264832 claude               245            324,4     
+  23744  msedge               241,7          196,9     
+  252484 claude               230,6          210,9     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,1          194,7     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,4          255,3     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:08:32
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 35.1 GB
+  - RAM Fisica en Uso:          28.72 GB (45%)
+  - RAM Disponible (OS):        35.12 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.53 GB
+  - Pool No Paginado (Drivers): 1.97 GB
+  - Pool Paginado:              1.41 GB
+  - Memoria Confirmada (Virtual):33.94 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1640,9         1697,3    
+  12160  iCUE                 576            401       
+  5924   MsMpEng              540,4          586,9     
+  21984  steamwebhelper       475,3          483,8     
+  11920  explorer             408,3          281,5     
+  22244  msedge               330,2          143,9     
+  264832 claude               324,4          245       
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        256            175,8     
+  11008  steamwebhelper       231,8          98,6      
+  20048  Everything           213,7          198       
+  252484 claude               211,5          231,1     
+  16520  NVIDIA Overlay       209,4          169,7     
+  20772  OneDrive             202,1          130,2     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1697,3         1640,9    
+  5924   MsMpEng              587,1          540,6     
+  21984  steamwebhelper       483,8          475,3     
+  20752  steamwebhelper       448,2          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 401            576       
+  11920  explorer             281,5          408,3     
+  264832 claude               245            324,4     
+  23744  msedge               241,8          196,7     
+  252484 claude               231,1          211,5     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,1          194,7     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,8          256       
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:13:33
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 34.63 GB
+  - RAM Fisica en Uso:          29.19 GB (45.7%)
+  - RAM Disponible (OS):        34.63 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.54 GB
+  - Pool No Paginado (Drivers): 2.05 GB
+  - Pool Paginado:              1.42 GB
+  - Memoria Confirmada (Virtual):34.64 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1641,8         1698,2    
+  12160  iCUE                 576            401       
+  5924   MsMpEng              484,6          486       
+  21984  steamwebhelper       475,7          484,2     
+  11920  explorer             408,1          281,3     
+  22244  msedge               330,1          143,9     
+  264832 claude               324,5          245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        255,9          175,8     
+  11008  steamwebhelper       231,7          98,6      
+  20048  Everything           213,7          198       
+  252484 claude               210,1          229,8     
+  16520  NVIDIA Overlay       209,4          169,7     
+  20772  OneDrive             201            130,1     
+  332    Secure System        196,8          0,2       
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1698,2         1641,8    
+  5924   MsMpEng              486            484,6     
+  21984  steamwebhelper       484,2          475,7     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,1     
+  12160  iCUE                 401            576       
+  11920  explorer             281,3          408,1     
+  264832 claude               245            324,5     
+  23744  msedge               241,5          196,6     
+  252484 claude               229,8          210,1     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,1          194,8     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,8          255,9     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:18:34
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 34.23 GB
+  - RAM Fisica en Uso:          29.59 GB (46.4%)
+  - RAM Disponible (OS):        34.23 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.61 GB
+  - Pool No Paginado (Drivers): 2.05 GB
+  - Pool Paginado:              1.44 GB
+  - Memoria Confirmada (Virtual):35.06 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1653,6         1710      
+  12160  iCUE                 576,1          401       
+  5924   MsMpEng              515,2          589,4     
+  21984  steamwebhelper       472,7          481,2     
+  11920  explorer             408,7          281,8     
+  22244  msedge               329,9          143,4     
+  264832 claude               324,5          245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        256            175,9     
+  11008  steamwebhelper       231,8          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209,1          229,3     
+  23744  msedge               202,4          288,4     
+  20772  OneDrive             201            130,1     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1710           1653,6    
+  5924   MsMpEng              589,4          515,2     
+  21984  steamwebhelper       481,2          472,7     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,9          130,5     
+  12160  iCUE                 401            576,1     
+  23744  msedge               288,4          202,4     
+  11920  explorer             281,8          408,7     
+  264832 claude               245            324,5     
+  252484 claude               229,3          209,1     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,2          194,8     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,9          256       
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:23:36
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 34.08 GB
+  - RAM Fisica en Uso:          29.74 GB (46.6%)
+  - RAM Disponible (OS):        34.09 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.67 GB
+  - Pool No Paginado (Drivers): 2.11 GB
+  - Pool Paginado:              1.45 GB
+  - Memoria Confirmada (Virtual):35.22 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1644,7         1701,2    
+  12160  iCUE                 576,3          401,2     
+  21984  steamwebhelper       473            481,6     
+  11920  explorer             408,5          281,4     
+  5924   MsMpEng              407,8          506,2     
+  22244  msedge               329,7          143,5     
+  264832 claude               324,4          245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        255,9          176       
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209,3          229,6     
+  23744  msedge               202,3          288,5     
+  20772  OneDrive             200,9          130,1     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1701,2         1644,7    
+  5924   MsMpEng              506,4          407,9     
+  21984  steamwebhelper       481,6          473       
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,2          576,3     
+  23744  msedge               288,5          202,3     
+  11920  explorer             281,4          408,5     
+  264832 claude               245            324,4     
+  252484 claude               229,6          209,3     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,2          194,8     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        176            255,9     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:28:37
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 33.58 GB
+  - RAM Fisica en Uso:          30.24 GB (47.4%)
+  - RAM Disponible (OS):        33.58 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.7 GB
+  - Pool No Paginado (Drivers): 2.11 GB
+  - Pool Paginado:              1.47 GB
+  - Memoria Confirmada (Virtual):35.82 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1645,5         1703,5    
+  12160  iCUE                 576,5          401,5     
+  21984  steamwebhelper       473,3          481,9     
+  5924   MsMpEng              465            565,4     
+  11920  explorer             408,5          281,4     
+  22244  msedge               330            143,7     
+  264832 claude               324            245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,2          177       
+  11008  steamwebhelper       231,8          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209,1          229,3     
+  23744  msedge               202,6          288,8     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1703,5         1645,5    
+  5924   MsMpEng              565,5          465,1     
+  21984  steamwebhelper       481,9          473,3     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,5          576,5     
+  23744  msedge               288,8          202,6     
+  11920  explorer             281,4          408,5     
+  264832 claude               245            324       
+  252484 claude               229,3          209,1     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,2          194,9     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        177            257,2     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:33:38
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 33.36 GB
+  - RAM Fisica en Uso:          30.46 GB (47.7%)
+  - RAM Disponible (OS):        33.33 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.76 GB
+  - Pool No Paginado (Drivers): 2.18 GB
+  - Pool Paginado:              1.49 GB
+  - Memoria Confirmada (Virtual):36.15 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1647,4         1705      
+  12160  iCUE                 576,7          401,7     
+  21984  steamwebhelper       473,6          482,1     
+  11920  explorer             408,4          281,3     
+  5924   MsMpEng              387,5          488,1     
+  22244  msedge               329,7          143,4     
+  264832 claude               324            245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        255,7          175,5     
+  11008  steamwebhelper       231,8          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209,2          229,6     
+  23744  msedge               202,3          288,4     
+  20772  OneDrive             201            130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1705           1647,4    
+  5924   MsMpEng              488,2          387,6     
+  21984  steamwebhelper       482,1          473,6     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,7          576,7     
+  23744  msedge               288,4          202,3     
+  11920  explorer             281,3          408,4     
+  264832 claude               245            324       
+  252484 claude               229,6          209,2     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,3          195       
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,5          255,7     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:38:40
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 32.92 GB
+  - RAM Fisica en Uso:          30.9 GB (48.4%)
+  - RAM Disponible (OS):        32.91 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.8 GB
+  - Pool No Paginado (Drivers): 2.21 GB
+  - Pool Paginado:              1.51 GB
+  - Memoria Confirmada (Virtual):36.58 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1660,8         1720,7    
+  12160  iCUE                 576,9          401,9     
+  5924   MsMpEng              480,1          582,9     
+  21984  steamwebhelper       473,9          482,4     
+  11920  explorer             408,5          281,3     
+  22244  msedge               329,7          143,4     
+  264832 claude               324            245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        255,9          175,6     
+  11008  steamwebhelper       231,8          100,6     
+  20048  Everything           213,7          197,9     
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209,1          229,6     
+  23744  msedge               202,2          288,4     
+  20772  OneDrive             201            130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1720,7         1660,8    
+  5924   MsMpEng              583,9          481       
+  21984  steamwebhelper       482,4          473,9     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,9          576,9     
+  23744  msedge               288,4          202,2     
+  11920  explorer             281,3          408,5     
+  264832 claude               245            324       
+  252484 claude               229,6          209,1     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,2          194,9     
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        175,6          255,9     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:43:41
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 32.59 GB
+  - RAM Fisica en Uso:          31.23 GB (48.9%)
+  - RAM Disponible (OS):        32.58 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.84 GB
+  - Pool No Paginado (Drivers): 2.2 GB
+  - Pool Paginado:              1.52 GB
+  - Memoria Confirmada (Virtual):36.98 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1645,6         1703,3    
+  12160  iCUE                 576,9          401,9     
+  21984  steamwebhelper       474,2          482,7     
+  5924   MsMpEng              453,3          555,3     
+  11920  explorer             408,5          281,4     
+  22244  msedge               329,6          143,4     
+  264832 claude               324            245       
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        255,9          175,7     
+  11008  steamwebhelper       231,7          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209,1          229,6     
+  23744  msedge               202,3          288,4     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1703,3         1645,6    
+  5924   MsMpEng              555,3          453,6     
+  21984  steamwebhelper       482,7          474,2     
+  20752  steamwebhelper       448,2          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,9          576,9     
+  23744  msedge               288,4          202,3     
+  11920  explorer             281,4          408,5     
+  264832 claude               245            324       
+  252484 claude               229,6          209,1     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,3          195       
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,7          255,9     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:48:43
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 32.27 GB
+  - RAM Fisica en Uso:          31.55 GB (49.4%)
+  - RAM Disponible (OS):        32.24 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.88 GB
+  - Pool No Paginado (Drivers): 2.27 GB
+  - Pool Paginado:              1.54 GB
+  - Memoria Confirmada (Virtual):37.39 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1656,1         1712,9    
+  12160  iCUE                 576,9          401,9     
+  21984  steamwebhelper       474,7          483,5     
+  5924   MsMpEng              426,8          524,6     
+  11920  explorer             408,5          281,4     
+  22244  msedge               329,6          143,3     
+  264832 claude               324            245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        256            175,7     
+  11008  steamwebhelper       231,8          98,8      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               208,9          229,6     
+  23744  msedge               202,3          288,4     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1712,9         1656,1    
+  5924   MsMpEng              524,6          426,8     
+  21984  steamwebhelper       483,5          474,7     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,9          576,9     
+  23744  msedge               288,4          202,3     
+  11920  explorer             281,4          408,5     
+  264832 claude               245            324       
+  252484 claude               229,6          208,9     
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,3          195,1     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,7          256       
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:53:44
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 31.93 GB
+  - RAM Fisica en Uso:          31.89 GB (50%)
+  - RAM Disponible (OS):        31.92 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.92 GB
+  - Pool No Paginado (Drivers): 2.26 GB
+  - Pool Paginado:              1.55 GB
+  - Memoria Confirmada (Virtual):37.74 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1652,2         1712      
+  12160  iCUE                 576,9          401,9     
+  21984  steamwebhelper       475            483,7     
+  5924   MsMpEng              435,5          532,5     
+  11920  explorer             408,5          281,4     
+  22244  msedge               330,2          144       
+  264832 claude               324            245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        256,1          175,9     
+  11008  steamwebhelper       231,8          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209            229,6     
+  23744  msedge               202,3          288,4     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1712           1652,2    
+  5924   MsMpEng              532,6          435,7     
+  21984  steamwebhelper       483,7          475       
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,9          576,9     
+  23744  msedge               288,4          202,3     
+  11920  explorer             281,4          408,5     
+  264832 claude               245            324       
+  252484 claude               229,6          209       
+  27172  msedgewebview2       218,4          131,6     
+  76376  steamwebhelper       214,4          195,1     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,9          256,1     
+  265500 claude               174,6          134,9     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 20:58:46
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 31.26 GB
+  - RAM Fisica en Uso:          32.56 GB (51%)
+  - RAM Disponible (OS):        31.25 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.96 GB
+  - Pool No Paginado (Drivers): 2.34 GB
+  - Pool Paginado:              1.6 GB
+  - Memoria Confirmada (Virtual):38.29 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1655,9         1712,7    
+  5924   MsMpEng              676,3          648,6     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       475,4          484       
+  11920  explorer             408,6          281,5     
+  22244  msedge               333,9          143,9     
+  264832 claude               324,2          245       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,2          176,8     
+  11008  steamwebhelper       231,9          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               209,3          229,6     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             201,2          130,5     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1712,7         1655,9    
+  5924   MsMpEng              648,6          676,4     
+  21984  steamwebhelper       484            475,4     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,5          130,2     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,5          408,6     
+  264832 claude               245            324,2     
+  252484 claude               229,6          209,3     
+  27172  msedgewebview2       218,4          135,8     
+  76376  steamwebhelper       214,4          195,1     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        176,8          257,2     
+  265500 claude               174,6          135,1     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:03:47
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 30.87 GB
+  - RAM Fisica en Uso:          32.95 GB (51.6%)
+  - RAM Disponible (OS):        30.88 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  12.47 GB
+  - Pool No Paginado (Drivers): 2.34 GB
+  - Pool Paginado:              1.62 GB
+  - Memoria Confirmada (Virtual):38.68 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1652,9         1709,3    
+  5924   MsMpEng              584            563,6     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       475,9          484,3     
+  11920  explorer             408,4          281,4     
+  22244  msedge               333,4          143,3     
+  264832 claude               323,4          243,6     
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        257,2          176,7     
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,5          171,8     
+  252484 claude               209,3          227,3     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             201,2          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1709,3         1652,9    
+  5924   MsMpEng              563,7          584,1     
+  21984  steamwebhelper       484,3          475,9     
+  20752  steamwebhelper       448,2          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,4          408,4     
+  264832 claude               243,6          323,4     
+  252484 claude               227,3          209,3     
+  27172  msedgewebview2       218,4          135,8     
+  76376  steamwebhelper       214,4          195,2     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        176,7          257,2     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:08:49
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 30.67 GB
+  - RAM Fisica en Uso:          33.15 GB (51.9%)
+  - RAM Disponible (OS):        30.66 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  12.52 GB
+  - Pool No Paginado (Drivers): 2.36 GB
+  - Pool Paginado:              1.64 GB
+  - Memoria Confirmada (Virtual):38.97 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1653,9         1712,9    
+  5924   MsMpEng              582,5          560,2     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       474            482,5     
+  11920  explorer             408,5          281,4     
+  22244  msedge               333,5          143,4     
+  264832 claude               322,6          242,8     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,7          177,1     
+  11008  steamwebhelper       232            100,9     
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,8     
+  252484 claude               208,3          226,2     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1712,9         1653,9    
+  5924   MsMpEng              560,2          582,5     
+  21984  steamwebhelper       482,5          474       
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,4          408,5     
+  264832 claude               242,8          322,6     
+  252484 claude               226,2          208,3     
+  27172  msedgewebview2       218,4          135,8     
+  76376  steamwebhelper       214,4          195,2     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        177,1          257,7     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:13:51
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 30.25 GB
+  - RAM Fisica en Uso:          33.57 GB (52.6%)
+  - RAM Disponible (OS):        30.27 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  12.57 GB
+  - Pool No Paginado (Drivers): 2.43 GB
+  - Pool Paginado:              1.65 GB
+  - Memoria Confirmada (Virtual):39.37 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1649,8         1708,1    
+  5924   MsMpEng              630,4          610,2     
+  12160  iCUE                 577            402       
+  21984  steamwebhelper       474,1          482,6     
+  11920  explorer             408,4          281,3     
+  22244  msedge               333,3          143,3     
+  264832 claude               322,6          242,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,7          177,2     
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               207,6          225,5     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1708,1         1649,8    
+  5924   MsMpEng              610,2          630,4     
+  21984  steamwebhelper       482,6          474,1     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 402            577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,3          408,4     
+  264832 claude               242,9          322,6     
+  252484 claude               225,5          207,6     
+  27172  msedgewebview2       218,4          135,9     
+  76376  steamwebhelper       214,5          195,2     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        177,2          257,7     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:18:52
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 30.01 GB
+  - RAM Fisica en Uso:          33.81 GB (53%)
+  - RAM Disponible (OS):        30.03 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  12.63 GB
+  - Pool No Paginado (Drivers): 2.46 GB
+  - Pool Paginado:              1.67 GB
+  - Memoria Confirmada (Virtual):39.59 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1663,2         1723,5    
+  12160  iCUE                 577            402       
+  5924   MsMpEng              573,4          553       
+  21984  steamwebhelper       474,1          482,4     
+  11920  explorer             408,4          281,3     
+  22244  msedge               333,5          143,4     
+  264832 claude               322,6          242,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,7          177,1     
+  11008  steamwebhelper       231,9          100,9     
+  20048  Everything           213,7          197,9     
+  16520  NVIDIA Overlay       209,4          169,7     
+  252484 claude               207,7          226,1     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1723,5         1663,2    
+  5924   MsMpEng              553            573,4     
+  21984  steamwebhelper       482,4          474,1     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,7          130,3     
+  12160  iCUE                 402            577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,3          408,4     
+  264832 claude               242,9          322,6     
+  252484 claude               226,1          207,7     
+  27172  msedgewebview2       218,4          135,8     
+  76376  steamwebhelper       214,4          195,2     
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        177,1          257,7     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:23:54
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 29.69 GB
+  - RAM Fisica en Uso:          34.13 GB (53.5%)
+  - RAM Disponible (OS):        29.7 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  12.68 GB
+  - Pool No Paginado (Drivers): 2.45 GB
+  - Pool Paginado:              1.69 GB
+  - Memoria Confirmada (Virtual):39.98 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1649,8         1708,9    
+  5924   MsMpEng              581,7          561,6     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       474,4          482,8     
+  11920  explorer             408,6          281,5     
+  22244  msedge               334,1          144       
+  264832 claude               322,6          242,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,6          177,2     
+  11008  steamwebhelper       231,9          100,8     
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,5          171,8     
+  252484 claude               207,8          226,4     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             201,1          130,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1708,9         1649,8    
+  5924   MsMpEng              562            582,1     
+  21984  steamwebhelper       482,8          474,4     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,5          408,6     
+  264832 claude               242,9          322,6     
+  252484 claude               226,4          207,8     
+  27172  msedgewebview2       218,4          135,8     
+  76376  steamwebhelper       214,5          195,3     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        177,2          257,6     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:28:56
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 29.42 GB
+  - RAM Fisica en Uso:          34.4 GB (53.9%)
+  - RAM Disponible (OS):        29.42 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  12.74 GB
+  - Pool No Paginado (Drivers): 2.52 GB
+  - Pool Paginado:              1.7 GB
+  - Memoria Confirmada (Virtual):40.3 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1650,1         1706,4    
+  12160  iCUE                 577            401,9     
+  5924   MsMpEng              553,2          532,8     
+  21984  steamwebhelper       474,7          483,1     
+  11920  explorer             408,3          281,1     
+  22244  msedge               333,5          143,4     
+  264832 claude               322,6          242,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        258,4          178       
+  11008  steamwebhelper       231,8          98,6      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,5          169,7     
+  252484 claude               207,6          225,9     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             202,2          131,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1706,4         1650,1    
+  5924   MsMpEng              533,5          553,9     
+  21984  steamwebhelper       483,1          474,7     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 403,1          578       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,1          408,3     
+  264832 claude               242,9          322,6     
+  252484 claude               225,9          207,6     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,6          195,3     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        178            258,4     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:33:57
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 29 GB
+  - RAM Fisica en Uso:          34.82 GB (54.6%)
+  - RAM Disponible (OS):        28.99 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  12.77 GB
+  - Pool No Paginado (Drivers): 2.51 GB
+  - Pool Paginado:              1.72 GB
+  - Memoria Confirmada (Virtual):40.8 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1654,2         1710,6    
+  5924   MsMpEng              605,5          585,6     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       475            483,4     
+  11920  explorer             408,4          281,2     
+  22244  msedge               333,6          143,5     
+  264832 claude               322,6          242,9     
+  20752  steamwebhelper       263,8          448,2     
+  25896  WhatsApp.Root        258,3          177,9     
+  11008  steamwebhelper       231,9          100,9     
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,5          169,7     
+  252484 claude               207,8          225,9     
+  23744  msedge               205,7          288,5     
+  20772  OneDrive             202,2          131,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1710,6         1654,2    
+  5924   MsMpEng              586            605,9     
+  21984  steamwebhelper       483,4          475       
+  20752  steamwebhelper       448,2          263,8     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,5          205,7     
+  11920  explorer             281,2          408,4     
+  264832 claude               242,9          322,6     
+  252484 claude               225,9          207,8     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,6          195,3     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        177,9          258,3     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:38:59
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 28.63 GB
+  - RAM Fisica en Uso:          35.19 GB (55.1%)
+  - RAM Disponible (OS):        28.63 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.79 GB
+  - Pool No Paginado (Drivers): 2.57 GB
+  - Pool Paginado:              1.73 GB
+  - Memoria Confirmada (Virtual):41.2 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1663,2         1725,6    
+  5924   MsMpEng              596,5          574,9     
+  12160  iCUE                 577            402       
+  21984  steamwebhelper       475,3          483,6     
+  11920  explorer             408,1          281       
+  22244  msedge               333,4          143,2     
+  264832 claude               322,6          242,9     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        258,3          177,9     
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,5          169,7     
+  252484 claude               207,6          225,9     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             202,1          131,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1725,6         1663,2    
+  5924   MsMpEng              574,9          596,5     
+  21984  steamwebhelper       483,6          475,3     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 402            577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281            408,1     
+  264832 claude               242,9          322,6     
+  252484 claude               225,9          207,6     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,6          195,4     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        177,9          258,3     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:44:01
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 28.46 GB
+  - RAM Fisica en Uso:          35.36 GB (55.4%)
+  - RAM Disponible (OS):        28.44 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.78 GB
+  - Pool No Paginado (Drivers): 2.56 GB
+  - Pool Paginado:              1.75 GB
+  - Memoria Confirmada (Virtual):41.46 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1650,4         1707,2    
+  12160  iCUE                 577            401,9     
+  5924   MsMpEng              549,7          530       
+  21984  steamwebhelper       475,6          484       
+  11920  explorer             408,2          281,2     
+  22244  msedge               333,2          143       
+  264832 claude               322,6          242,9     
+  20752  steamwebhelper       263,7          448,2     
+  25896  WhatsApp.Root        255,8          175,4     
+  11008  steamwebhelper       231,8          98,7      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,5          169,7     
+  252484 claude               207,6          225,9     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             202,2          131,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1707,2         1650,4    
+  5924   MsMpEng              530,1          549,9     
+  21984  steamwebhelper       484            475,6     
+  20752  steamwebhelper       448,2          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,2          408,2     
+  264832 claude               242,9          322,6     
+  252484 claude               225,9          207,6     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,6          195,4     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,4          255,8     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:49:02
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 28.03 GB
+  - RAM Fisica en Uso:          35.79 GB (56.1%)
+  - RAM Disponible (OS):        28.03 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.78 GB
+  - Pool No Paginado (Drivers): 2.63 GB
+  - Pool Paginado:              1.76 GB
+  - Memoria Confirmada (Virtual):41.9 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1659,7         1716,1    
+  12160  iCUE                 577            402       
+  5924   MsMpEng              550,5          530,4     
+  21984  steamwebhelper       476            484,3     
+  11920  explorer             408,5          281,6     
+  22244  msedge               333,4          143,3     
+  264832 claude               317,9          238,1     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        255,9          175,5     
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,5          169,7     
+  252484 claude               207,4          225,6     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             202,1          131,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1716,1         1659,7    
+  5924   MsMpEng              530,9          550,7     
+  21984  steamwebhelper       484,3          476       
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 402            577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,6          408,5     
+  264832 claude               238,1          317,9     
+  252484 claude               225,6          207,4     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,7          195,4     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        175,5          255,9     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:54:04
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 27.67 GB
+  - RAM Fisica en Uso:          36.15 GB (56.6%)
+  - RAM Disponible (OS):        27.65 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.79 GB
+  - Pool No Paginado (Drivers): 2.66 GB
+  - Pool Paginado:              1.78 GB
+  - Memoria Confirmada (Virtual):42.32 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1653,1         1709,5    
+  5924   MsMpEng              623,8          604,2     
+  12160  iCUE                 577            402       
+  21984  steamwebhelper       476,3          484,6     
+  11920  explorer             408,2          281,1     
+  22244  msedge               333,5          143,3     
+  264832 claude               317,9          238       
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        256            175,6     
+  11008  steamwebhelper       231,9          98,7      
+  20048  Everything           213,7          197,9     
+  16520  NVIDIA Overlay       209,5          169,7     
+  252484 claude               207,5          225,7     
+  23744  msedge               205,6          288,3     
+  20772  OneDrive             202,1          131,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1709,7         1653,3    
+  5924   MsMpEng              604,5          624       
+  21984  steamwebhelper       484,6          476,3     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 402            577       
+  23744  msedge               288,3          205,6     
+  11920  explorer             281,1          408,2     
+  264832 claude               238            317,9     
+  252484 claude               225,7          207,5     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,6          195,5     
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        175,6          256       
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 21:59:06
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 27.46 GB
+  - RAM Fisica en Uso:          36.36 GB (57%)
+  - RAM Disponible (OS):        27.45 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.79 GB
+  - Pool No Paginado (Drivers): 2.69 GB
+  - Pool Paginado:              1.8 GB
+  - Memoria Confirmada (Virtual):42.57 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1657,8         1714,7    
+  12160  iCUE                 577            402       
+  5924   MsMpEng              565,5          543       
+  21984  steamwebhelper       476,5          484,8     
+  11920  explorer             408,2          281,1     
+  22244  msedge               334            143,7     
+  264832 claude               318            238,3     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,8          177,3     
+  11008  steamwebhelper       232            99        
+  20048  Everything           213,7          197,9     
+  16520  NVIDIA Overlay       209,6          169,7     
+  252484 claude               207,3          225,4     
+  23744  msedge               205,6          288,3     
+  20772  OneDrive             202,2          131,4     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1714,7         1657,8    
+  5924   MsMpEng              538            560,9     
+  21984  steamwebhelper       484,8          476,5     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 402            577       
+  23744  msedge               288,3          205,6     
+  11920  explorer             281,1          408,2     
+  264832 claude               238,3          318       
+  252484 claude               225,4          207,3     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,6          195,5     
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        177,3          257,8     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 22:04:08
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 27 GB
+  - RAM Fisica en Uso:          36.82 GB (57.7%)
+  - RAM Disponible (OS):        26.99 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.79 GB
+  - Pool No Paginado (Drivers): 2.72 GB
+  - Pool Paginado:              1.81 GB
+  - Memoria Confirmada (Virtual):43.1 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1660,8         1718,2    
+  12160  iCUE                 577            401,9     
+  5924   MsMpEng              573,5          553,4     
+  21984  steamwebhelper       473,8          482,1     
+  11920  explorer             408,1          281       
+  22244  msedge               333,4          143,1     
+  264832 claude               318            238,3     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257            176,5     
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          197,9     
+  16520  NVIDIA Overlay       209,6          169,8     
+  252484 claude               209,1          227,2     
+  23744  msedge               205,6          288,3     
+  20772  OneDrive             202,1          131,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1718,2         1660,8    
+  5924   MsMpEng              553,4          573,5     
+  21984  steamwebhelper       482,1          473,8     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,3          205,6     
+  11920  explorer             281            408,1     
+  264832 claude               238,3          318       
+  252484 claude               227,2          209,1     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,7          195,5     
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        176,5          257       
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 22:09:10
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 26.61 GB
+  - RAM Fisica en Uso:          37.21 GB (58.3%)
+  - RAM Disponible (OS):        26.68 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.79 GB
+  - Pool No Paginado (Drivers): 2.76 GB
+  - Pool Paginado:              1.83 GB
+  - Memoria Confirmada (Virtual):43.47 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1653,5         1709,9    
+  12160  iCUE                 577            401,9     
+  5924   MsMpEng              573,8          553,5     
+  21984  steamwebhelper       473,9          482,2     
+  11920  explorer             408            280,9     
+  22244  msedge               333,3          143,1     
+  264832 claude               318,1          238,3     
+  20752  steamwebhelper       263,8          448,2     
+  25896  WhatsApp.Root        257,2          176,5     
+  11008  steamwebhelper       231,9          98,8      
+  20048  Everything           213,7          197,9     
+  252484 claude               209,6          227,7     
+  16520  NVIDIA Overlay       209,6          169,7     
+  23744  msedge               205,6          288,3     
+  20772  OneDrive             202,1          131,2     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1709,9         1653,5    
+  5924   MsMpEng              553,7          573,9     
+  21984  steamwebhelper       482,2          473,9     
+  20752  steamwebhelper       448,2          263,8     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,3          205,6     
+  11920  explorer             280,9          408       
+  264832 claude               238,3          318,1     
+  252484 claude               227,7          209,6     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,7          195,6     
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        176,5          257,2     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 22:14:12
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 26.35 GB
+  - RAM Fisica en Uso:          37.47 GB (58.7%)
+  - RAM Disponible (OS):        26.34 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.79 GB
+  - Pool No Paginado (Drivers): 2.74 GB
+  - Pool Paginado:              1.84 GB
+  - Memoria Confirmada (Virtual):43.84 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1663,4         1719,8    
+  12160  iCUE                 577            401,8     
+  5924   MsMpEng              569,4          547,7     
+  21984  steamwebhelper       474,1          482,4     
+  11920  explorer             408            280,9     
+  22244  msedge               333,2          143       
+  264832 claude               318,2          238,3     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,3          176,6     
+  11008  steamwebhelper       231,9          100,9     
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,6          169,7     
+  252484 claude               208,7          227       
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             202,1          131,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1719,8         1663,4    
+  5924   MsMpEng              548            569,7     
+  21984  steamwebhelper       482,4          474,1     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,8          577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             280,9          408       
+  264832 claude               238,3          318,2     
+  252484 claude               227            208,7     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,8          195,8     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        176,6          257,3     
+  265500 claude               174,6          135,1     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 22:19:14
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 25.98 GB
+  - RAM Fisica en Uso:          37.84 GB (59.3%)
+  - RAM Disponible (OS):        25.97 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.79 GB
+  - Pool No Paginado (Drivers): 2.83 GB
+  - Pool Paginado:              1.86 GB
+  - Memoria Confirmada (Virtual):44.27 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1665,6         1724,1    
+  5924   MsMpEng              584,8          565,2     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       474,4          482,7     
+  11920  explorer             408,1          281,1     
+  22244  msedge               333,4          143,2     
+  264832 claude               318,3          238,6     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,3          176,7     
+  11008  steamwebhelper       231,9          98,9      
+  20048  Everything           213,7          198       
+  16520  NVIDIA Overlay       209,6          169,7     
+  252484 claude               208,7          226,9     
+  23744  msedge               205,7          288,4     
+  20772  OneDrive             202,1          131,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1724,1         1665,6    
+  5924   MsMpEng              565,2          584,8     
+  21984  steamwebhelper       482,7          474,4     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,4          205,7     
+  11920  explorer             281,1          408,1     
+  264832 claude               238,6          318,3     
+  252484 claude               226,9          208,7     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,8          195,9     
+  20048  Everything           198            213,7     
+  25896  WhatsApp.Root        176,7          257,3     
+  265500 claude               174,6          135,1     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 22:24:16
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 26.05 GB
+  - RAM Fisica en Uso:          37.77 GB (59.2%)
+  - RAM Disponible (OS):        26.04 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.8 GB
+  - Pool No Paginado (Drivers): 2.88 GB
+  - Pool Paginado:              1.88 GB
+  - Memoria Confirmada (Virtual):44.73 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1656,1         1712,6    
+  5924   MsMpEng              589,7          570,1     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       474,7          482,9     
+  11920  explorer             408,1          281,1     
+  22244  msedge               333,5          143,4     
+  264832 claude               318,4          238,6     
+  20752  steamwebhelper       263,7          446,1     
+  25896  WhatsApp.Root        257,2          176,7     
+  4472   Memory Compression   239,9          0,6       
+  11008  steamwebhelper       231,9          98,9      
+  20048  Everything           213,7          197,9     
+  16520  NVIDIA Overlay       209,6          169,7     
+  252484 claude               208,4          227       
+  23744  msedge               205,7          288,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1712,6         1656,1    
+  5924   MsMpEng              570,5          590,2     
+  21984  steamwebhelper       482,9          474,7     
+  20752  steamwebhelper       446,1          263,7     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,3          205,7     
+  11920  explorer             281,1          408,1     
+  264832 claude               238,6          318,4     
+  252484 claude               227            208,4     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,8          196       
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        176,7          257,2     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+
+==========================================================================
+REGISTRO DE DIAGNOSTICO DE MEMORIA - 2026-07-10 22:29:18
+==========================================================================
+ESTADISTICAS GENERALES DE RAM:
+  - RAM Fisica Total:           63.82 GB
+  - RAM Fisica Libre (Complet): 25.67 GB
+  - RAM Fisica en Uso:          38.15 GB (59.8%)
+  - RAM Disponible (OS):        25.66 GB (incluye cache en espera)
+  - Cache en Espera (Standby):  11.8 GB
+  - Pool No Paginado (Drivers): 2.91 GB
+  - Pool Paginado:              1.9 GB
+  - Memoria Confirmada (Virtual):45.18 GB / 67.82 GB
+
+TOP 15 PROCESOS POR USO DE RAM FISICA (Working Set):
+  PID    ProcessName          WorkingSet_MB  Private_MB
+  ---    -----------          -------------  ----------
+  28864  vmmemWSL             1658,2         1720,2    
+  5924   MsMpEng              611,2          591,4     
+  12160  iCUE                 577            401,9     
+  21984  steamwebhelper       475            483,2     
+  11920  explorer             407,9          281       
+  22244  msedge               333,7          143,5     
+  264832 claude               318,5          238,6     
+  20752  steamwebhelper       263,8          448,2     
+  25896  WhatsApp.Root        257,9          177,4     
+  11008  steamwebhelper       231,9          98,9      
+  4472   Memory Compression   231,7          0,6       
+  20048  Everything           213,7          197,9     
+  16520  NVIDIA Overlay       209,6          169,7     
+  252484 claude               208,2          226,9     
+  23744  msedge               205,7          288,3     
+
+TOP 15 PROCESOS POR MEMORIA CONFIRMADA (Private Memory/Commit):
+  PID    ProcessName          Private_MB     WorkingSet_MB
+  ---    -----------          ----------     -------------
+  28864  vmmemWSL             1720,2         1658,2    
+  5924   MsMpEng              591,6          611,5     
+  21984  steamwebhelper       483,2          475       
+  20752  steamwebhelper       448,2          263,8     
+  2328   dwm                  436,6          130,3     
+  12160  iCUE                 401,9          577       
+  23744  msedge               288,3          205,7     
+  11920  explorer             281            407,9     
+  264832 claude               238,6          318,5     
+  252484 claude               226,9          208,2     
+  27172  msedgewebview2       218,5          135,9     
+  76376  steamwebhelper       214,8          196,1     
+  20048  Everything           197,9          213,7     
+  25896  WhatsApp.Root        177,4          257,9     
+  265500 claude               174,6          135,2     
+==========================================================================
+
+

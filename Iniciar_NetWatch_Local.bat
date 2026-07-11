@@ -43,7 +43,7 @@ docker-compose stop api >nul 2>&1
 
 :: 4. Ejecutar el backend local en segundo plano (oculto)
 echo [+] Iniciando Backend en segundo plano (red local / VPN)...
-start "" /min powershell -WindowStyle Hidden -Command "Set-Location -LiteralPath '%~dp0backend'; npm run dev"
+start "" /min powershell -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Set-Location -LiteralPath '%~dp0backend'; npm run dev"
 
 :: 5. Esperar 3 segundos para dar tiempo a inicializar y abrir la web
 ping 127.0.0.1 -n 4 >nul

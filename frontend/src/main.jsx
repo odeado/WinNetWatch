@@ -7530,27 +7530,66 @@ function SwitchPortMapModal({
   const eligibleDevices = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.trim().toLowerCase();
-    const switchCity = (currentActiveSwitch.city || '').trim().toLowerCase();
 
-    const getCityFromIp = (ip) => {
-      if (!ip) return '';
-      const parts = ip.split('.');
-      if (parts.length !== 4) return '';
-      const thirdOctet = parseInt(parts[2], 10);
-      if (thirdOctet === 100 || thirdOctet === 101 || thirdOctet === 102) return 'antofagasta';
-      if (thirdOctet === 110) return 'arica';
-      if (thirdOctet === 112) return 'iquique';
-      return '';
+    const getRefinedLocation = (item) => {
+      const city = (item.city || '').trim().toLowerCase();
+      const loc = (item.location || '').trim().toLowerCase();
+      const ip = item.ip || '';
+      
+      let baseCity = city;
+      let area = null;
+
+      if (ip) {
+        const parts = ip.split('.');
+        if (parts.length === 4) {
+          const thirdOctet = parseInt(parts[2], 10);
+          if (thirdOctet === 100 || thirdOctet === 101 || thirdOctet === 102) {
+            baseCity = 'antofagasta';
+          } else if (thirdOctet === 110) {
+            baseCity = 'arica';
+          } else if (thirdOctet === 112) {
+            baseCity = 'iquique';
+          }
+        }
+      }
+      
+      if (!baseCity || baseCity === 'sin ciudad' || baseCity === 'no asignada') {
+        baseCity = 'antofagasta';
+      }
+
+      if (baseCity === 'antofagasta') {
+        if (ip.startsWith('172.30.102.')) {
+          area = 'matta';
+        } else if (ip.startsWith('172.30.100.') || ip.startsWith('172.30.101.')) {
+          area = 'rendic';
+        } else if (loc.includes('matta')) {
+          area = 'matta';
+        } else if (loc.includes('rendic') || loc.includes('preprensa')) {
+          area = 'rendic';
+        }
+      } else if (baseCity === 'arica') {
+        if (loc.includes('nueva') || loc.includes('nuevo')) {
+          area = 'nuevo';
+        } else if (loc.includes('antigua') || loc.includes('viejo') || loc.includes('vieja')) {
+          area = 'viejo';
+        }
+      }
+
+      return { city: baseCity, area };
     };
+
+    const switchLoc = getRefinedLocation(currentActiveSwitch);
 
     // Buscar dispositivos en la misma ciudad (o sin ciudad asignada)
     const devs = devices.filter(d => {
-      const ipCity = getCityFromIp(d.ip);
-      const devCity = ipCity || (d.city || '').trim().toLowerCase();
-      
-      // Si tiene ciudad asignada/detectada y no coincide con el switch, se descarta
-      if (devCity && devCity !== 'sin ciudad' && devCity !== 'no asignada') {
-        if (devCity !== switchCity) return false;
+      const hasIp = !!d.ip;
+      const hasCity = d.city && d.city.trim().toLowerCase() !== 'sin ciudad' && d.city.trim().toLowerCase() !== 'no asignada';
+      const hasLocation = d.location && d.location.trim();
+
+      if (hasIp || hasCity || hasLocation) {
+        const devLoc = getRefinedLocation(d);
+        if (devLoc.city !== switchLoc.city) return false;
+        if (devLoc.area && switchLoc.area && devLoc.area !== switchLoc.area) return false;
       }
       
       if (d.switch_id === currentActiveSwitch.id && parseInt(d.switch_port, 10) === selectedPort) return false;
@@ -7565,11 +7604,14 @@ function SwitchPortMapModal({
 
     // Buscar infraestructura en la misma ciudad (excluyendo el switch activo actual)
     const infras = infrastructure.filter(i => {
-      const ipCity = getCityFromIp(i.ip);
-      const infraCity = ipCity || (i.city || '').trim().toLowerCase();
-      
-      if (infraCity && infraCity !== 'sin ciudad' && infraCity !== 'no asignada') {
-        if (infraCity !== switchCity) return false;
+      const hasIp = !!i.ip;
+      const hasCity = i.city && i.city.trim().toLowerCase() !== 'sin ciudad' && i.city.trim().toLowerCase() !== 'no asignada';
+      const hasLocation = i.location && i.location.trim();
+
+      if (hasIp || hasCity || hasLocation) {
+        const infraLoc = getRefinedLocation(i);
+        if (infraLoc.city !== switchLoc.city) return false;
+        if (infraLoc.area && switchLoc.area && infraLoc.area !== switchLoc.area) return false;
       }
       
       if (i.id === currentActiveSwitch.id) return false;
@@ -7585,7 +7627,7 @@ function SwitchPortMapModal({
     }).map(i => ({ ...i, isInfra: true, displayName: `${i.type}: ${i.brand} ${i.model}` }));
 
     return [...devs, ...infras];
-  }, [devices, infrastructure, searchQuery, currentActiveSwitch.id, selectedPort, currentActiveSwitch.city]);
+  }, [devices, infrastructure, searchQuery, currentActiveSwitch, selectedPort]);
 
   async function assignDeviceToPort(item, targetPort = null) {
     if (!selectedPort) return;

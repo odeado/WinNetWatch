@@ -1043,10 +1043,10 @@ router.get('/infrastructure', requirePermission('devices:read'), async (_req, re
 
 router.post('/infrastructure', requirePermission('devices:write'), async (req, res, next) => {
   try {
-    const { type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor, ip } = req.body;
+    const { type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor, ip, city } = req.body;
     const { rows } = await query(
-      `INSERT INTO network_infrastructure (type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor, ip)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO network_infrastructure (type, brand, model, serial_number, ports_count, location, status, acquired_at, notes, mac, floor, ip, city)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
         type || 'Switch',
@@ -1060,7 +1060,8 @@ router.post('/infrastructure', requirePermission('devices:write'), async (req, r
         notes || '',
         mac || '',
         floor || '',
-        ip || ''
+        ip || '',
+        city || 'Antofagasta'
       ]
     );
     const item = rows[0];
@@ -1077,7 +1078,61 @@ router.patch('/infrastructure/:id', requirePermission('devices:write'), async (r
     const before = (await query('SELECT * FROM network_infrastructure WHERE id = $1', [req.params.id])).rows[0];
     if (!before) return res.status(404).json({ error: 'Elemento de infraestructura no encontrado' });
 
-    const allowed = ['type', 'brand', 'model', 'serial_number', 'ports_count', 'location', 'status', 'acquired_at', 'notes', 'mac', 'floor', 'ip'];
+    // Normalize switch_id, switch_port and local_port
+    if (Object.hasOwn(req.body, 'switch_id')) {
+      if (!req.body.switch_id || req.body.switch_id === 'null' || req.body.switch_id === '') {
+        req.body.switch_id = null;
+        req.body.switch_port = null;
+        req.body.local_port = null;
+      }
+    }
+    if (Object.hasOwn(req.body, 'switch_port')) {
+      if (req.body.switch_port === 'null' || req.body.switch_port === '') {
+        req.body.switch_port = null;
+      } else if (req.body.switch_port !== null) {
+        req.body.switch_port = Number(req.body.switch_port);
+      }
+    }
+    if (Object.hasOwn(req.body, 'local_port')) {
+      if (req.body.local_port === 'null' || req.body.local_port === '') {
+        req.body.local_port = null;
+      } else if (req.body.local_port !== null) {
+        req.body.local_port = Number(req.body.local_port);
+      }
+    }
+
+    // Handle port reassignment (unbind any other device or infra from the target port)
+    const targetSwitchId = req.body.switch_id;
+    const targetSwitchPort = req.body.switch_port;
+    if (targetSwitchId !== undefined && targetSwitchPort !== undefined && targetSwitchId !== null && targetSwitchPort !== null) {
+      // Unbind from devices
+      const otherDevices = (await query(
+        'SELECT id FROM devices WHERE switch_id = $1 AND switch_port = $2',
+        [targetSwitchId, targetSwitchPort]
+      )).rows;
+      for (const other of otherDevices) {
+        const { rows: updatedRows } = await query(
+          'UPDATE devices SET switch_id = NULL, switch_port = NULL, updated_at = now() WHERE id = $1 RETURNING *',
+          [other.id]
+        );
+        if (updatedRows[0]) await pushDeviceToFirebase(updatedRows[0]);
+      }
+      
+      // Unbind from infrastructure (except self)
+      const otherInfras = (await query(
+        'SELECT id FROM network_infrastructure WHERE switch_id = $1 AND switch_port = $2 AND id != $3',
+        [targetSwitchId, targetSwitchPort, req.params.id]
+      )).rows;
+      for (const other of otherInfras) {
+        const { rows: updatedRows } = await query(
+          'UPDATE network_infrastructure SET switch_id = NULL, switch_port = NULL, local_port = NULL, updated_at = now() WHERE id = $1 RETURNING *',
+          [other.id]
+        );
+        if (updatedRows[0]) await pushInfrastructureToFirebase(updatedRows[0]);
+      }
+    }
+
+    const allowed = ['type', 'brand', 'model', 'serial_number', 'ports_count', 'location', 'status', 'acquired_at', 'notes', 'mac', 'floor', 'ip', 'city', 'switch_id', 'switch_port', 'local_port'];
     const fields = [];
     const values = [req.params.id];
     let idx = 2;

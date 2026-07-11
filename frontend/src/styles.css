@@ -6,8 +6,22 @@
   box-sizing: border-box;
 }
 
+html {
+  background-color: #fafafa;
+  color: #18181b;
+  min-height: 100vh;
+}
+
+html.dark {
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
 body {
   margin: 0;
+  background-color: inherit;
+  color: inherit;
+  min-height: 100vh;
 }
 
 .input {

@@ -1,0 +1,16 @@
+﻿{
+  "hostname": "ANDRES",
+  "ip": "192.168.1.18",
+  "mac": "14:75:5B:6F:3F:15",
+  "os": "Microsoft Windows 11 Pro",
+  "brand": "ASUS",
+  "model": "System Product Name",
+  "serial_number": "System Serial Number",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13700KF",
+  "ram": "64 GB",
+  "storage": "3688 GB",
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "motherboard": "TUF GAMING B760M-PLUS WIFI D4",
+  "office": "Microsoft Office Profesional Plus 2021 - es-es",
+  "antivirus": "Windows Defender"
+}
