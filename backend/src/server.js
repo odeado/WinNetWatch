@@ -35,10 +35,23 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
+
+app.use((req, res, next) => {
+  const log = `[${new Date().toISOString()}] ${req.method} ${req.url} - Body: ${JSON.stringify(req.body)}\n`;
+  try {
+    fs.appendFileSync('c:/Scripts/win-netwatch/backend/api_requests.log', log);
+  } catch (e) {}
+  next();
+});
+
 app.use('/api', router);
 
 app.use((error, _req, res, _next) => {
   console.error(error);
+  const log = `[${new Date().toISOString()}] SERVER ERROR: ${error.stack || error.message || error}\n`;
+  try {
+    fs.appendFileSync('c:/Scripts/win-netwatch/backend/api_requests.log', log);
+  } catch (e) {}
 
   if (res.headersSent) {
     return;

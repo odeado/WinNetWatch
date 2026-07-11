@@ -707,7 +707,7 @@ router.delete('/employees/:id', requirePermission('users:write'), async (req, re
     }
 
     await query('DELETE FROM employees WHERE id = $1', [req.params.id]);
-    await deleteDoc(doc(db, 'employees', req.params.id));
+    deleteDoc(doc(db, 'employees', req.params.id)).catch(e => console.warn('[Firebase bg] employee DELETE:', e.code || e.message));
     await audit(req.user.sub, 'employee.delete', 'employee', req.params.id, before, null);
     res.json({ success: true, id: req.params.id });
   } catch (error) {
@@ -852,7 +852,7 @@ router.delete('/settings/subnets/:subnet', requirePermission('users:write'), asy
   try {
     const cleanSubnet = decodeURIComponent(req.params.subnet);
     await query('DELETE FROM subnet_mappings WHERE subnet = $1', [cleanSubnet]);
-    await deleteDoc(doc(db, 'subnet_mappings', cleanSubnet));
+    deleteDoc(doc(db, 'subnet_mappings', cleanSubnet)).catch(e => console.warn('[Firebase bg] subnet DELETE:', e.code || e.message));
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -888,7 +888,7 @@ router.post('/settings/departments', requirePermission('users:write'), async (re
 router.delete('/settings/departments/:id', requirePermission('users:write'), async (req, res, next) => {
   try {
     await query('DELETE FROM departments WHERE id = $1', [req.params.id]);
-    await deleteDoc(doc(db, 'departments', req.params.id));
+    deleteDoc(doc(db, 'departments', req.params.id)).catch(e => console.warn('[Firebase bg] department DELETE:', e.code || e.message));
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -924,7 +924,7 @@ router.post('/settings/cities', requirePermission('users:write'), async (req, re
 router.delete('/settings/cities/:id', requirePermission('users:write'), async (req, res, next) => {
   try {
     await query('DELETE FROM cities WHERE id = $1', [req.params.id]);
-    await deleteDoc(doc(db, 'cities', req.params.id));
+    deleteDoc(doc(db, 'cities', req.params.id)).catch(e => console.warn('[Firebase bg] city DELETE:', e.code || e.message));
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -1236,9 +1236,26 @@ function csvCell(value) {
 }
 
 async function audit(actorId, action, entityType, entityId, before, after) {
-  await query(
-    `INSERT INTO audit_log(actor_id, action, entity_type, entity_id, before, after)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [actorId, action, entityType, entityId, before || null, after || null]
-  );
+  try {
+    // Validate that actorId is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const cleanActorId = uuidRegex.test(actorId) ? actorId : null;
+
+    await query(
+      `INSERT INTO audit_log(actor_id, action, entity_type, entity_id, before, after)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [cleanActorId, action, entityType, entityId, before || null, after || null]
+    );
+  } catch (err) {
+    console.warn('[Audit log] FK constraint failed, retrying with NULL actor_id:', err.message);
+    try {
+      await query(
+        `INSERT INTO audit_log(actor_id, action, entity_type, entity_id, before, after)
+         VALUES (NULL, $1, $2, $3, $4, $5)`,
+        [action, entityType, entityId, before || null, after || null]
+      );
+    } catch (innerErr) {
+      console.error('[Audit log] Failed completely:', innerErr.message);
+    }
+  }
 }
