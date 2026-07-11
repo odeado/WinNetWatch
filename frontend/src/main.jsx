@@ -5436,7 +5436,17 @@ function DeviceModalDialog({
         </div>
         <div className="bg-zinc-50 dark:bg-slate-900/50 px-4 xs:px-6 py-4 flex justify-end gap-2 border-t border-zinc-200 dark:border-slate-800 flex-shrink-0">
           <button className="button secondary" onClick={() => setDeviceModal(null)}>Cancelar</button>
-          <button className="button primary" onClick={() => saveDevice(form)}>Guardar Equipo</button>
+          <button className="button primary" onClick={() => {
+            // Merge deptType and cityType into the form before saving
+            // to ensure dropdowns don't lose their value
+            const mergedForm = {
+              ...form,
+              department: deptType && deptType !== 'Otro' ? deptType : (form.department || ''),
+              city: cityType && cityType !== 'Otro' ? cityType : (form.city || ''),
+              location: locationType && locationType !== 'Otro' ? locationType : (form.location || ''),
+            };
+            saveDevice(mergedForm);
+          }}>Guardar Cambios</button>
         </div>
       </div>
     </div>
