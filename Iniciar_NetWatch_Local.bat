@@ -67,23 +67,23 @@ start http://localhost:3000
 goto fin
 
 :usar_chrome64
-echo [+] Usando Google Chrome en modo Kiosk...
-start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+echo [+] Usando Google Chrome en modo Kiosk en pantalla secundaria...
+start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk --window-position=1920,0 --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
 goto fin
 
 :usar_chrome32
-echo [+] Usando Google Chrome (32-bit) en modo Kiosk...
-start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+echo [+] Usando Google Chrome (32-bit) en modo Kiosk en pantalla secundaria...
+start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk --window-position=1920,0 --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
 goto fin
 
 :usar_edge32
-echo [+] Usando Microsoft Edge en modo Kiosk...
-start "" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+echo [+] Usando Microsoft Edge en modo Kiosk en pantalla secundaria...
+start "" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" --kiosk --window-position=1920,0 --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
 goto fin
 
 :usar_edge64
-echo [+] Usando Microsoft Edge (64-bit) en modo Kiosk...
-start "" "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+echo [+] Usando Microsoft Edge (64-bit) en modo Kiosk en pantalla secundaria...
+start "" "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" --kiosk --window-position=1920,0 --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
 goto fin
 
 :fin
