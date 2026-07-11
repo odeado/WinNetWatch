@@ -47,7 +47,7 @@ const getInfraGroup = (item) => {
       return 'Antofagasta Matta';
     }
     if (ip.startsWith('172.30.100.') || ip.startsWith('172.30.101.')) {
-      return 'Antofagasta Rendic';
+      return 'Antofagasta Rendic'; // 100 y 101 son ambas subredes de Rendic
     }
     if (loc.includes('matta')) {
       return 'Antofagasta Matta';
@@ -416,8 +416,8 @@ function playNotificationSound(type) {
 function getSubnetLabelGlobal(subnet) {
   const mapping = {
     '172.30.100.0/24': 'Antofagasta Rendic',
-    '172.30.101.0/24': 'Antofagasta Matta',
-    '172.30.102.0/24': 'Antofagasta Diario',
+    '172.30.101.0/24': 'Antofagasta Rendic',
+    '172.30.102.0/24': 'Antofagasta Matta',
     '172.30.110.0/24': 'Arica',
     '172.30.112.0/24': 'Iquique'
   };
@@ -455,6 +455,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   const [adminSubTab, setAdminSubTab] = useState('employees');
   const [newSubnet, setNewSubnet] = useState('');
   const [newSubnetLabel, setNewSubnetLabel] = useState('');
+  const [editingSubnet, setEditingSubnet] = useState(null);
   const [newDeptName, setNewDeptName] = useState('');
   const [newCityName, setNewCityName] = useState('');
   const [useLocalApi, setUseLocalApi] = useState(() => {
@@ -1648,7 +1649,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
     if (!confirm('¿Eliminar este mapeo de subred?')) return;
     try {
       if (useLocalApi) {
-        const response = await fetch(`${API_URL}/api/settings/subnets/${subnet}`, {
+        const response = await fetch(`${API_URL}/api/settings/subnets/${encodeURIComponent(subnet)}`, {
           method: 'DELETE',
           headers: { authorization: `Bearer ${token}` }
         });
@@ -1660,6 +1661,21 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       triggerToast('Mapeo de subred eliminado', 'success');
     } catch (err) {
       alert('Error al eliminar subred');
+    }
+  }
+
+  async function deleteSubnetMappingSilently(subnet) {
+    try {
+      if (useLocalApi) {
+        await fetch(`${API_URL}/api/settings/subnets/${encodeURIComponent(subnet)}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        });
+      } else {
+        await deleteDoc(doc(db, 'subnet_mappings', subnet));
+      }
+    } catch (err) {
+      console.error('Error silently deleting subnet:', err);
     }
   }
 
@@ -3821,9 +3837,17 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     if (!newSubnet || !newSubnetLabel) return;
+                    
+                    const isRename = editingSubnet && editingSubnet !== newSubnet.trim();
                     await saveSubnetMapping(newSubnet.trim(), newSubnetLabel.trim());
+                    
+                    if (isRename) {
+                      await deleteSubnetMappingSilently(editingSubnet);
+                    }
+                    
                     setNewSubnet('');
                     setNewSubnetLabel('');
+                    setEditingSubnet(null);
                   }} className="space-y-3">
                     <div>
                       <label className="text-xs font-bold text-zinc-500 dark:text-slate-400 block mb-1">Subred IP (ej. 172.30.100.0 o 100.0)</label>
@@ -3847,9 +3871,24 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                         required
                       />
                     </div>
-                    <button type="submit" className="button primary w-full text-xs py-2 flex items-center justify-center gap-1.5 font-bold">
-                      <Plus size={14} /> Registrar Mapeo
-                    </button>
+                    <div className="flex gap-2">
+                      <button type="submit" className="button primary flex-1 text-xs py-2 flex items-center justify-center gap-1.5 font-bold">
+                        {editingSubnet ? 'Actualizar Mapeo' : 'Registrar Mapeo'}
+                      </button>
+                      {editingSubnet && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setNewSubnet('');
+                            setNewSubnetLabel('');
+                            setEditingSubnet(null);
+                          }} 
+                          className="button secondary text-xs py-2 font-bold"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
                   </form>
 
                   <div className="border border-zinc-100 dark:border-slate-800/50 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto feed-scroll">
@@ -3858,7 +3897,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                         <tr className="bg-zinc-50 dark:bg-slate-900/50 text-zinc-500 dark:text-slate-400 font-bold border-b border-zinc-100 dark:border-slate-800/50">
                           <th className="p-2.5">Subred</th>
                           <th className="p-2.5">Nombre</th>
-                          <th className="p-2.5 text-right">Acción</th>
+                          <th className="p-2.5 text-right font-bold">Acción</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3871,8 +3910,21 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                             <tr key={m.subnet} className="border-b border-zinc-50 dark:border-slate-800/30 hover:bg-zinc-50/50 dark:hover:bg-slate-800/20 transition duration-150">
                               <td className="p-2.5 font-mono text-zinc-600 dark:text-slate-300 font-semibold">{m.subnet}</td>
                               <td className="p-2.5 text-zinc-800 dark:text-slate-200 font-semibold">{m.label}</td>
-                              <td className="p-2.5 text-right">
+                              <td className="p-2.5 text-right flex justify-end gap-1">
                                 <button 
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingSubnet(m.subnet);
+                                    setNewSubnet(m.subnet);
+                                    setNewSubnetLabel(m.label);
+                                  }}
+                                  className="text-emerald-500 hover:text-emerald-700 p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/35 transition"
+                                  title="Editar"
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                                <button 
+                                  type="button"
                                   onClick={() => deleteSubnetMapping(m.subnet)}
                                   className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/35 transition"
                                   title="Eliminar"
@@ -7554,7 +7606,7 @@ function SwitchPortMapModal({
         if (parts.length === 4) {
           const thirdOctet = parseInt(parts[2], 10);
           if (thirdOctet === 100 || thirdOctet === 101 || thirdOctet === 102) {
-            baseCity = 'antofagasta';
+            baseCity = 'antofagasta'; // 100 y 101 = Rendic, 102 = Matta
           } else if (thirdOctet === 110) {
             baseCity = 'arica';
           } else if (thirdOctet === 112) {
@@ -7571,7 +7623,7 @@ function SwitchPortMapModal({
         if (ip.startsWith('172.30.102.')) {
           area = 'matta';
         } else if (ip.startsWith('172.30.100.') || ip.startsWith('172.30.101.')) {
-          area = 'rendic';
+          area = 'rendic'; // Tanto 100 como 101 son de Rendic
         } else if (loc.includes('matta')) {
           area = 'matta';
         } else if (loc.includes('rendic') || loc.includes('preprensa')) {
