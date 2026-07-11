@@ -5,7 +5,7 @@ echo           INICIANDO WIN NETWATCH LOCAL
 echo =======================================================
 echo.
 
-:: 1. Verificar si Docker está corriendo
+:: 1. Verificar si Docker esta corriendo
 echo [+] Verificando estado de Docker...
 docker ps >nul 2>&1
 if %errorlevel% equ 0 goto docker_ok
@@ -23,7 +23,7 @@ if %errorlevel% neq 0 (
 )
 
 :docker_ok
-echo [+] ¡Docker esta listo!
+echo [+] Docker esta listo!
 
 :: 2. Detener el contenedor API de Docker por si acaso (para liberar puerto 8080)
 echo [+] Liberando puerto 8080 en Docker...
@@ -35,7 +35,7 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8080 ^| findstr LISTENING') 
     taskkill /f /pid %%a >nul 2>&1
 )
 
-:: 3. Levantar la base de datos (Postgres) y el Frontend (sin levantar la API de Docker)
+:: 3. Levantar la base de datos (Postgres) y el Frontend
 echo [+] Levantando Base de Datos y Frontend en Docker...
 docker-compose up -d postgres
 docker-compose up -d --no-deps --build frontend
@@ -45,37 +45,50 @@ docker-compose stop api >nul 2>&1
 echo [+] Iniciando Backend en segundo plano (red local / VPN)...
 start "" /min powershell -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Set-Location -LiteralPath '%~dp0backend'; npm run dev"
 
-:: 5. Esperar 3 segundos para dar tiempo a inicializar y abrir la web
+:: 5. Esperar para dar tiempo a inicializar
 ping 127.0.0.1 -n 4 >nul
-echo [+] Abriendo navegador en modo App/Kiosk (Pantalla Completa)...
+echo [+] Abriendo navegador en modo pantalla completa (Kiosk)...
 
-:: Detectar Chrome o Edge y lanzar en modo Kiosk (pantalla completa sin barra de navegacion ni bordes)
-set BROWSER_PATH=
-set BROWSER_FLAGS=
+:: Buscar Chrome 64-bit
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" goto usar_chrome64
 
-if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
-    set BROWSER_PATH=%ProgramFiles%\Google\Chrome\Application\chrome.exe
-    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-chrome-kiosk" --no-first-run
-) else if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
-    set BROWSER_PATH=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe
-    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-chrome-kiosk" --no-first-run
-) else if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" (
-    set BROWSER_PATH=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe
-    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-edge-kiosk" --edge-kiosk-type=fullscreen --no-first-run
-) else if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" (
-    set BROWSER_PATH=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe
-    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-edge-kiosk" --edge-kiosk-type=fullscreen --no-first-run
-)
+:: Buscar Chrome 32-bit
+if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" goto usar_chrome32
 
-if not "%BROWSER_PATH%"=="" (
-    echo [+] Iniciando "%BROWSER_PATH%" en modo Kiosk...
-    start "" "%BROWSER_PATH%" %BROWSER_FLAGS% http://localhost:3000
-) else (
-    echo [!] No se detecto Chrome o Edge en rutas estandar. Abriendo navegador predeterminado...
-    start http://localhost:3000
-)
+:: Buscar Edge 32-bit
+if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" goto usar_edge32
 
+:: Buscar Edge 64-bit
+if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" goto usar_edge64
+
+:: Ningun navegador detectado
+echo [!] No se detecto Chrome ni Edge. Abriendo navegador predeterminado...
+start http://localhost:3000
+goto fin
+
+:usar_chrome64
+echo [+] Usando Google Chrome en modo Kiosk...
+start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+goto fin
+
+:usar_chrome32
+echo [+] Usando Google Chrome (32-bit) en modo Kiosk...
+start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+goto fin
+
+:usar_edge32
+echo [+] Usando Microsoft Edge en modo Kiosk...
+start "" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+goto fin
+
+:usar_edge64
+echo [+] Usando Microsoft Edge (64-bit) en modo Kiosk...
+start "" "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" --kiosk --no-first-run --user-data-dir="%TEMP%\netwatch-kiosk" http://localhost:3000
+goto fin
+
+:fin
 echo.
 echo =======================================================
-echo ¡Listo! El backend se inicio en segundo plano oculto.
+echo  Listo! El backend se inicio en segundo plano oculto.
+echo  Cierra la app con ALT+F4 cuando quieras salir.
 echo =======================================================
