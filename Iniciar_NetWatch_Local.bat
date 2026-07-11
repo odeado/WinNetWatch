@@ -47,8 +47,33 @@ start "" /min powershell -ExecutionPolicy Bypass -WindowStyle Hidden -Command "S
 
 :: 5. Esperar 3 segundos para dar tiempo a inicializar y abrir la web
 ping 127.0.0.1 -n 4 >nul
-echo [+] Abriendo navegador en http://localhost:3000...
-start http://localhost:3000
+echo [+] Abriendo navegador en modo App/Kiosk (Pantalla Completa)...
+
+:: Detectar Chrome o Edge y lanzar en modo Kiosk (pantalla completa sin barra de navegacion ni bordes)
+set BROWSER_PATH=
+set BROWSER_FLAGS=
+
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
+    set BROWSER_PATH="%ProgramFiles%\Google\Chrome\Application\chrome.exe"
+    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-chrome-kiosk" --no-first-run
+) else if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
+    set BROWSER_PATH="%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-chrome-kiosk" --no-first-run
+) else if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" (
+    set BROWSER_PATH="%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
+    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-edge-kiosk" --edge-kiosk-type=fullscreen --no-first-run
+) else if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" (
+    set BROWSER_PATH="%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
+    set BROWSER_FLAGS=--kiosk --user-data-dir="%TEMP%\netwatch-edge-kiosk" --edge-kiosk-type=fullscreen --no-first-run
+)
+
+if not "%BROWSER_PATH%"=="" (
+    echo [+] Iniciando %BROWSER_PATH% en modo Kiosk...
+    start "" %BROWSER_PATH% %BROWSER_FLAGS% http://localhost:3000
+) else (
+    echo [!] No se detecto Chrome o Edge en rutas estandar. Abriendo navegador predeterminado...
+    start http://localhost:3000
+)
 
 echo.
 echo =======================================================
