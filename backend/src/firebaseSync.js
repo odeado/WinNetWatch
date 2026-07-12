@@ -445,6 +445,22 @@ async function syncCityFromFirestore(fsData) {
     console.error('Error syncing city from Firestore:', err);
   }
 }
+async function syncLocationFromFirestore(fsData) {
+  try {
+    const uuid = stringToUUID(fsData.id);
+    const { rows } = await query('SELECT * FROM locations WHERE id = $1', [uuid]);
+    const local = rows[0];
+    if (!local) {
+      await query('DELETE FROM locations WHERE name = $1 AND id <> $2', [fsData.name, uuid]);
+      await query('INSERT INTO locations (id, name) VALUES ($1, $2)', [uuid, fsData.name]);
+    } else if (local.name !== fsData.name) {
+      await query('UPDATE locations SET name = $2 WHERE id = $1', [uuid, fsData.name]);
+    }
+  } catch (err) {
+    console.error('Error syncing location from Firestore:', err);
+  }
+}
+
 async function syncInfrastructureFromFirestore(fsData) {
   try {
     const uuid = stringToUUID(fsData.id);
@@ -732,6 +748,17 @@ export async function pushCityToFirebase(city) {
   }
 }
 
+export async function pushLocationToFirebase(location) {
+  try {
+    const docRef = doc(db, 'locations', location.id);
+    await setDoc(docRef, {
+      name: location.name
+    });
+  } catch (err) {
+    console.error('[FirebaseSync] Error al subir ubicación a Firebase:', err);
+  }
+}
+
 export async function pushInfrastructureToFirebase(item) {
   try {
     const docRef = doc(db, 'infrastructure', item.id);
@@ -840,6 +867,9 @@ async function runInitialSync() {
 
       const { rows: cities } = await query('SELECT * FROM cities');
       for (const c of cities) await pushCityToFirebase(c);
+
+      const { rows: locations } = await query('SELECT * FROM locations');
+      for (const l of locations) await pushLocationToFirebase(l);
 
       const { rows: employees } = await query('SELECT * FROM employees');
       for (const e of employees) await pushEmployeeToFirebase(e);
@@ -951,6 +981,22 @@ export async function initFirebaseSync() {
         }
       } catch (err) {
         console.error('Error handling city change:', err);
+      }
+    }
+  });
+
+  onSnapshot(collection(db, 'locations'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
+      const data = { id: change.doc.id, ...change.doc.data() };
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncLocationFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM locations WHERE id = $1', [uuid]);
+        }
+      } catch (err) {
+        console.error('Error handling location change:', err);
       }
     }
   });

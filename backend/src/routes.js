@@ -14,6 +14,7 @@ import {
   pushSubnetMappingToFirebase,
   pushDepartmentToFirebase,
   pushCityToFirebase,
+  pushLocationToFirebase,
   pushEventToFirebase,
   pushAlertToFirebase,
   pushInfrastructureToFirebase,
@@ -950,8 +951,7 @@ router.post('/settings/locations', requirePermission('users:write'), async (req,
        RETURNING *`,
       [name.trim()]
     );
-    const locId = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-    setDoc(doc(db, 'locations', locId), { name: name.trim() }).catch(e => console.warn('[Firebase bg] location set:', e.code || e.message));
+    pushLocationToFirebase(rows[0]).catch(e => console.warn('[Firebase bg] location set:', e.code || e.message));
     res.json(rows[0]);
   } catch (error) {
     next(error);

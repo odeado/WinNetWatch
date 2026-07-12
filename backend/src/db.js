@@ -7,6 +7,18 @@ export const pool = new pg.Pool({
   idleTimeoutMillis: 30000
 });
 
+// IMPORTANTE: sin este listener, un error en un cliente inactivo del pool
+// (ej. "Connection terminated unexpectedly" cuando Postgres se reinicia o
+// hay un corte de red breve) se convierte en una excepcion no controlada
+// que tumba TODO el proceso de Node (ver backend/crash.log). Como el backend
+// corre localmente via "npm run dev" sin un supervisor que lo reinicie,
+// eso dejaba el sistema completo sin poder guardar nada hasta reiniciarlo
+// manualmente. Con este handler el pool simplemente reconecta el siguiente
+// cliente y el servidor sigue funcionando.
+pool.on('error', (err) => {
+  console.error('[DB Pool] Error inesperado en cliente inactivo del pool:', err.message);
+});
+
 export async function query(text, params = []) {
   const start = Date.now();
   const result = await pool.query(text, params);

@@ -3,13 +3,24 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Ruta robusta al log de crashes: antes apuntaba a una carpeta de la
+// maquina de desarrollo original (c:/Users/pirat/...) que ya no existe en
+// este equipo, asi que fs.writeFileSync fallaba en silencio y nunca
+// quedaba registro de por que el backend se habia caido. Ahora se calcula
+// siempre relativo a este archivo, sin importar donde se ejecute.
+const CRASH_LOG_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'crash.log');
 
 process.on('uncaughtException', (err) => {
   const logMsg = `UNCAUGHT EXCEPTION:\n${err.stack || err}\n`;
   console.error(logMsg);
   try {
-    fs.writeFileSync('c:/Users/pirat/Documents/Codex/2026-06-04/desarrolla-un-sistema-web-local-de/outputs/win-netwatch/backend/crash.log', logMsg);
-  } catch {}
+    fs.writeFileSync(CRASH_LOG_PATH, logMsg);
+  } catch (writeErr) {
+    console.error('No se pudo escribir crash.log:', writeErr.message);
+  }
   process.exit(1);
 });
 
@@ -17,8 +28,10 @@ process.on('unhandledRejection', (reason) => {
   const logMsg = `UNHANDLED REJECTION:\n${reason?.stack || reason}\n`;
   console.error(logMsg);
   try {
-    fs.writeFileSync('c:/Users/pirat/Documents/Codex/2026-06-04/desarrolla-un-sistema-web-local-de/outputs/win-netwatch/backend/crash.log', logMsg);
-  } catch {}
+    fs.writeFileSync(CRASH_LOG_PATH, logMsg);
+  } catch (writeErr) {
+    console.error('No se pudo escribir crash.log:', writeErr.message);
+  }
   process.exit(1);
 });
 
