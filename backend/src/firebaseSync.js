@@ -67,6 +67,13 @@ async function syncEmployeeFromFirestore(fsData) {
     const uuid = stringToUUID(fsData.id);
     const { rows } = await query('SELECT * FROM employees WHERE id = $1', [uuid]);
     const local = rows[0];
+    if (local && fsData.updated_at && local.updated_at) {
+      const fsTime = new Date(fsData.updated_at).getTime();
+      const localTime = new Date(local.updated_at).getTime();
+      if (fsTime <= localTime) {
+        return;
+      }
+    }
     if (!local) {
       if (fsData.email) {
         await query('DELETE FROM employees WHERE email = $1 AND id <> $2', [fsData.email, uuid]);
@@ -250,6 +257,13 @@ async function syncDeviceFromFirestore(fsData) {
 
     const { rows } = await query('SELECT * FROM devices WHERE id = $1', [uuid]);
     const local = rows[0];
+    if (local && fsData.updated_at && local.updated_at) {
+      const fsTime = new Date(fsData.updated_at).getTime();
+      const localTime = new Date(local.updated_at).getTime();
+      if (fsTime <= localTime) {
+        return;
+      }
+    }
     if (!local) {
       await query('DELETE FROM devices WHERE ip = $1 AND id <> $2', [fsData.ip, uuid]);
       await query(
@@ -446,6 +460,13 @@ async function syncInfrastructureFromFirestore(fsData) {
 
     const { rows } = await query('SELECT * FROM network_infrastructure WHERE id = $1', [uuid]);
     const local = rows[0];
+    if (local && fsData.updated_at && local.updated_at) {
+      const fsTime = new Date(fsData.updated_at).getTime();
+      const localTime = new Date(local.updated_at).getTime();
+      if (fsTime <= localTime) {
+        return;
+      }
+    }
     if (!local) {
       await query(
         `INSERT INTO network_infrastructure (
@@ -640,6 +661,7 @@ export async function pushDeviceToFirebase(device) {
       location: device.location || 'Matta',
       last_seen: device.last_seen ? new Date(device.last_seen).toISOString() : new Date().toISOString(),
       office: device.office || '',
+      updated_at: device.updated_at ? new Date(device.updated_at).toISOString() : new Date().toISOString(),
       antivirus: device.antivirus || '',
       switch_id: device.switch_id || null,
       switch_port: device.switch_port || null
@@ -667,7 +689,8 @@ export async function pushEmployeeToFirebase(employee) {
       image_url: employee.image_url || '',
       active: employee.active !== undefined ? employee.active : true,
       job_title: employee.job_title || '',
-      authorized_systems: employee.authorized_systems || ''
+      authorized_systems: employee.authorized_systems || '',
+      updated_at: employee.updated_at ? new Date(employee.updated_at).toISOString() : new Date().toISOString()
     });
     handleFirebaseWriteSuccess();
   } catch (err) {
@@ -728,7 +751,8 @@ export async function pushInfrastructureToFirebase(item) {
       city: item.city || 'Antofagasta',
       switch_id: item.switch_id || null,
       switch_port: item.switch_port || null,
-      local_port: item.local_port || null
+      local_port: item.local_port || null,
+      updated_at: item.updated_at ? new Date(item.updated_at).toISOString() : new Date().toISOString()
     });
   } catch (err) {
     console.error('[FirebaseSync] Error al subir infraestructura a Firebase:', err);

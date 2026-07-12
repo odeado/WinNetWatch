@@ -161,6 +161,15 @@ async function runMigrations() {
       )
     `);
 
+    // Create locations table
+    await query(`
+      CREATE TABLE IF NOT EXISTS locations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
     // 7. Create network_infrastructure table
     await query(`
       CREATE TABLE IF NOT EXISTS network_infrastructure (

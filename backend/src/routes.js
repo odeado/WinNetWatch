@@ -931,6 +931,43 @@ router.delete('/settings/cities/:id', requirePermission('users:write'), async (r
   }
 });
 
+router.get('/settings/locations', requirePermission('devices:read'), async (_req, res, next) => {
+  try {
+    const { rows } = await query('SELECT * FROM locations ORDER BY name');
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/settings/locations', requirePermission('users:write'), async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
+    const { rows } = await query(
+      `INSERT INTO locations (name) VALUES ($1)
+       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+       RETURNING *`,
+      [name.trim()]
+    );
+    const locId = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    setDoc(doc(db, 'locations', locId), { name: name.trim() }).catch(e => console.warn('[Firebase bg] location set:', e.code || e.message));
+    res.json(rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/settings/locations/:id', requirePermission('users:write'), async (req, res, next) => {
+  try {
+    await query('DELETE FROM locations WHERE id = $1', [req.params.id]);
+    deleteDoc(doc(db, 'locations', req.params.id)).catch(e => console.warn('[Firebase bg] location DELETE:', e.code || e.message));
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // =============================================
 // User Management Routes
 // =============================================

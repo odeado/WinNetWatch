@@ -449,6 +449,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   const [subnetMappings, setSubnetMappings] = useState([]);
   const [dbDepartments, setDbDepartments] = useState([]);
   const [dbCities, setDbCities] = useState([]);
+  const [dbLocations, setDbLocations] = useState([]);
 
   // Tab States
   const [currentTab, setCurrentTab] = useState('dashboard');
@@ -458,6 +459,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   const [editingSubnet, setEditingSubnet] = useState(null);
   const [newDeptName, setNewDeptName] = useState('');
   const [newCityName, setNewCityName] = useState('');
+  const [newLocName, setNewLocName] = useState('');
   const [useLocalApi, setUseLocalApi] = useState(() => {
     return localStorage.getItem('use_local_api') === 'true';
   });
@@ -667,6 +669,13 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
     return [...depts].sort();
   }, [employees, devices, dbDepartments]);
 
+  const existingLocations = useMemo(() => {
+    const locs = new Set(dbLocations.map(l => l.name));
+    devices.forEach(d => d.location && locs.add(d.location));
+    infrastructure.forEach(i => i.location && locs.add(i.location));
+    return [...locs].sort();
+  }, [devices, infrastructure, dbLocations]);
+
   const existingCpus = useMemo(() => {
     const cpus = new Set();
     devices.forEach(d => d.cpu && cpus.add(d.cpu.trim()));
@@ -769,7 +778,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   useEffect(() => {
     if (!token || useLocalApi) return;
 
-    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubEvents, unsubAlerts, unsubInfra, unsubAnomalies;
+    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubLocations, unsubEvents, unsubAlerts, unsubInfra, unsubAnomalies;
 
     const handleFirebaseError = (err) => {
       console.warn('Firestore subscription failed, switching to local API polling:', err);
@@ -783,6 +792,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       if (unsubSubnets) unsubSubnets();
       if (unsubDepts) unsubDepts();
       if (unsubCities) unsubCities();
+      if (unsubLocations) unsubLocations();
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
       if (unsubInfra) unsubInfra();
@@ -867,6 +877,14 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         setDbCities(list);
       }, handleFirebaseError);
 
+      unsubLocations = onSnapshot(collection(db, 'locations'), (snapshot) => {
+        const list = [];
+        snapshot.forEach(d => {
+          list.push({ id: d.id, ...d.data() });
+        });
+        setDbLocations(list);
+      }, handleFirebaseError);
+
       const qEvents = query(collection(db, 'events'), orderBy('created_at', 'desc'), limit(12));
       unsubEvents = onSnapshot(qEvents, (snapshot) => {
         const list = [];
@@ -928,6 +946,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       if (unsubSubnets) unsubSubnets();
       if (unsubDepts) unsubDepts();
       if (unsubCities) unsubCities();
+      if (unsubLocations) unsubLocations();
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
       if (unsubInfra) unsubInfra();
@@ -1012,6 +1031,10 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       // 5. Fetch cities
       const cityRes = await fetch(`${API_URL}/api/settings/cities`, { headers });
       if (cityRes.ok) setDbCities(await cityRes.json());
+
+      // Fetch locations
+      const locRes = await fetch(`${API_URL}/api/settings/locations`, { headers });
+      if (locRes.ok) setDbLocations(await locRes.json());
 
       // 6. Fetch dashboard summary (for alerts & events)
       const summaryRes = await fetch(`${API_URL}/api/dashboard/summary`, { headers });
@@ -4770,6 +4793,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
           saveDevice={saveDevice}
           existingCities={existingCities}
           existingDepartments={existingDepartments}
+          existingLocations={existingLocations}
           setEmployeeModal={setEmployeeModal}
           existingCpus={existingCpus}
           existingRams={existingRams}
@@ -4814,6 +4838,7 @@ function DeviceModalDialog({
   saveDevice,
   existingCities = [],
   existingDepartments = [],
+  existingLocations = [],
   setEmployeeModal,
   existingCpus = [],
   existingRams = [],
@@ -4827,8 +4852,7 @@ function DeviceModalDialog({
   const [showEmployeeSearchList, setShowEmployeeSearchList] = useState(false);
   
   // Locations management
-  const predefinedLocations = ['Matta', 'Diario', 'Casa'];
-  const isCustomLocation = form.location && !predefinedLocations.includes(form.location);
+  const isCustomLocation = form.location && !existingLocations.includes(form.location);
   const [locationType, setLocationType] = useState(isCustomLocation ? 'Otro' : (form.location || 'Matta'));
 
   // Custom states for selects + manually entered inputs
@@ -5007,9 +5031,8 @@ function DeviceModalDialog({
                 }
               }}
             >
-              <option value="Matta">Matta</option>
-              <option value="Diario">Diario</option>
-              <option value="Casa">Casa</option>
+              <option value="">-- Seleccionar Ubicación --</option>
+              {existingLocations.map(l => <option key={l} value={l}>{l}</option>)}
               <option value="Otro">Otro lugar...</option>
             </select>
             {locationType === 'Otro' && (
