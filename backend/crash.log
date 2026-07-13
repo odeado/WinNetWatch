@@ -1,8 +1,7 @@
 UNCAUGHT EXCEPTION:
-Error: Connection terminated unexpectedly
-    at Connection.<anonymous> (C:\Users\pirat\Documents\Codex\2026-06-04\desarrolla-un-sistema-web-local-de\outputs\win-netwatch\backend\node_modules\pg\lib\client.js:193:73)
-    at Object.onceWrapper (node:events:632:28)
-    at Connection.emit (node:events:518:28)
-    at Socket.<anonymous> (C:\Users\pirat\Documents\Codex\2026-06-04\desarrolla-un-sistema-web-local-de\outputs\win-netwatch\backend\node_modules\pg\lib\connection.js:61:12)
-    at Socket.emit (node:events:518:28)
-    at TCP.<anonymous> (node:net:351:12)
+Error: listen EADDRINUSE: address already in use :::8080
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at bootstrap (file:///C:/Scripts/win-netwatch/backend/src/server.js:344:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)

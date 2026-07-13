@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { login, requireAuth, requirePermission } from './auth.js';
 import { encryptSecret } from './crypto.js';
-import { query } from './db.js';
+import { query, withTransaction } from './db.js';
 import { getSummary, scanAll } from './monitor.js';
 import { probeWindowsHost } from './network.js';
 // import net from 'net';
@@ -19,6 +19,8 @@ import {
   pushAlertToFirebase,
   pushInfrastructureToFirebase,
   deleteInfrastructureFromFirebase,
+  pushInfrastructureLinkToFirebase,
+  deleteInfrastructureLinkFromFirebase,
   isFirebaseQuotaExceeded,
   stringToUUID
 } from './firebaseSync.js';
@@ -716,6 +718,81 @@ router.delete('/employees/:id', requirePermission('users:write'), async (req, re
   }
 });
 
+router.post('/employees/bulk', requirePermission('users:write'), async (req, res, next) => {
+  try {
+    const employees = req.body;
+    if (!Array.isArray(employees)) {
+      return res.status(400).json({ error: 'Se esperaba un arreglo de empleados' });
+    }
+
+    const results = {
+      imported: 0,
+      errors: []
+    };
+
+    for (const emp of employees) {
+      try {
+        const fullName = emp.fullName || emp.full_name;
+        const email = emp.email ? emp.email.trim().toLowerCase() : null;
+        const department = emp.department;
+        const city = emp.city;
+        const status = emp.status || 'Presencial';
+        const phone = emp.phone;
+        const workplace = emp.workplace || 'Presencial';
+        const vpnActive = emp.vpnActive !== undefined ? emp.vpnActive : (emp.vpn_active || false);
+        const vpnType = emp.vpnType || emp.vpn_type || 'Ninguno';
+        const imageUrl = emp.imageUrl || emp.image_url || '';
+        const active = emp.active !== undefined ? emp.active : true;
+        const jobTitle = emp.jobTitle || emp.job_title || '';
+        const authorizedSystems = emp.authorizedSystems || emp.authorized_systems || '';
+
+        if (!fullName) {
+          results.errors.push({ employee: emp, error: 'El nombre completo es obligatorio' });
+          continue;
+        }
+
+        // Check if employee with same email already exists
+        if (email) {
+          const existing = (await query('SELECT id FROM employees WHERE email = $1', [email])).rows[0];
+          if (existing) {
+            results.errors.push({ employee: emp, error: `Ya existe un empleado con el correo ${email}` });
+            continue;
+          }
+        }
+
+        const { rows } = await query(
+          `INSERT INTO employees(full_name, email, department, city, status, phone, workplace, vpn_active, vpn_type, image_url, active, job_title, authorized_systems)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           RETURNING *`,
+          [fullName, email, department, city, status, phone, workplace, vpnActive, vpnType, imageUrl, active, jobTitle, authorizedSystems]
+        );
+        const employee = rows[0];
+
+        if (employee.department && employee.department.trim() !== '') {
+          await query('INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [employee.department.trim()]);
+          const { rows: deptRows } = await query('SELECT id FROM departments WHERE name = $1', [employee.department.trim()]);
+          if (deptRows.length) await pushDepartmentToFirebase({ id: deptRows[0].id, name: employee.department.trim() });
+        }
+        if (employee.city && employee.city.trim() !== '') {
+          await query('INSERT INTO cities (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [employee.city.trim()]);
+          const { rows: cityRows } = await query('SELECT id FROM cities WHERE name = $1', [employee.city.trim()]);
+          if (cityRows.length) await pushCityToFirebase({ id: cityRows[0].id, name: employee.city.trim() });
+        }
+
+        await pushEmployeeToFirebase(employee);
+        await audit(req.user.sub, 'employee.create', 'employee', employee.id, null, employee);
+        results.imported++;
+      } catch (err) {
+        results.errors.push({ employee: emp, error: err.message });
+      }
+    }
+
+    res.json(results);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Manual Device Creation and Deletion
 router.post('/devices', requirePermission('devices:write'), async (req, res, next) => {
   try {
@@ -1196,6 +1273,121 @@ router.patch('/infrastructure/:id', requirePermission('devices:write'), async (r
     await pushInfrastructureToFirebase(after);
     await audit(req.user.sub, 'infrastructure.update', 'infrastructure', req.params.id, before, after);
     res.json(after);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =============================================
+// Infrastructure Links (cascada switch-a-switch)
+// Cada conexión física entre dos elementos de infraestructura es su propia
+// fila, en vez de un único switch_id/switch_port/local_port por elemento
+// (que solo podía representar un enlace y se sobreescribía con cada
+// cascada nueva desde el mismo switch).
+// =============================================
+
+router.get('/infrastructure/links', requirePermission('devices:read'), async (_req, res, next) => {
+  try {
+    const { rows } = await query('SELECT * FROM infrastructure_links');
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+async function findLinkPortOccupant(client, infraId, port, excludeLinkId) {
+  const deviceRows = (await client.query(
+    'SELECT id, hostname, ip FROM devices WHERE switch_id = $1 AND switch_port = $2',
+    [infraId, port]
+  )).rows;
+  if (deviceRows.length) {
+    return { type: 'device', row: deviceRows[0] };
+  }
+
+  const linkRows = (await client.query(
+    `SELECT * FROM infrastructure_links
+     WHERE ((infra_a_id = $1 AND infra_a_port = $2) OR (infra_b_id = $1 AND infra_b_port = $2))
+       AND id != $3`,
+    [infraId, port, excludeLinkId || '00000000-0000-0000-0000-000000000000']
+  )).rows;
+  if (linkRows.length) {
+    return { type: 'link', row: linkRows[0] };
+  }
+
+  return null;
+}
+
+router.post('/infrastructure/links', requirePermission('devices:write'), async (req, res, next) => {
+  try {
+    const { infra_a_id, infra_b_id, force } = req.body;
+    const infra_a_port = Number(req.body.infra_a_port);
+    const infra_b_port = Number(req.body.infra_b_port);
+
+    if (!infra_a_id || !infra_b_id || !infra_a_port || !infra_b_port) {
+      return res.status(400).json({ error: 'Faltan datos del enlace (elementos y puertos de ambos lados son obligatorios)' });
+    }
+    if (infra_a_id === infra_b_id) {
+      return res.status(400).json({ error: 'Un elemento no puede conectarse a sí mismo' });
+    }
+
+    const result = await withTransaction(async (client) => {
+      const occupantA = await findLinkPortOccupant(client, infra_a_id, infra_a_port, null);
+      const occupantB = await findLinkPortOccupant(client, infra_b_id, infra_b_port, null);
+
+      if ((occupantA || occupantB) && !force) {
+        return { conflict: true, occupantA, occupantB };
+      }
+
+      const displacedDeviceIds = [];
+      for (const occupant of [occupantA, occupantB]) {
+        if (!occupant) continue;
+        if (occupant.type === 'device') {
+          await client.query('UPDATE devices SET switch_id = NULL, switch_port = NULL, updated_at = now() WHERE id = $1', [occupant.row.id]);
+          displacedDeviceIds.push(occupant.row.id);
+        } else {
+          await client.query('DELETE FROM infrastructure_links WHERE id = $1', [occupant.row.id]);
+        }
+      }
+
+      const { rows } = await client.query(
+        `INSERT INTO infrastructure_links (infra_a_id, infra_a_port, infra_b_id, infra_b_port)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [infra_a_id, infra_a_port, infra_b_id, infra_b_port]
+      );
+      return { conflict: false, link: rows[0], displacedDeviceIds };
+    });
+
+    if (result.conflict) {
+      return res.status(409).json({
+        error: 'Puerto ocupado',
+        occupantA: result.occupantA,
+        occupantB: result.occupantB
+      });
+    }
+
+    await audit(req.user.sub, 'infrastructure_link.create', 'infrastructure_link', result.link.id, null, result.link);
+    res.status(201).json(result.link);
+
+    pushInfrastructureLinkToFirebase(result.link).catch(e => console.warn('[Firebase bg] link create:', e.code || e.message));
+    for (const devId of result.displacedDeviceIds) {
+      query('SELECT * FROM devices WHERE id = $1', [devId])
+        .then(({ rows }) => { if (rows[0]) pushDeviceToFirebase(rows[0]).catch(() => {}); })
+        .catch(() => {});
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/infrastructure/links/:id', requirePermission('devices:write'), async (req, res, next) => {
+  try {
+    const before = (await query('SELECT * FROM infrastructure_links WHERE id = $1', [req.params.id])).rows[0];
+    if (!before) return res.status(404).json({ error: 'Enlace no encontrado' });
+    await query('DELETE FROM infrastructure_links WHERE id = $1', [req.params.id]);
+    await audit(req.user.sub, 'infrastructure_link.delete', 'infrastructure_link', req.params.id, before, null);
+    res.json({ success: true });
+    deleteInfrastructureLinkFromFirebase(req.params.id).catch(e => console.warn('[Firebase bg] link delete:', e.code || e.message));
   } catch (error) {
     next(error);
   }

@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import './styles.css';
 import { db, auth } from './firebase.js';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, limit, where, getDocs, writeBatch } from 'firebase/firestore';
 import { signInWithEmailAndPassword, onIdTokenChanged } from 'firebase/auth';
 
 let API_URL = localStorage.getItem('custom_api_url') || (
@@ -491,6 +491,10 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
 
   // Infrastructure inventory states
   const [infrastructure, setInfrastructure] = useState([]);
+  // Enlaces switch-a-switch (cascada): cada conexión física es su propia fila,
+  // en vez de un único switch_id/switch_port/local_port por elemento que solo
+  // podía representar un enlace y se sobreescribía con cada cascada nueva.
+  const [infrastructureLinks, setInfrastructureLinks] = useState([]);
   const [infraModal, setInfraModal] = useState(null);
   const [infraFilter, setInfraFilter] = useState('');
   const [activeSwitchForPorts, setActiveSwitchForPorts] = useState(null);
@@ -533,6 +537,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   });
 
   const prevDevicesRef = useRef({});
+  const employeeFileInputRef = useRef(null);
 
 
   // Dynamic Subnet Name Mappings
@@ -778,7 +783,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
   useEffect(() => {
     if (!token || useLocalApi) return;
 
-    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubLocations, unsubEvents, unsubAlerts, unsubInfra, unsubAnomalies;
+    let unsubDevices, unsubEmployees, unsubSubnets, unsubDepts, unsubCities, unsubLocations, unsubEvents, unsubAlerts, unsubInfra, unsubInfraLinks, unsubAnomalies;
 
     const handleFirebaseError = (err) => {
       console.warn('Firestore subscription failed, switching to local API polling:', err);
@@ -796,6 +801,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
       if (unsubInfra) unsubInfra();
+      if (unsubInfraLinks) unsubInfraLinks();
       if (unsubAnomalies) unsubAnomalies();
     };
 
@@ -911,6 +917,14 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         setInfrastructure(list);
       }, handleFirebaseError);
 
+      unsubInfraLinks = onSnapshot(collection(db, 'infrastructure_links'), (snapshot) => {
+        const list = [];
+        snapshot.forEach(d => {
+          list.push({ id: d.id, ...d.data() });
+        });
+        setInfrastructureLinks(list);
+      }, handleFirebaseError);
+
       const qAnomalies = query(collection(db, 'device_anomalies'), orderBy('detected_at', 'desc'), limit(30));
       unsubAnomalies = onSnapshot(qAnomalies, (snapshot) => {
         const list = [];
@@ -950,6 +964,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       if (unsubEvents) unsubEvents();
       if (unsubAlerts) unsubAlerts();
       if (unsubInfra) unsubInfra();
+      if (unsubInfraLinks) unsubInfraLinks();
       if (unsubAnomalies) unsubAnomalies();
     };
   }, [token, useLocalApi]);
@@ -1048,6 +1063,10 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       // 7. Fetch infrastructure
       const infraRes = await fetch(`${API_URL}/api/infrastructure`, { headers });
       if (infraRes.ok) setInfrastructure(await infraRes.json());
+
+      // 7b. Fetch infrastructure links (cascada switch-a-switch)
+      const infraLinksRes = await fetch(`${API_URL}/api/infrastructure/links`, { headers });
+      if (infraLinksRes.ok) setInfrastructureLinks(await infraLinksRes.json());
 
       // 8. Fetch anomalies
       const anomalyRes = await fetch(`${API_URL}/api/anomalies`, { headers });
@@ -1299,6 +1318,225 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
     }
   }
 
+  const handleImportEmployees = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const text = evt.target.result;
+        let parsedList = [];
+
+        if (file.name.endsWith('.json')) {
+          const json = JSON.parse(text);
+          parsedList = Array.isArray(json) ? json : [json];
+        } else if (file.name.endsWith('.csv')) {
+          const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+          if (lines.length < 2) {
+            alert('El archivo CSV está vacío o le faltan datos.');
+            return;
+          }
+
+          // Detect separator: comma or semicolon
+          const firstLine = lines[0];
+          const commaCount = (firstLine.match(/,/g) || []).length;
+          const semiCount = (firstLine.match(/;/g) || []).length;
+          const sep = semiCount > commaCount ? ';' : ',';
+
+          // Split headers
+          const headers = firstLine.split(sep).map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
+
+          // Helper to find header index
+          const findHeaderIdx = (patterns) => {
+            return headers.findIndex(h => patterns.some(p => h.includes(p)));
+          };
+
+          const nameIdx = findHeaderIdx(['nombre', 'name', 'full_name', 'fullname', 'completo']);
+          const emailIdx = findHeaderIdx(['email', 'correo', 'mail']);
+          const deptIdx = findHeaderIdx(['dept', 'area', 'departamento', 'unidad']);
+          const cityIdx = findHeaderIdx(['ciudad', 'city', 'sucursal']);
+          const statusIdx = findHeaderIdx(['estado', 'status', 'disponibilidad']);
+          const phoneIdx = findHeaderIdx(['tel', 'phone', 'fono', 'movil']);
+          const workplaceIdx = findHeaderIdx(['lugar', 'workplace', 'modalidad', 'trabajo']);
+          const vpnActiveIdx = findHeaderIdx(['vpn_active', 'vpn_activa', 'vpn activa', 'usa_vpn', 'vpn']);
+          const vpnTypeIdx = findHeaderIdx(['vpn_type', 'tipo_vpn', 'tipo vpn']);
+          const jobIdx = findHeaderIdx(['cargo', 'puesto', 'rol', 'job', 'title', 'titulo']);
+          const sysIdx = findHeaderIdx(['sistemas', 'systems', 'accesos', 'authorized']);
+
+          if (nameIdx === -1) {
+            alert('No se pudo encontrar una columna de "Nombre" en el archivo CSV.');
+            return;
+          }
+
+          for (let i = 1; i < lines.length; i++) {
+            const cells = [];
+            let currentCell = '';
+            let inQuotes = false;
+            const line = lines[i];
+
+            for (let c = 0; c < line.length; c++) {
+              const char = line[c];
+              if (char === '"') {
+                inQuotes = !inQuotes;
+              } else if (char === sep && !inQuotes) {
+                cells.push(currentCell.trim().replace(/^["']|["']$/g, ''));
+                currentCell = '';
+              } else {
+                currentCell += char;
+              }
+            }
+            cells.push(currentCell.trim().replace(/^["']|["']$/g, ''));
+
+            if (cells.length === 0 || !cells[nameIdx]) continue;
+
+            const vpnVal = vpnActiveIdx !== -1 ? (cells[vpnActiveIdx] || '').toLowerCase() : '';
+            const isVpnActive = vpnVal.includes('si') || vpnVal.includes('sí') || vpnVal.includes('true') || vpnVal === '1' || vpnVal.includes('activa');
+
+            parsedList.push({
+              full_name: cells[nameIdx] || '',
+              email: emailIdx !== -1 ? cells[emailIdx] || '' : '',
+              department: deptIdx !== -1 ? cells[deptIdx] || '' : '',
+              city: cityIdx !== -1 ? cells[cityIdx] || '' : '',
+              status: statusIdx !== -1 ? cells[statusIdx] || 'Presencial' : 'Presencial',
+              phone: phoneIdx !== -1 ? cells[phoneIdx] || '' : '',
+              workplace: workplaceIdx !== -1 ? cells[workplaceIdx] || 'Presencial' : 'Presencial',
+              vpn_active: isVpnActive,
+              vpn_type: vpnTypeIdx !== -1 ? cells[vpnTypeIdx] || 'Ninguno' : 'Ninguno',
+              job_title: jobIdx !== -1 ? cells[jobIdx] || '' : '',
+              authorized_systems: sysIdx !== -1 ? cells[sysIdx] || '' : ''
+            });
+          }
+        } else {
+          alert('Formato de archivo no soportado. Use .json o .csv');
+          return;
+        }
+
+        if (parsedList.length === 0) {
+          alert('No se encontraron registros válidos para importar.');
+          return;
+        }
+
+        const confirmImport = confirm(`Se encontraron ${parsedList.length} empleados listos para importar.\n¿Deseas continuar?`);
+        if (!confirmImport) return;
+
+        if (useLocalApi) {
+          const response = await fetch(`${API_URL}/api/employees/bulk`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(parsedList)
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(errText || 'Error en la importación masiva');
+          }
+
+          const resData = await response.json();
+          let msg = `Importación finalizada.\nExitosos: ${resData.imported}`;
+          if (resData.errors && resData.errors.length > 0) {
+            msg += `\nErrores: ${resData.errors.length}\nPrimer error: ${resData.errors[0].error}`;
+          }
+          alert(msg);
+          triggerToast(`Importados ${resData.imported} empleados`, 'success');
+          loadData();
+        } else {
+          const currentEmails = new Set(employees.map(e => (e.email || '').trim().toLowerCase()));
+          const toImport = [];
+          const skipped = [];
+
+          for (const emp of parsedList) {
+            const email = (emp.email || '').trim().toLowerCase();
+            if (email && currentEmails.has(email)) {
+              skipped.push(emp);
+            } else {
+              toImport.push(emp);
+            }
+          }
+
+          if (toImport.length === 0) {
+            alert(`No hay nuevos empleados para importar (todos los ${parsedList.length} correos ya existen).`);
+            e.target.value = '';
+            return;
+          }
+
+          let batch = writeBatch(db);
+          let count = 0;
+          let totalImported = 0;
+
+          const uniqueDepts = new Set();
+          const uniqueCities = new Set();
+
+          for (const emp of toImport) {
+            const id = doc(collection(db, 'employees')).id;
+            const empRef = doc(db, 'employees', id);
+            
+            const payload = {
+              full_name: emp.full_name,
+              email: emp.email || '',
+              department: emp.department || '',
+              city: emp.city || '',
+              status: emp.status || 'Presencial',
+              phone: emp.phone || '',
+              workplace: emp.workplace || 'Presencial',
+              vpn_active: !!emp.vpn_active,
+              vpn_type: emp.vpn_type || 'Ninguno',
+              image_url: emp.image_url || '',
+              active: emp.active !== undefined ? emp.active : true,
+              job_title: emp.job_title || '',
+              authorized_systems: emp.authorized_systems || '',
+              updated_at: new Date().toISOString()
+            };
+
+            batch.set(empRef, payload);
+            count++;
+
+            if (emp.department) uniqueDepts.add(emp.department.trim());
+            if (emp.city) uniqueCities.add(emp.city.trim());
+
+            if (count >= 100) {
+              await batch.commit();
+              totalImported += count;
+              batch = writeBatch(db);
+              count = 0;
+            }
+          }
+
+          if (count > 0) {
+            await batch.commit();
+            totalImported += count;
+          }
+
+          for (const dept of uniqueDepts) {
+            const deptId = dept.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            await setDoc(doc(db, 'departments', deptId), { name: dept });
+          }
+          for (const city of uniqueCities) {
+            const cityId = city.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            await setDoc(doc(db, 'cities', cityId), { name: city });
+          }
+
+          let msg = `Importación en Firebase finalizada.\nExitosos: ${totalImported}`;
+          if (skipped.length > 0) {
+            msg += `\nOmitidos por correo duplicado: ${skipped.length}`;
+          }
+          alert(msg);
+          triggerToast(`Importados ${totalImported} empleados en nube`, 'success');
+        }
+        
+        e.target.value = '';
+      } catch (error) {
+        alert('Error al importar empleados: ' + error.message);
+        e.target.value = '';
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
   async function saveDevice(form) {
     try {
       let finalForm = { ...form };
@@ -1426,9 +1664,18 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
         return;
       }
 
+      // IMPORTANTE: mismo bug que en saveInfrastructure — setDoc sin merge
+      // reemplaza el documento COMPLETO. "payload" solo trae los campos del
+      // formulario básico del equipo, así que sin partir de "...form" (el
+      // equipo original completo) se pierden campos que no están en el
+      // formulario: switch_id/switch_port (la boca asignada en el switch) y
+      // cualquier dato que el monitor de red le agregue al equipo (uptime,
+      // último ping, etc.). Antes esto causaba que guardar cualquier cambio
+      // básico (nombre, ubicación, notas, etc.) en modo nube borrara
+      // silenciosamente la conexión de puerto ya asignada del equipo.
       const id = form.id || doc(collection(db, 'devices')).id;
       const deviceRef = doc(db, 'devices', id);
-      await setDoc(deviceRef, { id, ...payload });
+      await setDoc(deviceRef, { ...form, ...payload, id });
 
       // Auto-save city & department parameter in Firestore
       if (finalForm.department && finalForm.department.trim() !== '') {
@@ -1943,8 +2190,15 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       }
 
       // Cloud mode: write directly to Firestore
+      // IMPORTANTE: setDoc sin merge reemplaza el documento COMPLETO. "payload" solo
+      // trae los campos del formulario básico, así que si no partimos de "...form"
+      // (el elemento original completo) se pierden campos que no están en el
+      // formulario — en particular switch_id/switch_port/local_port, es decir, el
+      // cableado de puertos/cascada del switch. Antes esto causaba que guardar
+      // cualquier cambio básico (marca, ubicación, notas, etc.) en modo nube borrara
+      // silenciosamente la conexión de fibra ya asignada.
       const id = form.id || doc(collection(db, 'infrastructure')).id;
-      await setDoc(doc(db, 'infrastructure', id), { id, ...payload });
+      await setDoc(doc(db, 'infrastructure', id), { ...form, ...payload, id });
       triggerToast(isEdit ? 'Elemento actualizado' : 'Elemento creado', 'success');
       setInfraModal(null);
     } catch (err) {
@@ -2256,22 +2510,23 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       const portDeviceMap = {};
       
       const connectedDevs = devices.filter(d => d.switch_id === item.id && d.switch_port).map(d => ({ ...d, isDevice: true }));
-      const connectedInfras = infrastructure.filter(i => i.switch_id === item.id && i.switch_port).map(i => ({ ...i, isInfra: true }));
-      
-      const parentInfras = [];
-      if (item.switch_id && item.local_port) {
-        const parent = infrastructure.find(p => p.id === item.switch_id);
-        if (parent) {
-          parentInfras.push({
-            ...parent,
-            isInfra: true,
-            isParent: true,
-            switch_port: parseInt(item.local_port, 10)
-          });
-        }
-      }
+      // Un switch puede tener varios enlaces cascada simultáneos hacia otros
+      // switches/infraestructura, por lo que se leen todos desde
+      // infrastructure_links (una fila por conexión física) en vez del antiguo
+      // campo único switch_id/local_port que solo alcanzaba para un enlace.
+      const linkedInfras = infrastructureLinks
+        .filter(l => l.infra_a_id === item.id || l.infra_b_id === item.id)
+        .map(l => {
+          const isA = l.infra_a_id === item.id;
+          const otherId = isA ? l.infra_b_id : l.infra_a_id;
+          const myPort = isA ? l.infra_a_port : l.infra_b_port;
+          const other = infrastructure.find(i => i.id === otherId);
+          if (!other) return null;
+          return { ...other, isInfra: true, switch_port: myPort };
+        })
+        .filter(Boolean);
 
-      const connected = [...connectedDevs, ...connectedInfras, ...parentInfras];
+      const connected = [...connectedDevs, ...linkedInfras];
 
       connected.forEach(elem => {
         if (elem.switch_port) portDeviceMap[elem.switch_port] = elem;
@@ -2335,22 +2590,21 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
       const portDevMap = {};
 
       const connectedDevs = devices.filter(d => d.switch_id === item.id && d.switch_port).map(d => ({ ...d, isDevice: true }));
-      const connectedInfras = infrastructure.filter(i => i.switch_id === item.id && i.switch_port).map(i => ({ ...i, isInfra: true }));
-      
-      const parentInfras = [];
-      if (item.switch_id && item.local_port) {
-        const parent = infrastructure.find(i => i.id === item.switch_id);
-        if (parent) {
-          parentInfras.push({
-            ...parent,
-            isInfra: true,
-            isParent: true,
-            switch_port: parseInt(item.local_port, 10)
-          });
-        }
-      }
+      // Igual que en buildPortsGrid: leer todos los enlaces cascada desde
+      // infrastructure_links, no solo el único switch_id/local_port legado.
+      const linkedInfras = infrastructureLinks
+        .filter(l => l.infra_a_id === item.id || l.infra_b_id === item.id)
+        .map(l => {
+          const isA = l.infra_a_id === item.id;
+          const otherId = isA ? l.infra_b_id : l.infra_a_id;
+          const myPort = isA ? l.infra_a_port : l.infra_b_port;
+          const other = infrastructure.find(i => i.id === otherId);
+          if (!other) return null;
+          return { ...other, isInfra: true, switch_port: myPort };
+        })
+        .filter(Boolean);
 
-      const connected = [...connectedDevs, ...connectedInfras, ...parentInfras];
+      const connected = [...connectedDevs, ...linkedInfras];
 
       connected.forEach(elem => {
         if (elem.switch_port) portDevMap[elem.switch_port] = elem;
@@ -2646,6 +2900,97 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
     triggerToast('Inventario exportado como Excel estructurado', 'success');
   };
 
+  const downloadEmployeesCSV = () => {
+    const headers = [
+      'Nombre Completo', 'Email', 'Departamento', 'Ciudad', 'Estado', 'Teléfono',
+      'Lugar de Trabajo', 'VPN Activa', 'Tipo de VPN', 'Cargo', 'Sistemas Autorizados'
+    ];
+
+    const rowsHtml = employees.map(emp => {
+      const isVpn = !!emp.vpn_active;
+      const vpn = isVpn ? 'SI' : 'NO';
+
+      let rowStyle = '';
+      if (isVpn) {
+        rowStyle = 'style="background-color: #e0f2fe; color: #0369a1;"'; // soft blue for VPN
+      } else if (emp.workplace === 'Remoto') {
+        rowStyle = 'style="background-color: #f5f5f5; color: #4b5563;"'; // gray for Remote
+      }
+
+      const columns = [
+        emp.full_name || '',
+        emp.email || '',
+        emp.department || '',
+        emp.city || '',
+        emp.status || 'Presencial',
+        emp.phone || '',
+        emp.workplace || 'Presencial',
+        vpn,
+        emp.vpn_type || 'Ninguno',
+        emp.job_title || '',
+        emp.authorized_systems || ''
+      ];
+
+      return `
+        <tr ${rowStyle}>
+          ${columns.map(val => `<td>${String(val).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`).join('')}
+        </tr>
+      `;
+    }).join('');
+
+    let excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8"/>
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Gestión de Empleados</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          table { border-collapse: collapse; font-family: Segoe UI, sans-serif; }
+          th { background-color: #10b981; color: white; font-weight: bold; border: 1px solid #d1d5db; padding: 6px; }
+          td { border: 1px solid #e5e7eb; padding: 6px; }
+          .title { font-size: 16px; font-weight: bold; color: #065f46; padding-bottom: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="title">Win NetWatch RMM - Listado de Empleados</div>
+        <table>
+          <thead>
+            <tr>
+              ${headers.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'empleados.xls';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+    triggerToast('Lista de empleados exportada como Excel estructurado', 'success');
+  };
+
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -2776,7 +3121,11 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
             serial_number: item.serial_number || (existing ? existing.serial_number : ''),
             location: item.location || (existing ? existing.location : 'Matta'),
             device_type: item.device_type || (existing ? existing.device_type : 'PC'),
-            employee_id: empId || (existing ? existing.employee_id : null)
+            employee_id: empId || (existing ? existing.employee_id : null),
+            // Preservar la boca/switch ya asignados (ver comentario en el otro
+            // importador de fichas JSON más abajo en este mismo archivo).
+            switch_id: existing ? existing.switch_id : null,
+            switch_port: existing ? existing.switch_port : null
           };
 
           try {
@@ -2884,7 +3233,13 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
           ram: data.ram || (existing ? existing.ram : ''),
           storage: data.storage || (existing ? existing.storage : ''),
           gpu: data.gpu || (existing ? existing.gpu : ''),
-          motherboard: data.motherboard || (existing ? existing.motherboard : '')
+          motherboard: data.motherboard || (existing ? existing.motherboard : ''),
+          // Preservar la boca/switch ya asignados a este equipo: devicePayload
+          // se construye desde cero (no es el objeto completo del equipo), así
+          // que sin esto una importación de ficha JSON sobre un equipo ya
+          // cableado le borraría su conexión de puerto existente.
+          switch_id: existing ? existing.switch_id : null,
+          switch_port: existing ? existing.switch_port : null
         };
 
         await saveDevice(devicePayload);
@@ -3236,29 +3591,50 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
                     />
                     <Search className="absolute right-3 top-2.5 text-zinc-400" size={18} />
                   </div>
-                  <button
-                    onClick={() =>
-                      setEmployeeModal({
-                        mode: 'create',
-                        form: {
-                          full_name: '',
-                          email: '',
-                          department: '',
-                          city: '',
-                          status: 'Presencial',
-                          phone: '',
-                          workplace: 'Presencial',
-                          vpn_active: false,
-                          vpn_type: 'Ninguno',
-                          image_url: '',
-                          active: true
-                        }
-                      })
-                    }
-                    className="button primary flex items-center gap-1.5"
-                  >
-                    <Plus size={16} /> Agregar Empleado
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={downloadEmployeesCSV}
+                      className="button secondary flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-slate-200 border border-zinc-200 dark:border-slate-700 bg-white hover:bg-zinc-50 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Download size={16} /> Exportar Empleados
+                    </button>
+                    <button
+                      onClick={() => employeeFileInputRef.current?.click()}
+                      className="button secondary flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-slate-200 border border-zinc-200 dark:border-slate-700 bg-white hover:bg-zinc-50 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Upload size={16} /> Importar Empleados
+                    </button>
+                    <input
+                      type="file"
+                      ref={employeeFileInputRef}
+                      onChange={handleImportEmployees}
+                      accept=".json,.csv"
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() =>
+                        setEmployeeModal({
+                          mode: 'create',
+                          form: {
+                            full_name: '',
+                            email: '',
+                            department: '',
+                            city: '',
+                            status: 'Presencial',
+                            phone: '',
+                            workplace: 'Presencial',
+                            vpn_active: false,
+                            vpn_type: 'Ninguno',
+                            image_url: '',
+                            active: true
+                          }
+                        })
+                      }
+                      className="button primary flex items-center gap-1.5"
+                    >
+                      <Plus size={16} /> Agregar Empleado
+                    </button>
+                  </div>
                 </div>
 
                 <div className="overflow-hidden border border-zinc-200 dark:border-slate-800 rounded-xl shadow-sm">
@@ -4630,6 +5006,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
           onClose={() => setActiveSwitchForPorts(null)}
           devices={devices}
           infrastructure={infrastructure}
+          infrastructureLinks={infrastructureLinks}
           token={token}
           user={user}
           useLocalApi={useLocalApi}
@@ -4645,6 +5022,7 @@ function Dashboard({ token, user, theme, setTheme, setToken }) {
           isOpen={showTopologyMap}
           onClose={() => setShowTopologyMap(false)}
           infrastructure={infrastructure}
+          infrastructureLinks={infrastructureLinks}
           devices={devices}
           setActiveSwitchForPorts={setActiveSwitchForPorts}
         />
@@ -6764,6 +7142,7 @@ function TopologyMapModal({
   onClose,
   infrastructure = [],
   devices = [],
+  infrastructureLinks = [],
   setActiveSwitchForPorts
 }) {
   const [selectedCity, setSelectedCity] = useState('Todos');
@@ -6795,10 +7174,30 @@ function TopologyMapModal({
   }, [infrastructure, selectedCity]);
 
   // 2. Build tree structure: children map & unique roots (sorted by sub-location: no-badge first, then alphabetical sub-locations)
-  const { roots, childrenMap } = useMemo(() => {
+  // Con el modelo antiguo cada infra tenía un único switch_id/local_port ("mi
+  // único padre"), lo que hacía trivial armar el árbol. Ahora un switch puede
+  // tener varios enlaces simultáneos (infrastructure_links), así que ya no hay
+  // un "padre" único por nodo: es un grafo de conexiones. Para seguir mostrando
+  // un árbol navegable se recorre ese grafo con BFS/DFS desde routers/firewalls
+  // (normalmente arriba de la jerarquía) y desde cualquier nodo sin ningún
+  // enlace; el resto de nodos alcanzables cuelgan como hijos del primer nodo
+  // desde el que se llega a ellos, y un enlace cuyos dos extremos ya fueron
+  // visitados simplemente no se repite (evita duplicados y ciclos infinitos).
+  const { roots, childrenMap, childLocalPort } = useMemo(() => {
     const childrenMap = {};
-    const roots = [];
+    const childLocalPort = {};
     const itemIds = new Set(filteredInfra.map(i => i.id));
+    const byId = {};
+    filteredInfra.forEach(i => { byId[i.id] = i; });
+
+    const adj = {};
+    filteredInfra.forEach(i => { adj[i.id] = []; });
+    infrastructureLinks.forEach(l => {
+      if (itemIds.has(l.infra_a_id) && itemIds.has(l.infra_b_id)) {
+        adj[l.infra_a_id].push({ id: l.infra_b_id, remotePort: l.infra_b_port });
+        adj[l.infra_b_id].push({ id: l.infra_a_id, remotePort: l.infra_a_port });
+      }
+    });
 
     const sortInfraItems = (items) => {
       return [...items].sort((a, b) => {
@@ -6819,24 +7218,29 @@ function TopologyMapModal({
       });
     };
 
-    filteredInfra.forEach(item => {
-      // If it points to a parent that exists in our current filtered list, it's a child
-      if (item.switch_id && itemIds.has(item.switch_id)) {
-        if (!childrenMap[item.switch_id]) childrenMap[item.switch_id] = [];
-        childrenMap[item.switch_id].push(item);
-      } else {
-        roots.push(item);
-      }
-    });
+    const visited = new Set();
+    const roots = [];
 
-    // Also check if any item's parent is missing in the list (treat as root)
-    filteredInfra.forEach(item => {
-      if (item.switch_id) {
-        const parentExists = filteredInfra.some(p => p.id === item.switch_id);
-        if (!parentExists) {
-          roots.push(item);
-        }
-      }
+    const visit = (item) => {
+      (adj[item.id] || []).forEach(edge => {
+        if (visited.has(edge.id)) return;
+        const child = byId[edge.id];
+        if (!child) return;
+        visited.add(edge.id);
+        if (!childrenMap[item.id]) childrenMap[item.id] = [];
+        childrenMap[item.id].push(child);
+        childLocalPort[child.id] = edge.remotePort; // boca del hijo hacia este padre en el árbol
+        visit(child);
+      });
+    };
+
+    const priority = filteredInfra.filter(i => i.type === 'Router' || i.type === 'Fortinet');
+    const isolated = filteredInfra.filter(i => (adj[i.id] || []).length === 0);
+    [...priority, ...isolated, ...filteredInfra].forEach(item => {
+      if (visited.has(item.id)) return;
+      visited.add(item.id);
+      roots.push(item);
+      visit(item);
     });
 
     const uniqueRoots = Array.from(new Set(roots));
@@ -6847,8 +7251,8 @@ function TopologyMapModal({
       childrenMap[key] = sortInfraItems(childrenMap[key]);
     });
 
-    return { roots: sortedRoots, childrenMap };
-  }, [filteredInfra]);
+    return { roots: sortedRoots, childrenMap, childLocalPort };
+  }, [filteredInfra, infrastructureLinks]);
 
   // Get list of existing city groups for filtering
   const cityGroups = useMemo(() => {
@@ -6860,27 +7264,29 @@ function TopologyMapModal({
   const selectedNodeDetails = useMemo(() => {
     if (!selectedNode) return null;
     const connectedDevs = devices.filter(d => d.switch_id === selectedNode.id);
-    const connectedInfras = infrastructure.filter(i => i.switch_id === selectedNode.id);
-    
-    // Parent connection details
-    let parentInfo = null;
-    if (selectedNode.switch_id) {
-      const parent = infrastructure.find(i => i.id === selectedNode.switch_id);
-      if (parent) {
-        parentInfo = {
-          parent,
-          localPort: selectedNode.local_port,
-          parentPort: selectedNode.switch_port
-        };
-      }
-    }
+
+    // Un switch puede tener varios enlaces cascada simultáneos, así que se leen
+    // todos desde infrastructure_links en vez del antiguo switch_id/local_port
+    // único. Ya no existe un "padre" distinguido: cada fila es una conexión
+    // física entre dos extremos y se muestran todas de forma uniforme.
+    const connectedInfras = infrastructureLinks
+      .filter(l => l.infra_a_id === selectedNode.id || l.infra_b_id === selectedNode.id)
+      .map(l => {
+        const isA = l.infra_a_id === selectedNode.id;
+        const otherId = isA ? l.infra_b_id : l.infra_a_id;
+        const myPort = isA ? l.infra_a_port : l.infra_b_port;
+        const otherPort = isA ? l.infra_b_port : l.infra_a_port;
+        const other = infrastructure.find(i => i.id === otherId);
+        if (!other) return null;
+        return { ...other, switch_port: myPort, remotePort: otherPort, linkId: l.id };
+      })
+      .filter(Boolean);
 
     return {
       connectedDevs,
-      connectedInfras,
-      parentInfo
+      connectedInfras
     };
-  }, [selectedNode, devices, infrastructure]);
+  }, [selectedNode, devices, infrastructure, infrastructureLinks]);
 
   const renderIcon = (type) => {
     switch (type) {
@@ -6968,9 +7374,9 @@ function TopologyMapModal({
             </div>
 
             {/* Display connection label inside card if it's connected to parent */}
-            {node.switch_id && node.local_port && (
+            {childLocalPort[node.id] && (
               <div className="mt-2 text-[9px] bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/30 rounded px-1.5 py-0.5 text-center font-mono flex items-center justify-between">
-                <span>Boca: {getPortName(node.type, node.model, node.local_port)}</span>
+                <span>Boca: {getPortName(node.type, node.model, childLocalPort[node.id])}</span>
                 <span>➜</span>
               </div>
             )}
@@ -7105,8 +7511,8 @@ function TopologyMapModal({
       nodeHtml += `<div class="node-detail">Tipo: <span>${node.type.toUpperCase()}</span></div>`;
       nodeHtml += `<div class="node-detail">IP: <span>${node.ip || '—'}</span></div>`;
       nodeHtml += `<div class="node-detail">Ubicación: <span>${node.location || '—'}</span></div>`;
-      if (node.switch_id && node.local_port) {
-        nodeHtml += `<div class="node-port">Boca local: ${getPortName(node.type, node.model, node.local_port)}</div>`;
+      if (childLocalPort[node.id]) {
+        nodeHtml += `<div class="node-port">Boca local: ${getPortName(node.type, node.model, childLocalPort[node.id])}</div>`;
       }
       nodeHtml += `</div>`;
       if (hasChildren) {
@@ -7349,23 +7755,8 @@ function TopologyMapModal({
                   </div>
                 </div>
 
-                {/* Connection Path details */}
-                {selectedNodeDetails.parentInfo && (
-                  <div className="bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800/30 rounded-xl p-3.5 space-y-2 text-xs">
-                    <h5 className="font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
-                      <Network size={14} /> Conexión Superior (Padre)
-                    </h5>
-                    <p className="text-zinc-650 dark:text-slate-300">
-                      Este equipo se conecta desde su puerto <strong className="text-zinc-950 dark:text-white">{getPortName(selectedNode.type, selectedNode.model, selectedNodeDetails.parentInfo.localPort)}</strong> hacia:
-                    </p>
-                    <div className="bg-white dark:bg-slate-950 p-2 rounded border border-zinc-200 dark:border-slate-800 font-mono text-[10px] space-y-1">
-                      <div>Equipo: <strong className="text-cyan-600 dark:text-cyan-400">{selectedNodeDetails.parentInfo.parent.brand} {selectedNodeDetails.parentInfo.parent.model}</strong></div>
-                      <div>Puerto Padre: <strong className="text-cyan-600 dark:text-cyan-400">{getPortName(selectedNodeDetails.parentInfo.parent.type, selectedNodeDetails.parentInfo.parent.model, selectedNodeDetails.parentInfo.parentPort)}</strong></div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Connected Infrastructure Downstream (Cascades) */}
+                {/* Connected Infrastructure (Cascades) — un switch puede tener varios
+                    enlaces simultáneos, ya no hay un único "padre" distinguido */}
                 <div className="space-y-2.5">
                   <h5 className="font-extrabold text-xs uppercase tracking-wider text-zinc-550 dark:text-slate-400">
                     🔌 Enlaces de Red / Cascadas ({selectedNodeDetails.connectedInfras.length})
@@ -7374,11 +7765,12 @@ function TopologyMapModal({
                     {selectedNodeDetails.connectedInfras.length > 0 ? (
                       selectedNodeDetails.connectedInfras.map(infra => {
                         const portName = getPortName(selectedNode.type, selectedNode.model, infra.switch_port);
+                        const remotePortName = getPortName(infra.type, infra.model, infra.remotePort);
                         return (
-                          <div key={infra.id} className="p-3 bg-zinc-50/50 dark:bg-slate-950/20 flex flex-col gap-1 hover:bg-zinc-100 dark:hover:bg-slate-800/20 cursor-pointer transition-colors" onClick={() => setSelectedNode(infra)}>
+                          <div key={infra.linkId || infra.id} className="p-3 bg-zinc-50/50 dark:bg-slate-950/20 flex flex-col gap-1 hover:bg-zinc-100 dark:hover:bg-slate-800/20 cursor-pointer transition-colors" onClick={() => setSelectedNode(infra)}>
                             <div className="flex justify-between text-xs font-bold text-zinc-850 dark:text-slate-200">
                               <span className="truncate max-w-[160px]">{infra.brand} {infra.model}</span>
-                              <span className="text-[10px] bg-zinc-200 dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded font-mono">Boca {portName}</span>
+                              <span className="text-[10px] bg-zinc-200 dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded font-mono">Boca {portName} ↔ {remotePortName}</span>
                             </div>
                             <div className="flex justify-between text-[10px] font-mono text-zinc-500 dark:text-slate-400">
                               <span>IP: {infra.ip || '—'}</span>
@@ -7453,6 +7845,7 @@ function SwitchPortMapModal({
   onClose,
   devices,
   infrastructure = [],
+  infrastructureLinks = [],
   token,
   user,
   useLocalApi,
@@ -7502,11 +7895,16 @@ function SwitchPortMapModal({
 
   const targetPorts = useMemo(() => {
     if (!selectedDeviceToAssign || !selectedDeviceToAssign.isInfra) return [];
-    
-    // Buscar ocupantes de los puertos del equipo destino
+
+    // Buscar ocupantes de los puertos del equipo destino: dispositivos directos
+    // y enlaces switch-a-switch (en cualquiera de los dos lados) que usen ese
+    // puerto. Cada fila de infrastructure_links es una conexión física propia,
+    // así que un switch puede tener varios enlaces simultáneos sin ambigüedad.
     const occupiedDevices = devices.filter(d => d.switch_id === selectedDeviceToAssign.id);
-    const occupiedInfras = infrastructure.filter(i => i.switch_id === selectedDeviceToAssign.id);
-    
+    const linksForDest = infrastructureLinks.filter(
+      l => l.infra_a_id === selectedDeviceToAssign.id || l.infra_b_id === selectedDeviceToAssign.id
+    );
+
     const list = [];
     for (let p = 1; p <= destCount; p++) {
       const baseLabel = getPortName(
@@ -7515,36 +7913,33 @@ function SwitchPortMapModal({
         p,
         destCount
       );
-      
+
       let occupant = null;
-      
-      // 1. Verificar si está conectado a su switch padre
-      if (selectedDeviceToAssign.switch_id && selectedDeviceToAssign.local_port === p) {
-        const parent = infrastructure.find(i => i.id === selectedDeviceToAssign.switch_id);
-        occupant = parent ? `Enlace a ${parent.brand} ${parent.model}` : 'Enlace Superior';
+
+      // 1. Verificar si hay un enlace switch-a-switch usando este puerto
+      const matchedLink = linksForDest.find(l =>
+        (l.infra_a_id === selectedDeviceToAssign.id && l.infra_a_port === p) ||
+        (l.infra_b_id === selectedDeviceToAssign.id && l.infra_b_port === p)
+      );
+      if (matchedLink) {
+        const otherId = matchedLink.infra_a_id === selectedDeviceToAssign.id ? matchedLink.infra_b_id : matchedLink.infra_a_id;
+        const other = infrastructure.find(i => i.id === otherId);
+        occupant = other ? `Enlace: ${other.brand} ${other.model}` : 'Enlace a otro equipo';
       }
-      
-      // 2. Verificar si hay un switch cascada conectado a este puerto
-      if (!occupant) {
-        const matchedInfra = occupiedInfras.find(i => parseInt(i.switch_port, 10) === p);
-        if (matchedInfra) {
-          occupant = `Cascada: ${matchedInfra.brand} ${matchedInfra.model}`;
-        }
-      }
-      
-      // 3. Verificar si hay un dispositivo conectado a este puerto
+
+      // 2. Verificar si hay un dispositivo conectado a este puerto
       if (!occupant) {
         const matchedDev = occupiedDevices.find(d => parseInt(d.switch_port, 10) === p);
         if (matchedDev) {
           occupant = matchedDev.hostname || matchedDev.ip || 'Terminal';
         }
       }
-      
+
       const label = occupant ? `${baseLabel} 🔴 (${occupant})` : `${baseLabel} 🟢 (Libre)`;
       list.push({ value: p, label });
     }
     return list;
-  }, [selectedDeviceToAssign, destCount, devices, infrastructure]);
+  }, [selectedDeviceToAssign, destCount, devices, infrastructure, infrastructureLinks]);
 
   // Find all connected elements (devices + other infrastructure cascaded here)
   const connectedElements = useMemo(() => {
@@ -7552,26 +7947,34 @@ function SwitchPortMapModal({
     const devs = devices.filter(d => d.switch_id === currentActiveSwitch.id)
       .map(d => ({ ...d, isDevice: true, displayPort: parseInt(d.switch_port, 10) }));
 
-    // 2. Child switches connected to this switch (they point to currentActiveSwitch)
-    const childInfras = infrastructure.filter(i => i.switch_id === currentActiveSwitch.id)
-      .map(i => ({ ...i, isInfra: true, isChild: true, displayPort: parseInt(i.switch_port, 10) }));
-
-    // 3. Parent switch that this currentActiveSwitch is connected to (currentActiveSwitch points to it)
-    const parentInfras = [];
-    if (currentActiveSwitch.switch_id) {
-      const parent = infrastructure.find(i => i.id === currentActiveSwitch.switch_id);
-      if (parent) {
-        parentInfras.push({
-          ...parent,
+    // 2. Enlaces switch-a-switch que involucran a este switch, en cualquiera de
+    // los dos lados. Antes esto distinguía "hijo" (switch_id apunta a mí) de
+    // "padre" (yo apunto a otro switch_id), pero ambos casos compartían el
+    // mismo campo único por switch y se pisaban entre sí. Ahora cada enlace es
+    // una fila independiente en infrastructure_links, así que un switch puede
+    // tener tantos enlaces simultáneos como puertos físicos tenga.
+    const linkedInfras = infrastructureLinks
+      .filter(l => l.infra_a_id === currentActiveSwitch.id || l.infra_b_id === currentActiveSwitch.id)
+      .map(l => {
+        const isSideA = l.infra_a_id === currentActiveSwitch.id;
+        const myPort = isSideA ? l.infra_a_port : l.infra_b_port;
+        const otherId = isSideA ? l.infra_b_id : l.infra_a_id;
+        const otherPort = isSideA ? l.infra_b_port : l.infra_a_port;
+        const other = infrastructure.find(i => i.id === otherId);
+        if (!other) return null;
+        return {
+          ...other,
           isInfra: true,
-          isParent: true,
-          displayPort: parseInt(currentActiveSwitch.local_port, 10) || 1
-        });
-      }
-    }
+          isChild: true,
+          linkId: l.id,
+          displayPort: myPort,
+          remotePort: otherPort
+        };
+      })
+      .filter(Boolean);
 
-    return [...devs, ...childInfras, ...parentInfras];
-  }, [devices, infrastructure, currentActiveSwitch.id, currentActiveSwitch.switch_id, currentActiveSwitch.local_port]);
+    return [...devs, ...linkedInfras];
+  }, [devices, infrastructure, infrastructureLinks, currentActiveSwitch.id]);
 
   // Map of port number -> connected element (always use integer keys)
   const portDeviceMap = useMemo(() => {
@@ -7765,52 +8168,72 @@ function SwitchPortMapModal({
           });
         }
       } else {
-        // Es conexión cascada (infraestructura a infraestructura)
-        // Usar jerarquía para decidir qué registro actualiza switch_id
-        const rank = (s) => {
-          if (s.type === 'Fortinet') return 3;
-          if (s.type === 'Router') return 3;
-          if (s.type === 'Switch') return 2;
-          if (s.type === 'Switch Genérico') return 1.5;
-          return 1; // Modem / Conversor
+        // Es conexión cascada (infraestructura a infraestructura). Se crea una
+        // fila nueva e independiente en infrastructure_links por cada conexión
+        // física. Antes se elegía uno de los dos switches (según su "rango" de
+        // tipo) para sobreescribir su único switch_id/switch_port/local_port,
+        // lo que borraba cualquier otro enlace que ese switch ya tuviera.
+        const finalTargetPort = targetPort || 1;
+        const linkBody = {
+          infra_a_id: currentActiveSwitch.id,
+          infra_a_port: selectedPort,
+          infra_b_id: item.id,
+          infra_b_port: finalTargetPort
         };
-        const activeRank = rank(currentActiveSwitch);
-        const itemRank = rank(item);
-
-        let targetId, updateBody;
-        if (activeRank <= itemRank) {
-          targetId = currentActiveSwitch.id;
-          updateBody = {
-            switch_id: item.id,
-            switch_port: targetPort || 1,
-            local_port: selectedPort
-          };
-        } else {
-          targetId = item.id;
-          updateBody = {
-            switch_id: currentActiveSwitch.id,
-            switch_port: selectedPort,
-            local_port: targetPort || 1
-          };
-        }
 
         if (useLocalApi) {
-          const res = await fetch(`${API_URL}/api/infrastructure/${targetId}`, {
-            method: 'PATCH',
+          let res = await fetch(`${API_URL}/api/infrastructure/links`, {
+            method: 'POST',
             headers: {
               authorization: `Bearer ${token}`,
               'content-type': 'application/json'
             },
-            body: JSON.stringify(updateBody)
+            body: JSON.stringify(linkBody)
           });
-          if (!res.ok) throw new Error('Error al actualizar el puerto en la API local.');
+          if (res.status === 409) {
+            // El puerto elegido ya tenía un ocupante: el usuario ya confirmó
+            // el reemplazo en el diálogo previo (targetPorts marca 🔴/🟢), así
+            // que reintentamos forzando el desplazamiento del ocupante anterior.
+            res = await fetch(`${API_URL}/api/infrastructure/links`, {
+              method: 'POST',
+              headers: {
+                authorization: `Bearer ${token}`,
+                'content-type': 'application/json'
+              },
+              body: JSON.stringify({ ...linkBody, force: true })
+            });
+          }
+          if (!res.ok) throw new Error('Error al crear el enlace en la API local.');
         } else {
-          // Firebase fallback para infra
-          const targetItem = targetId === currentActiveSwitch.id ? currentActiveSwitch : item;
-          await setDoc(doc(db, 'infrastructure', targetId), {
-            ...targetItem,
-            ...updateBody
-          });
+          // Firebase fallback: liberar cualquier ocupante previo de AMBOS
+          // puertos (el mío y el del switch destino) antes de crear el enlace,
+          // para no dejar dos registros compitiendo por el mismo puerto físico.
+          const previousDeviceOnMine = devices.find(d => d.switch_id === currentActiveSwitch.id && parseInt(d.switch_port, 10) === selectedPort);
+          if (previousDeviceOnMine) {
+            await setDoc(doc(db, 'devices', previousDeviceOnMine.id), { ...previousDeviceOnMine, switch_id: null, switch_port: null });
+          }
+          const previousLinkOnMine = infrastructureLinks.find(l =>
+            (l.infra_a_id === currentActiveSwitch.id && l.infra_a_port === selectedPort) ||
+            (l.infra_b_id === currentActiveSwitch.id && l.infra_b_port === selectedPort)
+          );
+          if (previousLinkOnMine) {
+            await deleteDoc(doc(db, 'infrastructure_links', previousLinkOnMine.id));
+          }
+
+          const previousDeviceOnTarget = devices.find(d => d.switch_id === item.id && parseInt(d.switch_port, 10) === finalTargetPort);
+          if (previousDeviceOnTarget) {
+            await setDoc(doc(db, 'devices', previousDeviceOnTarget.id), { ...previousDeviceOnTarget, switch_id: null, switch_port: null });
+          }
+          const previousLinkOnTarget = infrastructureLinks.find(l =>
+            (l.infra_a_id === item.id && l.infra_a_port === finalTargetPort) ||
+            (l.infra_b_id === item.id && l.infra_b_port === finalTargetPort)
+          );
+          if (previousLinkOnTarget && (!previousLinkOnMine || previousLinkOnTarget.id !== previousLinkOnMine.id)) {
+            await deleteDoc(doc(db, 'infrastructure_links', previousLinkOnTarget.id));
+          }
+
+          const newLinkId = doc(collection(db, 'infrastructure_links')).id;
+          await setDoc(doc(db, 'infrastructure_links', newLinkId), { id: newLinkId, ...linkBody });
         }
       }
       setSearchQuery('');
@@ -7823,47 +8246,38 @@ function SwitchPortMapModal({
 
   async function unbindDevice(item) {
     try {
-      const isDev = item.isDevice;
-      const isParent = item.isParent;
-      const endpoint = isDev ? 'devices' : 'infrastructure';
-      const targetId = isParent ? currentActiveSwitch.id : item.id;
-      const targetEndpoint = isParent ? 'infrastructure' : endpoint;
-
-      if (useLocalApi) {
-        const res = await fetch(`${API_URL}/api/${targetEndpoint}/${targetId}`, {
-          method: 'PATCH',
-          headers: {
-            authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            switch_id: null,
-            switch_port: null,
-            local_port: null
-          })
-        });
-        if (!res.ok) throw new Error('Error al remover el puerto en la API local.');
-      } else {
-        if (isParent) {
-          await setDoc(doc(db, 'infrastructure', currentActiveSwitch.id), {
-            ...currentActiveSwitch,
-            switch_id: null,
-            switch_port: null,
-            local_port: null
+      if (item.isDevice) {
+        // Desconectar un equipo conectado directamente a este puerto
+        if (useLocalApi) {
+          const res = await fetch(`${API_URL}/api/devices/${item.id}`, {
+            method: 'PATCH',
+            headers: {
+              authorization: `Bearer ${token}`,
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({ switch_id: null, switch_port: null })
           });
-        } else if (isDev) {
+          if (!res.ok) throw new Error('Error al remover el puerto en la API local.');
+        } else {
           await setDoc(doc(db, 'devices', item.id), {
             ...item,
             switch_id: null,
             switch_port: null
           });
-        } else {
-          await setDoc(doc(db, 'infrastructure', item.id), {
-            ...item,
-            switch_id: null,
-            switch_port: null,
-            local_port: null
+        }
+      } else {
+        // Desconectar un enlace switch-a-switch: se elimina la fila del enlace
+        // (infrastructure_links), no un campo de un único switch. Así el otro
+        // lado del enlace (y cualquier otra conexión que cualquiera de los dos
+        // switches tenga) queda intacto.
+        if (useLocalApi) {
+          const res = await fetch(`${API_URL}/api/infrastructure/links/${item.linkId}`, {
+            method: 'DELETE',
+            headers: { authorization: `Bearer ${token}` }
           });
+          if (!res.ok) throw new Error('Error al remover el enlace en la API local.');
+        } else {
+          await deleteDoc(doc(db, 'infrastructure_links', item.linkId));
         }
       }
       await onSaved();
@@ -8068,10 +8482,7 @@ function SwitchPortMapModal({
                               <p className="flex justify-between">
                                 <span className="text-zinc-455 dark:text-slate-550">Enlace de Red:</span>
                                 <span className="font-bold text-zinc-900 dark:text-cyan-400 bg-cyan-500/5 px-2 py-0.5 rounded border border-cyan-500/10">
-                                  {selectedDevice.isParent
-                                    ? `Va a Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, activeSwitch.switch_port, selectedDevice.brand)} de este ${selectedDevice.type}`
-                                    : `Viene de Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, selectedDevice.local_port, selectedDevice.brand)} de este ${selectedDevice.type}`
-                                  }
+                                  {`Enlace a Interfaz ${getPortName(selectedDevice.type, selectedDevice.model, selectedDevice.remotePort)} de este ${selectedDevice.type}`}
                                 </span>
                               </p>
                               <p className="flex justify-between">
@@ -8180,7 +8591,11 @@ function SwitchPortMapModal({
                                   Responsable: <strong>{selectedDeviceToAssign.responsible_user}</strong>
                                 </p>
                               )}
-                              {selectedDeviceToAssign.switch_id && (
+                              {/* Solo aplica a equipos: un equipo tiene un único puerto, así que
+                                  asignarlo aquí lo mueve de donde estaba. Un switch/infraestructura
+                                  puede tener varios enlaces simultáneos, así que agregar uno nuevo
+                                  no le quita los que ya tenía. */}
+                              {!selectedDeviceToAssign.isInfra && selectedDeviceToAssign.switch_id && (
                                 <p className="text-[10px] text-amber-500 font-semibold mt-1">
                                   ⚠️ Se moverá desde su puerto actual.
                                 </p>
@@ -8195,6 +8610,22 @@ function SwitchPortMapModal({
                               </button>
                               <button
                                 onClick={async () => {
+                                  // Si el puerto destino elegido en el switch remoto ya tiene un
+                                  // ocupante, pedir confirmación explícita antes de desplazarlo.
+                                  // Antes esto se sobreescribía en silencio (sin aviso) cuando el
+                                  // usuario dejaba el selector de puerto en su valor por defecto,
+                                  // lo que causaba que equipos ya conectados perdieran su boca
+                                  // asignada sin que nadie lo notara.
+                                  if (selectedDeviceToAssign.isInfra) {
+                                    const chosenPortInfo = targetPorts.find(tp => tp.value === selectedTargetPort);
+                                    if (chosenPortInfo && chosenPortInfo.label.includes('🔴')) {
+                                      const occupantMatch = chosenPortInfo.label.match(/\(([^)]+)\)$/);
+                                      const occupantName = occupantMatch ? occupantMatch[1] : 'otro elemento';
+                                      if (!confirm(`El puerto destino ya está ocupado por "${occupantName}". Si continúas, se desconectará automáticamente de ahí. ¿Deseas continuar?`)) {
+                                        return;
+                                      }
+                                    }
+                                  }
                                   await assignDeviceToPort(selectedDeviceToAssign, selectedTargetPort);
                                   setSelectedDeviceToAssign(null);
                                 }}

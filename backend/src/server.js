@@ -217,6 +217,45 @@ async function runMigrations() {
       ADD COLUMN IF NOT EXISTS local_port INTEGER
     `);
 
+    // Tabla de enlaces switch-a-switch (cascada). Antes, cada elemento de
+    // infraestructura solo podía registrar UN enlace propio (switch_id +
+    // switch_port + local_port), así que conectar una segunda fibra desde el
+    // mismo switch sobreescribía el registro de la primera conexión. Ahora
+    // cada conexión física es su propia fila, así un switch puede tener
+    // tantos enlaces simultáneos como puertos físicos tenga, sin pisarse.
+    // Las columnas viejas (switch_id/switch_port/local_port) se dejan intactas
+    // como respaldo histórico, pero ya no se usan para registrar cascadas nuevas.
+    await query(`
+      CREATE TABLE IF NOT EXISTS infrastructure_links (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        infra_a_id UUID NOT NULL REFERENCES network_infrastructure(id) ON DELETE CASCADE,
+        infra_a_port INTEGER NOT NULL,
+        infra_b_id UUID NOT NULL REFERENCES network_infrastructure(id) ON DELETE CASCADE,
+        infra_b_port INTEGER NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (infra_a_id, infra_a_port),
+        UNIQUE (infra_b_id, infra_b_port)
+      )
+    `);
+
+    // Migración única: convertir los enlaces ya guardados en el modelo viejo
+    // (switch_id/switch_port/local_port) a filas de infrastructure_links, para
+    // no perder el cableado que ya existía antes de este cambio.
+    const { rows: linksCount } = await query('SELECT count(*)::int FROM infrastructure_links');
+    if (linksCount[0].count === 0) {
+      await query(`
+        INSERT INTO infrastructure_links (infra_a_id, infra_a_port, infra_b_id, infra_b_port)
+        SELECT child.switch_id, child.switch_port, child.id, child.local_port
+        FROM network_infrastructure child
+        WHERE child.switch_id IS NOT NULL
+          AND child.switch_port IS NOT NULL
+          AND child.local_port IS NOT NULL
+          AND EXISTS (SELECT 1 FROM network_infrastructure parent WHERE parent.id = child.switch_id)
+        ON CONFLICT DO NOTHING
+      `);
+    }
+
     // 8. Add switch_id and switch_port columns to devices table
     await query(`
       ALTER TABLE devices

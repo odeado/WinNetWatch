@@ -561,6 +561,48 @@ async function syncInfrastructureFromFirestore(fsData) {
     console.error('Error syncing infrastructure from Firestore:', err);
   }
 }
+async function syncInfrastructureLinkFromFirestore(fsData) {
+  try {
+    const uuid = stringToUUID(fsData.id);
+    const infraAUuid = stringToUUID(fsData.infra_a_id);
+    const infraBUuid = stringToUUID(fsData.infra_b_id);
+    const infraAPort = Number(fsData.infra_a_port) || null;
+    const infraBPort = Number(fsData.infra_b_port) || null;
+    if (!infraAUuid || !infraBUuid || !infraAPort || !infraBPort) return;
+
+    // Validar que ambos elementos existan localmente antes de insertar (evitar violación de FK)
+    const aExists = (await query('SELECT id FROM network_infrastructure WHERE id = $1', [infraAUuid])).rows[0];
+    const bExists = (await query('SELECT id FROM network_infrastructure WHERE id = $1', [infraBUuid])).rows[0];
+    if (!aExists || !bExists) return;
+
+    const { rows } = await query('SELECT * FROM infrastructure_links WHERE id = $1', [uuid]);
+    const local = rows[0];
+
+    if (!local) {
+      await query(
+        `INSERT INTO infrastructure_links (id, infra_a_id, infra_a_port, infra_b_id, infra_b_port)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO NOTHING`,
+        [uuid, infraAUuid, infraAPort, infraBUuid, infraBPort]
+      );
+    } else if (
+      local.infra_a_id !== infraAUuid ||
+      local.infra_a_port !== infraAPort ||
+      local.infra_b_id !== infraBUuid ||
+      local.infra_b_port !== infraBPort
+    ) {
+      await query(
+        `UPDATE infrastructure_links
+         SET infra_a_id = $2, infra_a_port = $3, infra_b_id = $4, infra_b_port = $5, updated_at = now()
+         WHERE id = $1`,
+        [uuid, infraAUuid, infraAPort, infraBUuid, infraBPort]
+      );
+    }
+  } catch (err) {
+    console.error('Error syncing infrastructure link from Firestore:', err);
+  }
+}
+
 // ------------------------------------------------------------
 // Action queue worker (Firestore Actions -> Local Execution)
 // ------------------------------------------------------------
@@ -794,6 +836,29 @@ export async function deleteInfrastructureFromFirebase(id) {
   }
 }
 
+export async function pushInfrastructureLinkToFirebase(link) {
+  try {
+    const docRef = doc(db, 'infrastructure_links', link.id);
+    await setDoc(docRef, {
+      infra_a_id: link.infra_a_id,
+      infra_a_port: link.infra_a_port,
+      infra_b_id: link.infra_b_id,
+      infra_b_port: link.infra_b_port,
+      updated_at: link.updated_at ? new Date(link.updated_at).toISOString() : new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('[FirebaseSync] Error al subir enlace de infraestructura a Firebase:', err);
+  }
+}
+
+export async function deleteInfrastructureLinkFromFirebase(id) {
+  try {
+    await deleteDoc(doc(db, 'infrastructure_links', id));
+  } catch (err) {
+    console.error('[FirebaseSync] Error al eliminar enlace de infraestructura de Firebase:', err);
+  }
+}
+
 export async function pushEventToFirebase(event) {
   try {
     const id = `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -885,6 +950,9 @@ async function runInitialSync() {
 
       const { rows: infra } = await query('SELECT * FROM network_infrastructure');
       for (const item of infra) await pushInfrastructureToFirebase(item);
+
+      const { rows: links } = await query('SELECT * FROM infrastructure_links');
+      for (const link of links) await pushInfrastructureLinkToFirebase(link);
 
       console.log('[FirebaseSync] Sembrado inicial completado con éxito!');
     } else {
@@ -1013,6 +1081,22 @@ export async function initFirebaseSync() {
         }
       } catch (err) {
         console.error('Error handling infrastructure change:', err);
+      }
+    }
+  });
+
+  onSnapshot(collection(db, 'infrastructure_links'), async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
+      const data = { id: change.doc.id, ...change.doc.data() };
+      try {
+        if (change.type === 'added' || change.type === 'modified') {
+          await syncInfrastructureLinkFromFirestore(data);
+        } else if (change.type === 'removed') {
+          const uuid = stringToUUID(change.doc.id);
+          await query('DELETE FROM infrastructure_links WHERE id = $1', [uuid]);
+        }
+      } catch (err) {
+        console.error('Error handling infrastructure_link change:', err);
       }
     }
   });
